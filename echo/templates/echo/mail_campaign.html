@@ -1,0 +1,36 @@
+{% extends 'core/app_base_admin.html' %}
+{% load i18n humanize staticfiles auth_tokens %}
+
+{% block page_title %}
+    <title> {% trans "WEB campaign" %} - ikwen</title>
+{% endblock %}
+
+{% block head_style %}
+    {{ block.super }}
+{% endblock %}
+
+{% block breadcrumb_location %}
+    <li>{% trans "Mail campaign" %}</li>
+{% endblock %}
+
+{% block admin_content %}
+    <div id="admin-content">
+        <div class="container-fluid">
+
+             <div class="sold" style="text-align: right">
+                <strong><p>{% trans "Remainig mail : " %}<span class="balance">{{ balance.mail_count }}</span></p></strong>
+                {% if balance.mail_count == 0 %}
+                    <a style="text-decoration: none;" href="#"><strong><p>{% trans "Refill ? " %}</p></strong></a>
+                {% endif %}
+            </div>
+
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block js %}
+    {{ block.super }}
+    <script>
+    </script>
+{% endblock %}

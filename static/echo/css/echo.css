@@ -1,0 +1,53 @@
+/**
+    Document   : echo
+    Created on : Oct 04, 2018, 18:15
+    Author     : W1773ND
+    Description:
+        Echo/sms_sender styles
+*/
+
+.btn{min-width: 140px;}
+
+.campaign-title{padding-bottom: 20px;}
+
+.event {list-style-type: none; margin-bottom: 30px; padding: 0 !important;}
+.event .btn {width: 120px;}
+.event-content {padding-left: 105px;}
+.event-content p {margin-top: 10px;}
+.event-detail {border: 1px solid #ddd; height: 160px; margin-top: 10px; padding: 15px;}
+.event-icon {border-right: 1px solid #eee; height: 160px; line-height: 140px; margin: -15px 0 0 -15px; position: absolute; text-align: center; width: 90px;}
+.event-icon img {width: 60px;}
+
+
+.text {line-height: 20px;}
+
+.p-0 {padding: 0 !important;}
+.pb-15 {padding-bottom: 15px !important;}
+
+.progress {height: 4px !important;}
+
+.sold {text-align: right; padding: 0 20px 10px 0;}
+
+
+
+
+
+@media only screen and (max-width: 800px) and (orientation: portrait) {
+    .mobile-adjustment{
+        padding: 0 !important;
+    }
+    .mobile-adjustment.btn-spacing{
+        padding-top: 10px !important;
+    }
+
+    .sold {text-align: center !important; padding: 10px 0 !important;}
+}
+
+@media only screen and (max-width: 800px) and (orientation: landscape) {
+    .mobile-adjustment{
+        padding: 0 !important;
+    }
+    .mobile-adjustment.btn-spacing{
+        padding-top: 10px !important;
+    }
+}

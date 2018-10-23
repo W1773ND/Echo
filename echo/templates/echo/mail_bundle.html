@@ -1,0 +1,29 @@
+{% extends 'core/app_base_admin.html' %}
+{% load i18n humanize staticfiles auth_tokens %}
+
+{% block page_title %}
+    <title> {% trans "WEB campaign pricing" %} - ikwen</title>
+{% endblock %}
+
+{% block head_style %}
+    {{ block.super }}
+{% endblock %}
+
+{% block breadcrumb_location %}
+    <li>{% trans "Mail pricing plan" %}</li>
+{% endblock %}
+
+{% block admin_content %}
+    <div id="admin-content">
+        <div class="container-fluid">
+
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block js %}
+    {{ block.super }}
+    <script>
+    </script>
+{% endblock %}

@@ -1,0 +1,20 @@
+{% extends "core/base_admin.html" %}
+{% load i18n humanize static %}
+{% block app_admin_nav %}
+    <ul class="nav nav-pills nav-stacked">
+        <li role="presentation" class="menus">
+            <a href="javascript:;" data-toggle="collapse" data-target="#echo" style="padding-right: 0;">
+                Echo
+                <i class="fa fa-fw fa-caret-down"></i>
+            </a>
+            <ul id="echo" class="nav nav-pills nav-stacked" style="padding-left: 15px;">
+                <li class="echo-categories">
+                    <a href="{% url "echo:sms_campaign" %}">SMS</a>
+                </li>
+                <li class="echo-categories">
+                    <a href="{% url "echo:mail_campaign" %}">Mail</a>
+                </li>
+            </ul>
+        </li>
+    </ul>
+{% endblock %}

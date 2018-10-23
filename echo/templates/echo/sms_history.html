@@ -1,0 +1,279 @@
+{% extends 'core/object_list_base.html' %}
+{% load i18n static humanize %}
+
+{% block admin_content %}
+
+{% endblock %}
+    <div id="admin-content">
+        <div class="container-fluid stage">
+            <div id="admin-tools" class="ceil bottom-shade-xs">
+                <form id="admin-tools-form" onsubmit="return false">
+                    <div>
+                        <i class="glyphicon glyphicon-search"></i>
+                        <i class="glyphicon glyphicon-menu-left hide-search back"></i>
+                        <input type="text" id="context-search" class="tool search form-input input-sm" placeholder="{% blocktrans %}Search {{ verbose_name }}{% endblocktrans %}"/>
+                    </div>
+                    {% if filter and filter|length > 0 %}
+                        <div class="filter-trigger">
+                            <i class="glyphicon glyphicon-filter"></i>
+                            <i class="glyphicon glyphicon-menu-left hide-filter back"></i>
+                            {% for elt in filter %}
+                            <div class="tool filter">
+                                <label for="{{ elt.parameter_name }}" class="sr-only">{% trans elt.title %}</label>
+                                <select id="{{ elt.parameter_name }}" style="float: left; width: 120px" class="form-control input-sm {{ elt.parameter_name }} widget" name="{{ elt.parameter_name }}">
+                                    <option value="">{% trans "All" %}</option>
+                                    {% for choice in elt.choices %}
+                                        <option value="{{ choice.0 }}">{{ choice.1 }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </form>
+                {% url change_object_url_name as change_object_url %}
+                <a href="{{ change_object_url }}" class="btn btn-sm btn-success cta add pull-right action" style="border-color: #18bc9c"
+                        title="{% trans "Add new " %} {{ verbose_name }}">
+                    <i class="glyphicon glyphicon-plus"></i>
+                    <span class="hidden-xs">{% trans "Add" %}</span>
+                </a>
+                <div class="clearfix"></div>
+            </div>
+            <div id="results">
+                {% include 'core/snippets/spinner.html' %}
+                {% include 'core/snippets/object_list_results.html' %}
+            </div>
+        </div>
+    </div>
+        <div id="content">
+            <div class="container">
+                <h3 class="text-center" style="margin: 5px 0 15px">{% trans "SMS Report" %}</h3>
+                <div id="filter">
+                    <form id="criteria" onsubmit="return false" class="row">
+                        <div class="form-group col-sm-4 col-lg-3">
+                            <label for="operator">Operator</label>
+                            <select id="operator" name="operator" class="form-control input-sm">
+                                <option value="">All</option>
+                                <option value="mtn-momo">MTN MoMo</option>
+                                <option value="orange-money">Orange Money</option>
+                            </select>
+                        </div>
+                        <div class="form-group col-sm-4 col-lg-3">
+                            <label for="app">App</label>
+                            <select id="app" name="service_id" class="form-control input-sm">
+                                <option value="">All</option>
+                                {% for key, value in service_list.items %}
+                                    <option value="{{ key }}">{{ value }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group col-sm-4 col-lg-3">
+                            <label for="period">Period</label>
+                            <select id="period" name="period" class="form-control input-sm">
+                                <option value="today">Today</option>
+                                <option value="yesterday">Yesterday</option>
+                                <option value="last_7_days">Last 7 days</option>
+                                <option value="last_28_days">Last 28 days</option>
+                                <option value="since_the_1st">Since the 1st of month</option>
+                                <option value="other" data-toggle="modal" data-target="#period-chooser">Other ...</option>
+                            </select>
+                            <input type="hidden" id="start-alt" name="start_date" />
+                            <input type="hidden" id="end-alt" name="end_date" />
+                            <input type="hidden" id="is-running" name="is_running" />
+                            <input type="hidden" id="status" name="status" />
+                            <input type="hidden" id="page" name="page" />
+                        </div>
+                        <div class="form-group col-sm-4 col-lg-3">
+                            <div class="custom-period">
+                                <span class="start text-muted">17/02/2018</span> -
+                                <span class="end text-muted">19/02/2018</span>                                &nbsp;&nbsp;
+                                <a href="javascript:;"
+                                   data-toggle="modal" data-target="#period-chooser">Change</a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div id="results">
+                    {% include 'echo/snippets/sms_report_results.html' %}
+                </div>
+            </div>
+        </div>
+        <div id="period-chooser" class="modal fade" role="dialog">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content modal-info">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        <h4 class="modal-title">{% trans "Choose custom period" %}</h4>
+                    </div>
+                    <div class="modal-body">
+                        <form onsubmit="return false">
+                            <div class="form-group">
+                                <label for="start-date">From:</label>
+                                <input type="text" id="start-date" class="form-control input-sm" />
+                            </div>
+                            <div class="form-group">
+                                <label for="end-date">To:</label>
+                                <input type="text" id="end-date" class="form-control input-sm" />
+                            </div>
+                        </form>
+                        <div class="actions">
+                            <div class="col-xs-12 col-sm-4 col-md-3 pull-right">
+                                <button class="btn btn-sm btn-success btn-block confirm-period"
+                                        data-dismiss="modal" aria-label="Close">{% trans "OK" %}</button>
+                            </div>
+                            <div class="col-xs-12 col-sm-4 col-md-3 pull-right">
+                                <button class="btn btn-sm btn-default btn-block cancel-period"
+                                        data-dismiss="modal" aria-label="Close">{% trans "Cancel" %}</button>
+                            </div>
+                        </div>
+                        <div class="clearfix"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="tx-details" class="modal fade" role="dialog">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content modal-info">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        <h4 class="modal-title">{% trans "Transaction details" %}</h4>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <strong class="col-xs-4">Phone :</strong>
+                            <span class="col-xs-8 text-muted phone"></span>
+                            <div class="clearfix"></div>
+                        </div>
+                        <div class="row">
+                            <strong class="col-xs-4">Amount :</strong>
+                            <span class="col-xs-8 text-muted amount"></span>
+                            <div class="clearfix"></div>
+                        </div>
+                        <div class="row">
+                            <strong class="col-xs-4">App :</strong>
+                            <span class="col-xs-8 text-muted app"></span>
+                            <div class="clearfix"></div>
+                        </div>
+                        <div class="row">
+                            <strong class="col-xs-4">Date :</strong>
+                            <span class="col-xs-8 text-muted date"></span>
+                            <div class="clearfix"></div>
+                        </div>
+                        <div class="row">
+                            <strong class="col-xs-4">Status :</strong>
+                            <span class="col-xs-8 text-muted status"></span>
+                            <div class="clearfix"></div>
+                        </div>
+                        <div class="row">
+                            <strong class="col-xs-4">Operator :</strong>
+                            <span class="col-xs-8 text-muted operator"></span>
+                            <div class="clearfix"></div>
+                        </div>
+                        <div class="row">
+                            <strong class="col-xs-4">Operator TX ID :</strong>
+                            <span class="col-xs-8 text-muted operator-tx-id"></span>
+                            <div class="clearfix"></div>
+                        </div>
+                        <div class="row">
+                            <strong class="col-xs-4">Object ID :</strong>
+                            <span class="col-xs-8 text-muted object-id"></span>
+                            <div class="clearfix"></div>
+                        </div>
+                        <div class="row">
+                            <strong class="col-xs-4">Message :</strong>
+                            <span class="col-xs-8 text-muted message"></span>
+                            <div class="clearfix"></div>
+                        </div>
+                        <div class="clearfix"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script src="{% static 'ikwen/js/jquery-1.12.4.min.js' %}"></script>
+        <script src="{% static 'ikwen/js/jquery-ui.js' %}"></script>
+        <script src="{% static 'ikwen/js/bootstrap.min.js' %}"></script>
+        <script type="text/javascript">
+            (function() {
+                $('#start-date').datepicker({
+                    altField: "#start-alt",
+                    altFormat: "yy-mm-dd"
+                });
+                $('#end-date').datepicker({
+                    altField: "#end-alt",
+                    altFormat: "yy-mm-dd"
+                });
+                var period = 'today';  // Initial period is today
+                $('#period').change(function() {
+                    var val = $(this).val();
+                    if (val === 'other') {
+                        $('#period-chooser').modal('show');
+                    } else {
+                        period = val;
+                        $('.custom-period').hide();
+                        loadResults();
+                    }
+                });
+                $('#operator, #app').change(loadResults);
+                $('#content').on('click', '.see-all', function() {
+                    $('#is-running').val('');
+                    $('#status').val('');
+                    loadResults();
+                }).on('click', '.category', function() {
+                    var status = $(this).data('status');
+                    if (status === 'Running') {
+                        $('#is-running').val('yes');
+                        $('#status').val('');
+                    } else {
+                        $('#is-running').val('');
+                        $('#status').val(status);
+                    }
+                    loadResults();
+                }).on('click', '.page:not(.active)', function() {
+                    $('#page').val($(this).data('val'));
+                    loadResults();
+                });
+                $('.cancel-period').click(function() {
+                    $('#period').val(period);
+                });
+                $('.confirm-period').click(function() {
+                    var start = $('#start-date').val(),
+                        end = $('#end-date').val();
+                    if (start && end) {
+                        $('.custom-period .start').text(start);
+                        $('.custom-period .end').text(end);
+                        $('.custom-period').show();
+                        loadResults();
+                    }
+                });
+                $('#results').on('click', '.tx-list tr', function() {
+                    var operator = $(this).find('.operator').text(),
+                        app = $(this).find('.app').text(),
+                        phone = $(this).find('.phone').text(),
+                        amount = $(this).find('.amount').text(),
+                        userId = $(this).find('.user-id').text(),
+                        date = $(this).find('.date').text(),
+                        status = $(this).find('.status').text(),
+                        operatorTxId = $(this).data('operator-tx-id'),
+                        objectId = $(this).data('object-id'),
+                        message = $(this).data('message');
+                    $('div#tx-details .operator').text(operator);
+                    $('div#tx-details .app').text(app);
+                    $('div#tx-details .phone').text(phone);
+                    $('div#tx-details .amount').text(amount);
+                    $('div#tx-details .user-id').text(userId);
+                    $('div#tx-details .date').text(date);
+                    $('div#tx-details .status').text(status);
+                    $('div#tx-details .operator-tx-id').text(operatorTxId);
+                    $('div#tx-details .object-id').text(objectId);
+                    $('div#tx-details .message').text(message);
+                    $('div#tx-details').modal('show');
+                });
+                function loadResults() {
+                    $('div#results .spinner').show();
+                    var params = $('form#criteria').serialize() + '&ajax=yes';
+                    $('#results').load('{{ request.path }}', params)
+                }
+            })()
+        </script>
+    </body>
+</html>

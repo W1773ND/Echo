@@ -1,0 +1,133 @@
+{% load i18n humanize %}
+{% include 'core/snippets/spinner.html' %}
+<div style="border-top: 1px solid #ddd; margin-top: 20px">
+    <div style="background: #fff; width: 300px; margin: -22px auto 0; text-align: center">
+        <button class="btn btn-disabled see-all" style="width: 240px">See All</button>
+    </div>
+</div>
+<div class="row">
+    <div class="col-xs-6 col-md-3">
+        <div class="category successful" data-status="Success">
+            <h4>Successful:
+                <span class="count">
+                    {% if status == 'Success' %}{{ meta.total.count }}{% else %}{{ meta.successful.count }}{% endif %}
+                </span>
+            </h4>
+            <div class="amount">
+                {% if status == 'Success' %}
+                    {{ meta.total.amount|floatformat:"0"|intcomma }}
+                {% else %}
+                    {{ meta.successful.amount|floatformat:"0"|intcomma }}
+                {% endif %}
+            </div>
+            <div class="clearfix"></div>
+        </div>
+    </div>
+    <div class="col-xs-6 col-md-3">
+        <div class="category running" data-status="Running">
+            <h4>Running:
+                <span class="count">
+                    {% if status == 'Running' %}{{ meta.total.count }}{% else %}{{ meta.running.count }}{% endif %}
+                </span>
+            </h4>
+            <div class="amount">
+                {% if status == 'Running' %}
+                    {{ meta.total.amount|floatformat:"0"|intcomma }}
+                {% else %}
+                    {{ meta.running.amount|floatformat:"0"|intcomma }}
+                {% endif %}
+            </div>
+            <div class="clearfix"></div>
+        </div>
+    </div>
+    <div class="col-xs-6 col-md-3">
+        <div class="category failed" data-status="Failure">
+            <h4>Failed:
+                <span class="count">
+                    {% if status == 'Failure' %}{{ meta.total.count }}{% else %}{{ meta.failed.count }}{% endif %}
+                </span>
+            </h4>
+            <div class="amount">
+                {% if status == 'Failure' %}
+                    {{ meta.total.amount|floatformat:"0"|intcomma }}
+                {% else %}
+                    {{ meta.failed.amount|floatformat:"0"|intcomma }}
+                {% endif %}
+            </div>
+            <div class="clearfix"></div>
+        </div>
+    </div>
+    <div class="col-xs-6 col-md-3">
+        <div class="category dropped" data-status="Dropped">
+            <h4>Dropped:
+                <span class="count">
+                    {% if status == 'Dropped' %}{{ meta.total.count }}{% else %}{{ meta.dropped.count }}{% endif %}
+                </span>
+            </h4>
+            <div class="amount">
+                {% if status == 'Dropped' %}
+                    {{ meta.total.amount|floatformat:"0"|intcomma }}
+                {% else %}
+                    {{ meta.dropped.amount|floatformat:"0"|intcomma }}
+                {% endif %}
+            </div>
+            <div class="clearfix"></div>
+        </div>
+    </div>
+</div>
+{#<div style="margin: 15px 0">#}
+{#    <button class="btn btn-sm btn-success pull-right" title="{% trans "Export as Spreadsheet" %}" style="width: 120px">#}
+{#        <i class="glyphicon glyphicon-list-alt"></i>#}
+{#        <span class="hidden-xs">{% trans "Export" %}</span>#}
+{#    </button>#}
+{#    <div class="clearfix"></div>#}
+{#</div>#}
+<div class="table-responsive" style="margin-top: 15px">
+    {% if error %}
+        <div class="alert alert-danger alert-dismissible">
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            {{ error }}
+        </div>
+    {% else %}
+        <table class="table table-condensed table-hover table-stripped tx-list">
+            <thead>
+                <tr>
+                    <th>Operator</th>
+                    <th>App.</th>
+                    <th>Phone</th>
+                    <th>Amount</th>
+                    <th>User ID</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for tx in transactions %}
+                    <tr class="{% if tx.status == 'Success' and tx.message != 'OK' %}warning{% endif %}"
+                        data-message="{{ tx.message }}" data-operator-tx-id="{{ tx.processor_tx_id }}" data-object-id="{{ tx.object_id }}">
+                        <td class="operator">{{ tx.wallet }}</td>
+                        <td class="app">{{ tx.app_name }}</td>
+                        <td class="phone">{% if tx.phone == '<Unknown>' %}{{ tx.phone }}{% else %}{{ tx.phone|floatformat:"0" }}{% endif %}</td>
+                        <td class="amount">{{ tx.amount|floatformat:"0"|intcomma }}</td>
+                        <td class="user-id">{{ tx.username }}</td>
+                        <td class="date">{{ tx.created_on }}</td>
+                        <td class="status">{{ tx.status }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+</div>
+{% if objects_page.paginator.num_pages > 1 %}
+<ul class="pagination">
+{#                        <li class="disabled"><a href="#" aria-label="Previous"><span aria-hidden="true">«</span></a></li>#}
+    {% for page in objects_page.paginator.page_range %}
+        <li class="page{% if page == objects_page.number %} active{% endif %}" data-val="{{ page }}">
+            <a href="#">
+                {{ page }} {% if page == objects_page.number %}<span class="sr-only">(current)</span>{% endif %}
+            </a>
+        </li>
+    {% endfor %}
+{#                        <li><a href="#" aria-label="Next"><span aria-hidden="true">»</span></a></li>#}
+</ul>
+{% endif %}

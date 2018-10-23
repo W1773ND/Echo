@@ -1,0 +1,61 @@
+{% extends 'core/app_base_admin.html' %}
+{% load i18n humanize staticfiles auth_tokens %}
+
+{% block page_title %}
+    <title> {% trans "WEB campaign pricing" %} - ikwen</title>
+{% endblock %}
+
+{% block head_style %}
+    {{ block.super }}
+    <link rel="stylesheet" type="text/css" href="{% static 'echo/css/echo.css' %}" />
+{% endblock %}
+
+{% block breadcrumb_location %}
+    <li>{% trans "SMS pricing plan" %}</li>
+{% endblock %}
+
+{% block admin_content %}
+    <div id="admin-content">
+        <div class="container-fluid">
+            <div class="row mobile-adjustment" style="padding-top: 100px; text-align: center">
+                <div class="col-sm-6 col-md-4">
+                    <div class="thumbnail">
+                        <img src="..." alt="...">
+                        <div class="caption">
+                            <h3>Basic</h3>
+                            <p>...</p>
+                            <p><a href="#" class="btn btn-primary basic-bundle" role="button">{% trans "Buy" %}</a></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-md-4">
+                    <div class="thumbnail">
+                        <img src="..." alt="...">
+                        <div class="caption">
+                            <h3>Classic</h3>
+                            <p>...</p>
+                            <p><a href="#" class="btn btn-primary classic-bundle" role="button">{% trans "Buy" %}</a></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-md-4">
+                    <div class="thumbnail">
+                        <img src="..." alt="...">
+                        <div class="caption">
+                            <h3>Professional</h3>
+                            <p>...</p>
+                            <p><a href="#" class="btn btn-primary professional-bundle" role="button">{% trans "Buy" %}</a></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block js %}
+    {{ block.super }}
+    <script>
+    </script>
+{% endblock %}

@@ -1,0 +1,325 @@
+{% extends 'core/app_base_admin.html' %}
+{% load i18n humanize staticfiles auth_tokens %}
+
+{% block page_title %}
+    <title> {% trans "WEB campaign" %} - ikwen</title>
+{% endblock %}
+
+{% block head_style %}
+    {{ block.super }}
+{#    <link rel="stylesheet" type="text/css" href="{% static 'echo/css/bootstrap-datepicker3.standalone.css' %}" />#}
+{#    <link rel="stylesheet" type="text/css" href="{% static 'echo/css/bootstrap-slider.css' %}" />#}
+    <link rel="stylesheet" type="text/css" href="{% static 'echo/css/echo.css' %}" />
+{% endblock %}
+
+{% block breadcrumb_location %}
+    <li>{% trans "SMS campaign" %}</li>
+{% endblock %}
+
+{% block admin_content %}
+    <div id="admin-content">
+        <div class="container-fluid">
+
+            {% comment %}<br style="clear:both">
+            <div id="start-campaign-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="start-campaign-modal" aria-hidden="false">
+                <div class="modal-dialog modal-dialog-centered" role="document">
+                    <div class="modal-content">
+                      <div class="modal-header">
+                        <h2 class="modal-title" id="campaign_modal_title">{% trans "Let's make something big together" %}</h2>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                          <span aria-hidden="true">&times;</span>
+                        </button>
+                      </div>
+                      <div class="modal-body">
+                          <form>
+    {#                                  <div class="row">#}
+                                  <div class="col-sm-6 p-0">
+                                      <label for="campaign_title" data-toggle="tooltip" title="{% trans "Enter your campaign subject" %}" style="text-align: center;">{% trans "Campaign title" %}</label>
+                                  </div>
+                                  <div class="col-sm-12 p-0 pb-15">
+                                      <input type="text" class="form-control campaign-title" id="campaign_title" placeholder="Title">
+                                  </div>
+                                  <div class="col-sm-6 p-0">
+                                      <label for="purchase_datepicker" data-toggle="tooltip" title="{% trans "Set interval of" %}">{% trans "Last purchase date" %}</label>
+                                  </div>
+                                  <div class="form-group col-sm-6 input-daterange input-group p-0" id="purchase_datepicker" data-provide="datepicker">
+                                    <input type="text" class="input-sm form-control" name="start" />
+                                    <span class="input-group-addon" style=" color: #555; text-align: center; background-color: #eee; border: 1px solid #ccc;">to</span>
+                                    <input type="text" class="input-sm form-control" name="end" />
+                                  </div>
+                                  <div class="col-sm-6 p-0">
+                                      <label for="visit_datepicker" data-toggle="tooltip" title="{% trans "Set interval of" %}">{% trans "Last visit date" %}</label>
+                                  </div>
+                                  <div class="form-group col-sm-10 input-daterange input-group p-0" id="visit_datepicker" data-provide="datepicker">
+                                    <input type="text" class="input-sm form-control" name="start" />
+                                    <span class="input-group-addon" style=" color: #555; text-align: center; background-color: #eee; border: 1px solid #ccc;">to</span>
+                                    <input type="text" class="input-sm form-control" name="end" />
+                                  </div>
+                                  <div class="col-sm-6 p-0">
+                                      <label for="subscription_datepicker" data-toggle="tooltip" title="{% trans "Set interval of" %}">{% trans "Subscription date" %}</label>
+                                  </div>
+                                  <div class="form-group col-sm-10 input-daterange input-group p-0" id="subscription_datepicker" data-provide="datepicker">
+                                    <input type="text" class="input-sm form-control" name="start" />
+                                    <span class="input-group-addon" style=" color: #555; text-align: center; background-color: #eee; border: 1px solid #ccc;">to</span>
+                                    <input type="text" class="input-sm form-control" name="end" />
+                                  </div>
+
+    {#                                  </div>#}
+                          </form>
+                      </div>
+                      <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary">Save changes</button>
+                      </div>
+                    </div>
+                </div>
+            </div>{% endcomment %}
+
+            <br style="clear:both">
+            <div id="start-campaign-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="start-campaign-modal">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content" style="text-align: center">
+                      <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        <h4 class="modal-title" id="campaign_modal_title" style="text-align: center">{% trans "Configure your audience" %}</h4>
+                      </div>
+                      <div class="modal-body">
+                          <form>
+                              <div class="col-sm-5 col-xs-5 p-0">
+                                  <label for="import_contact" data-toggle="tooltip" title="{% trans "Upload a contact list from " %}CSV{% trans " file to send a SMS campaign" %}">{% trans "Import from " %}CSV{% trans " file" %}</label>
+                              </div>
+                              <div class="col-sm-2 col-xs-2">
+                                  <label>{% trans "or" %}</label>
+                              </div>
+                              <div class="col-sm-5 col-xs-5 p-0">
+                                  <label for="all_contact" data-toggle="tooltip" title="{% trans "Send a sms campaign to all your contact" %}">{% trans "Select all your contact" %}</label>
+                              </div>
+                              <div class="col-sm-4 col-xs-4 p-0" id="CSVFile">
+                                  <input type="file" id="InputCSV">
+                                {% comment %}<a href="#" class="thumbnail">
+                                    <img src="..." alt="...">
+                                </a>{% endcomment %}
+                              </div>
+                              <div class="col-sm-4 col-xs-4 col-sm-offset-4 col-xs-offset-1 p-0">
+                                <button class="btn btn-primary btn-sm" type="button" data-dismiss="modal">
+                                  Contact <span class="badge"> {{ member.all }} 1500 </span>
+                                </button>
+                              </div>
+                          </form>
+                          <div class="clear"></div>
+                      </div>
+                      <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">{% trans "Done" %}</button>
+                      </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="sms-detail-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="sms-detail-modal" aria-hidden="false">
+                <div class="modal-dialog modal-dialog-centered" role="document">
+                    <div class="modal-content">
+                      <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        <h4 class="modal-title" id="campaign_modal_title" style="text-align: center">{% trans "SMS Detail" %}</h4>
+                      </div>
+                      <div class="modal-body">
+                        <div class="detail-content">
+                            <strong class="title-message">{{ campaign.subject }}</strong>
+                            <hr>
+                            <p class="detail-message">{{ campaign.sms_set.all.0.text }}</p>
+                        </div>
+                      </div>
+                      <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                      </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="insufficient-balance-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="insufficient-balance-modal" aria-hidden="false">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                      <div class="modal-body">
+                        <div class="detail-content">
+                            <strong class="title">{% trans "Not enough credit..." %}</strong>
+                            <img src="..." alt="...">
+                        </div>
+                      </div>
+                      <div class="modal-footer">
+                        <button type="button" class="btn btn-success"><a href="{% url 'echo:sms_bundle' %}" style="text-decoration: none; color: #ffffff;"> {% trans "Refill" %}</a></button>
+                      </div>
+                    </div>
+                </div>
+            </div>
+
+
+            <div class="sold" style="text-align: right">
+                <strong><p>{% trans "Remainig SMS : " %}<span class="balance">{{ balance.sms_count }}</span></p></strong>
+                {% if balance.sms_count <= 200 %}
+                    <a style="text-decoration: none" href="{% url 'echo:sms_bundle' %}"><strong><p>{% trans "Refill ? " %}</p></strong></a>
+                {% endif %}
+            </div>
+
+
+            <div class="form col-sm-4 col-sm-offset-4">
+                <h4 style="text-align: center"><label id="messageLabel" for="message">{% trans "Write your message" %}</label></h4>
+                <form>
+                    <div class="form-row">
+                        <div class="col-sm-5 mobile-adjustment pb-15" style="padding-left: 0">
+                            <input type="tel" class="form-control recipient" id="input_Num" placeholder="To">
+                        </div>
+                        <div class="col-sm-7 mobile-adjustment btn-spacing pb-15" style="padding-right: 0">
+                        <button type="button" class="btn btn-primary btn-block" data-toggle="modal" data-target="#start-campaign-modal" style>
+                          {% trans "Start campaign" %}
+                        </button>
+                    </div>
+                        <div class="col-sm-12 p-0">
+                            <input type="text" class="form-control subject" id="input_subject" placeholder="Object">
+                        </div>
+                        <div class="col-sm-12" style="padding: 10px 0">
+                            <textarea class="form-control input-sm text " type="textarea" id="text" placeholder="Message" rows="4"></textarea>
+                        </div>
+                    </div>
+                </form>
+
+                <div class="row">
+                    <div class="col-xs-8">
+                        <p id="sms-char-count" class="help-block sms-char-count">0 / 160</p>
+                    </div>
+                    <div class="col-xs-4">
+                        <p id="sms-page-count" class="help-block sms-page-count pull-right">0 SMS</p>
+                    </div>
+                </div>
+                <div class="form-group col-sm-12" style="padding: 0">
+                    <button class="form-control input-sm btn btn-success disabled btn-send" id="btn-send" name="btnSend" type="button" style="height:40px"> Send</button>
+                </div>
+            </div>
+            <div class="col-sm-8 col-sm-offset-2"style="padding-top: 45px;">
+                <div class="col-sm-12" style="padding: 0;">
+                    <strong class="event-header">{% trans "History" %}</strong>
+                    <hr class="event-separator">
+                </div>
+
+                <ul class="campaign-list p-0">
+                    {% for campaign in campaign_list %}
+                        <li class="col-sm-12 event{% if campaign.total > campaign.progress %} running{% endif %}" id= "{{ campaign.id }}">
+                            <div class="subtle-shade event-detail">
+                                <div class="event-icon">
+                                    <img src="{% static 'foulassi/img/report-card-icon.png' %}" />
+                                </div>
+                                <div class="event-content">
+                                    <strong class="event-title">{{ campaign.subject }}</strong>
+                                    <p class="event-message">{{ campaign.sms_set.all.0.text }}</p>
+                                    {% if campaign.progress < campaign.total  %}
+                                    <div class="progress">
+                                        <div class="progress-bar progress-bar-success" role="progressbar" aria-valuenow="10" aria-valuemin="0" aria-valuemax="100" style="width: {{ campaign.progress_rate }}%;"></div>
+                                    </div>
+                                    {% endif %}
+                                    <div class="actions">
+{#                                        {% if campaign %}#}
+{#                                            <a class="btn btn-warning pull-right btn-sm" href="{% url "echo:history" %}" target="_blank"> {% trans "Detail" %}</a>#}
+{#                                        {% else %}#}
+                                            <button type="button" class="btn btn-warning pull-right btn-sm" data-toggle="modal" data-target="#sms-detail-modal" style> {% trans "Detail" %}</button>
+{#                                        {% endif %}#}
+                                    </div>
+                                </div>
+                                <div class="clearfix"></div>
+                            </div>
+                        </li>
+                    {% empty %}
+                        <li id="placeholder" class="placeholder"> {% trans "Your SMS and sent campaigns will be displayed here..." %}</li>
+                    {% endfor %}
+
+                     <li class="col-sm-12 event tpl">
+                        <div class="subtle-shade event-detail">
+                            <div class="event-icon">
+                                <img src="{% static 'foulassi/img/report-card-icon.png' %}" />
+                            </div>
+                            <div class="event-content">
+                                <strong class="event-title"></strong>
+                                <p class="event-message"></p>
+                                <div class="progress">
+                                    <div class="progress-bar progress-bar-success" role="progressbar" aria-valuenow="80" aria-valuemin="0" aria-valuemax="100" style="width: 2%;"></div>
+                                </div>
+                                <div class="actions">
+                                    {% if campaign %}
+                                        <a class="btn btn-warning pull-right btn-sm" href="{% url 'echo:sms_history' %}" target="_blank"> {% trans "Detail" %}</a>
+                                    {% else %}
+                                        <button type="button" class="btn btn-warning pull-right btn-sm" data-toggle="modal" data-target="#sms-detail-modal" style> {% trans "Detail" %}</button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="clearfix"></div>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+
+
+{% endblock %}
+
+{% block js %}
+    {{ block.super }}
+    <script src="{% static 'echo/js/bootstrap-datepicker.js' %}" ></script>
+    <script src="{% static 'echo/js/sms_character_counter.js' %}" ></script>
+    <script>
+        (function () {
+            $('.btn-send').click(function () {
+                if ($('.btn-send').hasClass('disabled')) return;
+                var title = $('.campaign-title').val();
+                var recipient = $('.recipient').val();
+                var subject = $('.subject').val();
+                var txt = $('.text').val();
+                var endpoint = "{% url 'echo:sms_campaign' %}";
+                var params = {action: 'start_campaign', title: title, recipients: recipient, subject: subject, txt: txt};
+
+                $.getJSON(endpoint, params, function (data) {
+                    if (data.error) {
+                        var bundleLink = "{% url 'echo:sms_bundle' %}";
+                        $('#insufficient-balance-modal').modal('show')
+
+                    }else {
+                        var $historyTpl = $('.event.tpl').clone().removeClass('tpl');
+                        $historyTpl.find('.event-title').text(subject);
+                        $historyTpl.find('.event-message').text(txt);
+                        $historyTpl.prependTo('.campaign-list').addClass('running').attr('id', data.campaign.id);
+                        {#$('#placeholder').remove();#}
+                        intervalId = setInterval(updateProgressBar, 100);
+                    }
+                })
+            });
+
+            function updateProgressBar() {
+                if ($('.event.running').length === 0) {
+                    clearInterval(intervalId);
+                    return
+                }
+                $('.event.running').each(function () {
+                    var campaignId = $(this).attr('id');
+                    var params = {action: 'get_campaign_progress', campaign_id: campaignId};
+
+                    $.getJSON('', params, function (data) {
+                        var progressState = (data.progress / data.total) * 100;
+                        $('#' + campaignId).find('.progress-bar').css('width', progressState + '%');
+                        if (progressState === 100) $('#' + campaignId).removeClass('running')
+                    });
+                });
+
+            }
+            var intervalId = setInterval(updateProgressBar, 100);
+{% comment %}
+
+            $('.input-daterange').datepicker({
+                autoclose: true,
+                clearBtn: true,
+                format: "dd/mm/yy",
+                todayHighlight: true
+            });
+{% endcomment %}
+
+        })();
+    </script>
+{% endblock %}
