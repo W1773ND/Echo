@@ -48,7 +48,7 @@ class CampaignTestCase(unittest.TestCase):
         wipe_test_data()
         wipe_test_data()
 
-    @override_settings(IKWEN_SERVICE_ID='56eb6d04b37b3379b531b105')
+    @override_settings(IKWEN_SERVICE_ID='56eb6d04b37b3379b531b102')
     def test_SMSCampaign(self):
         """
         Make sure the url is reachable
@@ -57,50 +57,50 @@ class CampaignTestCase(unittest.TestCase):
         response = self.client.get(reverse('echo:sms_campaign'))
         self.assertEqual(response.status_code, 200)
 
-    # @override_settings(IKWEN_SERVICE_ID='56eb6d04b37b3379b531b102')
-    # def test_Sms_bundle_page(self):
-    #     """
-    #     Make sure the url is reachable
-    #     """
-    #     self.client.login(username='arch', password='admin')
-    #     response = self.client.get(reverse('echo:sms_bundle'))
-    #     self.assertEqual(response.status_code, 200)
-    #
-    # @override_settings(IKWEN_SERVICE_ID='56eb6d04b37b3379b531b102')
-    # def test_Sms_history_page(self):
-    #     """
-    #     Make sure the url is reachable
-    #     """
-    #     self.client.login(username='arch', password='admin')
-    #     response = self.client.get(reverse('echo:sms_history'))
-    #     self.assertEqual(response.status_code, 200)
-    #
-    # @override_settings(IKWEN_SERVICE_ID='56eb6d04b37b3379b531b102')
-    # def test_Mail_campaign_page(self):
-    #     """
-    #     Make sure the url is reachable
-    #     """
-    #     self.client.login(username='arch', password='admin')
-    #     response = self.client.get(reverse('echo:mail_campaign'))
-    #     self.assertEqual(response.status_code, 200)
-    #
-    # @override_settings(IKWEN_SERVICE_ID='56eb6d04b37b3379b531b102')
-    # def test_Mail_bundle_page(self):
-    #     """
-    #     Make sure the url is reachable
-    #     """
-    #     self.client.login(username='arch', password='admin')
-    #     response = self.client.get(reverse('echo:mail_bundle'))
-    #     self.assertEqual(response.status_code, 200)
-    #
-    # @override_settings(IKWEN_SERVICE_ID='56eb6d04b37b3379b531b102')
-    # def test_Mail_history_page(self):
-    #     """
-    #     Make sure the url is reachable
-    #     """
-    #     self.client.login(username='arch', password='admin')
-    #     response = self.client.get(reverse('echo:mail_history'))
-    #     self.assertEqual(response.status_code, 200)
+    @override_settings(IKWEN_SERVICE_ID='56eb6d04b37b3379b531b102')
+    def test_Sms_bundle_page(self):
+        """
+        Make sure the url is reachable
+        """
+        self.client.login(username='arch', password='admin')
+        response = self.client.get(reverse('echo:sms_bundle'))
+        self.assertEqual(response.status_code, 200)
+
+    @override_settings(IKWEN_SERVICE_ID='56eb6d04b37b3379b531b102')
+    def test_Sms_history_page(self):
+        """
+        Make sure the url is reachable
+        """
+        self.client.login(username='arch', password='admin')
+        response = self.client.get(reverse('echo:sms_history'))
+        self.assertEqual(response.status_code, 200)
+
+    @override_settings(IKWEN_SERVICE_ID='56eb6d04b37b3379b531b102')
+    def test_Mail_campaign_page(self):
+        """
+        Make sure the url is reachable
+        """
+        self.client.login(username='arch', password='admin')
+        response = self.client.get(reverse('echo:mail_campaign'))
+        self.assertEqual(response.status_code, 200)
+
+    @override_settings(IKWEN_SERVICE_ID='56eb6d04b37b3379b531b102')
+    def test_Mail_bundle_page(self):
+        """
+        Make sure the url is reachable
+        """
+        self.client.login(username='arch', password='admin')
+        response = self.client.get(reverse('echo:mail_bundle'))
+        self.assertEqual(response.status_code, 200)
+
+    @override_settings(IKWEN_SERVICE_ID='56eb6d04b37b3379b531b102')
+    def test_Mail_history_page(self):
+        """
+        Make sure the url is reachable
+        """
+        self.client.login(username='arch', password='admin')
+        response = self.client.get(reverse('echo:mail_history'))
+        self.assertEqual(response.status_code, 200)
 
     # @override_settings(IKWEN_SERVICE_ID='56eb6d04b37b3379b531b102')
     # def test_SMSCampaign_start_campaign_with_insufficient_balance(self):

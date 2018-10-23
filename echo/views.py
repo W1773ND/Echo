@@ -166,6 +166,11 @@ class SMSHistory(TemplateView):
     template_name = "echo/sms_history.html"
 
 
+class SMSBundle(TemplateView):
+    template_name = "echo/sms_bundle.html"
+
+
+
 class MailCampaign(TemplateView):
     template_name = "echo/mail_campaign.html"
 
@@ -174,5 +179,5 @@ class MailHistory(TemplateView):
     template_name = "echo/mail_history.html"
 
 
-class SMSBundle(TemplateView):
-    template_name = "echo/sms_bundle.html"
+class MailBundle(TemplateView):
+    template_name = "echo/mail_bundle.html"
