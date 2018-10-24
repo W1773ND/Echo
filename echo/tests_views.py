@@ -11,6 +11,7 @@ from django.utils import unittest
 from ikwen.core.utils import get_service_instance
 
 from echo.models import Campaign, Balance
+from echo.views import restart_batch, batch_send
 
 
 
@@ -139,17 +140,10 @@ class CampaignTestCase(unittest.TestCase):
     @override_settings(IKWEN_SERVICE_ID='56eb6d04b37b3379b531b102',
                        UNIT_TESTING=True)
     def test_restart_batch(self):
-        self.client.login(username='arch', password='admin')
-        recipient_list = "693655488,658458741,5689784125"
-        txt = 'CAMP1 UniTest RestartBatch'
-        subject = 'Unitest RestartBatch campaign 1'
-        response = self.client.get(reverse('echo:sms_campaign'),
-                                   {'action': 'start_campaign', 'subject': subject, 'recipients': recipient_list,
-                                    'txt': txt})
-        self.assertEqual(response.status_code, 200)
-        campaign = Campaign.objects.get(subject=subject)
-        status = self.client.get(reverse('echo:sms_campaign'),
-                                 {'action': 'get_campaign_progress', 'campaign_id': campaign.id})
+        restart_batch()
+        campaign = Campaign.objects.get(service='56eb6d04b37b3379b531b102')
+        self.assertGreater(campaign.progress, 0)
+
 
 
 

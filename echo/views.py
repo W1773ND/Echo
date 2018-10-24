@@ -2,6 +2,7 @@
 import json
 from datetime import datetime, timedelta
 from threading import Thread
+from time import strftime
 
 import requests
 from django.conf import settings
@@ -47,7 +48,6 @@ def batch_send(campaign, balance):
     for recipient in campaign.recipient_list[campaign.progress:]:
         if len(recipient) == 9:
             recipient = '237' + recipient
-    for recipient in campaign.recipient_list[campaign.progress:]:
         try:
             if not getattr(settings, 'UNIT_TESTING', False):
                 if getattr(settings, 'REQUEST_TESTING', False):
@@ -90,10 +90,14 @@ def count_pages(text):
 
 def restart_batch():
     timeout = datetime.now() - timedelta(minutes=5)
-    campaign_list = Campaign.objects.filter(progress__lt=F('total'), updated_on__lt=timeout)
+    raw_query = {"$where": "function() {return this.progress < this.total}"}
+    campaign_list = list(Campaign.objects.raw_query(raw_query).filter(updated_on__lt=timeout))
     for campaign in campaign_list:
         balance = Balance(service=campaign.service)
-        Thread(target=batch_send, args=(campaign, balance)).start()
+        if getattr(settings, 'UNIT_TESTING', False):
+            batch_send(campaign, balance)
+        else:
+            Thread(target=batch_send, args=(campaign, balance)).start()
 
 
 class SMSCampaign(TemplateView):

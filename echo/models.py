@@ -2,6 +2,7 @@
 import os
 
 from django.db import models
+from django_mongodb_engine.contrib import MongoDBManager
 from djangotoolbox.fields import ListField
 from ikwen.core.models import Model, Service
 from ikwen.core.utils import get_service_instance
@@ -27,6 +28,8 @@ class Campaign(Model):
     slug = models.SlugField(max_length=240)
     total = models.IntegerField(default=0)
     progress = models.IntegerField(default=0)
+
+    objects = MongoDBManager()
 
     def __unicode__(self):
         return u'%s %s' % (self.type, self.subject)

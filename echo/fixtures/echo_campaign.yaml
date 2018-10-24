@@ -13,8 +13,17 @@
     mail_count: 0
 
 - model: echo.campaign
-  pk: 56eb6d04b37b3379b531e023
+  pk: 56eb6d04b37b3379b531e200
   fields:
     service: 56eb6d04b37b3379b531b102
-    sms_count: 10
-    mail_count: 0
+    member: 56eb6d04b37b3379b531e011
+    type: 'SMS'
+    text: 'Test restart batch'
+    recipient_list: ['693799544']
+    page_count: 5
+    subject: 'Batch restart testing'
+    slug: 'Batch-restart-testing'
+    total: 5
+    progress: 0
+    updated_on: 2018-10-24 19:05:27.000Z
+
