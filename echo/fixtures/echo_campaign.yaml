@@ -1,13 +1,20 @@
-- model: echo.campaign
-  pk: 56eb6d04b37b3379b531e011
+- model: echo.balance
+  pk: 56eb6d04b37b3379b531e022
+  fields:
+    service: 56eb6d04b37b3379b531b101
+    sms_count: 2
+    mail_count: 0
+
+- model: echo.balance
+  pk: 56eb6d04b37b3379b531e023
   fields:
     service: 56eb6d04b37b3379b531b102
-    member: 56eb6d04b37b3379b531e011
-    type: SMS
-    recipient_list: [693799544]
-    text: CAMP1 UnitTest
-    page_count: 3
-    subject: Unitest campaign 1
-    slug: Unitest-campaign-1
-    total: 3
-    progress: 0
+    sms_count: 10
+    mail_count: 0
+
+- model: echo.campaign
+  pk: 56eb6d04b37b3379b531e023
+  fields:
+    service: 56eb6d04b37b3379b531b102
+    sms_count: 10
+    mail_count: 0

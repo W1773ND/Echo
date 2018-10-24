@@ -24,6 +24,8 @@
 .p-0 {padding: 0 !important;}
 .pb-15 {padding-bottom: 15px !important;}
 
+.placeholder {list-style-type: none;}
+
 .progress {height: 4px !important;}
 
 .sold {text-align: right; padding: 0 20px 10px 0;}

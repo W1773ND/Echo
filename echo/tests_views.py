@@ -1,3 +1,6 @@
+import json
+
+import time
 from django.contrib.auth.models import Group
 from django.core.management import call_command
 from django.core.urlresolvers import reverse
@@ -7,7 +10,7 @@ from django.utils import unittest
 
 from ikwen.core.utils import get_service_instance
 
-from echo.models import Campaign
+from echo.models import Campaign, Balance
 
 
 
@@ -72,7 +75,7 @@ class CampaignTestCase(unittest.TestCase):
         Make sure the url is reachable
         """
         self.client.login(username='arch', password='admin')
-        response = self.client.get(reverse('echo:sms_history'))
+        response = self.client.get(reverse('echo:sms_hist'))
         self.assertEqual(response.status_code, 200)
 
     @override_settings(IKWEN_SERVICE_ID='56eb6d04b37b3379b531b102')
@@ -99,24 +102,56 @@ class CampaignTestCase(unittest.TestCase):
         Make sure the url is reachable
         """
         self.client.login(username='arch', password='admin')
-        response = self.client.get(reverse('echo:mail_history'))
+        response = self.client.get(reverse('echo:mail_hist'))
         self.assertEqual(response.status_code, 200)
 
-    # @override_settings(IKWEN_SERVICE_ID='56eb6d04b37b3379b531b102')
-    # def test_SMSCampaign_start_campaign_with_insufficient_balance(self):
-    #     self.client.login(username='arch', password='admin')
-    #     service = get_service_instance()
-    #     campaign = Campaign.objects.using(echo).get(pk='56eb6d04b37b3379b531e011')
-    #     member = campaign.member
-    #     type = campaign.type
-    #     recipient_list = campaign.recipient_list
-    #     text = campaign.text
-    #     page_count = campaign.page_count
-    #     subject = campaign.subject
-    #     slug = campaign.slug
-    #     total = campaign.total
-    #     progress = campaign.progress
-    #     response = self.client.post(reverse('echo:sms_campaign') + '?action=start_campaign',
-    #
-    #     cr_profile = CROperatorProfile.objects.using(echo).get(service=service)
-    #     self.assertEqual(cr_profile.plan, plan)
+    @override_settings(IKWEN_SERVICE_ID='56eb6d04b37b3379b531b101')
+    def test_SMSCampaign_start_campaign_with_insufficient_balance(self):
+        self.client.login(username='arch', password='admin')
+        recipient_list = "693655488,658458741,5689784125"
+        txt = 'CAMP1 UniTest'
+        subject = 'Unitest campaign 1'
+        response = self.client.get(reverse('echo:sms_campaign'),
+                                   {'action': 'start_campaign', 'subject': subject, 'recipients': recipient_list,
+                                    'txt': txt})
+        self.assertEqual(response.status_code, 200)
+        result = json.loads(response.content)
+        self.assertEqual(result['error'], 'Insufficient SMS balance.')
+
+    @override_settings(IKWEN_SERVICE_ID='56eb6d04b37b3379b531b102',
+                       UNIT_TESTING=True)
+    def test_SMSCampaign_start_campaign_with_sufficient_balance(self):
+        self.client.login(username='arch', password='admin')
+        recipient_list = "693655488,658458741,5689784125"
+        txt = 'CAMP1 UniTest'
+        subject = 'Unitest campaign 1'
+        response = self.client.get(reverse('echo:sms_campaign'),
+                                   {'action': 'start_campaign', 'subject': subject, 'recipients': recipient_list,
+                                    'txt': txt})
+        self.assertEqual(response.status_code, 200)
+        result = json.loads(response.content)
+        self.assertTrue(result['success'])
+        campaign = Campaign.objects.get(subject=subject)
+        self.assertEqual(campaign.progress, 3)
+        balance = Balance.objects.get(service='56eb6d04b37b3379b531b102')
+        self.assertEqual(balance.sms_count, 7)
+
+    @override_settings(IKWEN_SERVICE_ID='56eb6d04b37b3379b531b102',
+                       UNIT_TESTING=True)
+    def test_restart_batch(self):
+        self.client.login(username='arch', password='admin')
+        recipient_list = "693655488,658458741,5689784125"
+        txt = 'CAMP1 UniTest RestartBatch'
+        subject = 'Unitest RestartBatch campaign 1'
+        response = self.client.get(reverse('echo:sms_campaign'),
+                                   {'action': 'start_campaign', 'subject': subject, 'recipients': recipient_list,
+                                    'txt': txt})
+        self.assertEqual(response.status_code, 200)
+        campaign = Campaign.objects.get(subject=subject)
+        status = self.client.get(reverse('echo:sms_campaign'),
+                                 {'action': 'get_campaign_progress', 'campaign_id': campaign.id})
+
+
+
+
+

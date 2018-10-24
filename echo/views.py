@@ -44,13 +44,16 @@ def batch_send(campaign, balance):
         path = getattr(settings, 'MEDIA_ROOT') + filename
         fh = open(path, 'r')
         campaign.recipient_list = fh.readlines()
-    # for recipient in recipient_list[campaign.progress:]:
-    #     if len(recipient) == 9:
-    #         recipient = '237' + recipient
+    for recipient in campaign.recipient_list[campaign.progress:]:
+        if len(recipient) == 9:
+            recipient = '237' + recipient
     for recipient in campaign.recipient_list[campaign.progress:]:
         try:
-            # send_sms(recipient=recipient, text=text, fail_silently=False)
-            requests.get('http://google.com')
+            if not getattr(settings, 'UNIT_TESTING', False):
+                if getattr(settings, 'REQUEST_TESTING', False):
+                    requests.get('http://google.com')
+                else:
+                    send_sms(recipient=recipient, text=text, fail_silently=False)
             SMS.objects.create(recipient=recipient, text=text, label=label, campaign=campaign)
         except:
             SMS.objects.create(recipient=recipient, text=text, label=label, campaign=campaign, is_sent=False)
@@ -142,10 +145,14 @@ class SMSCampaign(TemplateView):
             )
         balance.sms_count -= sms_count
         balance.save()
-        campaign = Campaign.objects.create(member=member, subject=subject, type="SMS", slug=slug, total=len(recipient_list))
+        campaign = Campaign.objects.create(member=member, subject=subject, type="SMS", slug=slug,
+                                           recipient_list=recipient_list, total=len(recipient_list))
         # campaign = Campaign.objects.create(member=member, subject=subject, type="SMS", slug=slug, total=recipient_count)
         # sms = SMS.objects.create(label=label, recipient=recipient_list, text=txt, campaign=campaign)
-        Thread(target=batch_send, args=(campaign, balance)).start()
+        if getattr(settings, 'UNIT_TESTING', False):
+            batch_send(campaign, balance)
+        else:
+            Thread(target=batch_send, args=(campaign, balance)).start()
         response = {"success": True, "campaign": campaign.to_dict()}
         return HttpResponse(
             json.dumps(response),
@@ -168,7 +175,6 @@ class SMSHistory(TemplateView):
 
 class SMSBundle(TemplateView):
     template_name = "echo/sms_bundle.html"
-
 
 
 class MailCampaign(TemplateView):

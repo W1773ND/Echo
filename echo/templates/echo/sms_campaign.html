@@ -227,7 +227,7 @@
                             </div>
                         </li>
                     {% empty %}
-                        <li id="placeholder" class="placeholder"> {% trans "Your SMS and sent campaigns will be displayed here..." %}</li>
+                        <li id="placeholder" class="placeholder"> {% trans "Your sent campaigns will be displayed here..." %}</li>
                     {% endfor %}
 
                      <li class="col-sm-12 event tpl">
@@ -243,7 +243,7 @@
                                 </div>
                                 <div class="actions">
                                     {% if campaign %}
-                                        <a class="btn btn-warning pull-right btn-sm" href="{% url 'echo:sms_history' %}" target="_blank"> {% trans "Detail" %}</a>
+                                        <a class="btn btn-warning pull-right btn-sm" href="{% url 'echo:sms_hist' %}" target="_blank"> {% trans "Detail" %}</a>
                                     {% else %}
                                         <button type="button" class="btn btn-warning pull-right btn-sm" data-toggle="modal" data-target="#sms-detail-modal" style> {% trans "Detail" %}</button>
                                     {% endif %}
@@ -274,7 +274,7 @@
                 var subject = $('.subject').val();
                 var txt = $('.text').val();
                 var endpoint = "{% url 'echo:sms_campaign' %}";
-                var params = {action: 'start_campaign', title: title, recipients: recipient, subject: subject, txt: txt};
+                var params = {action: 'start_campaign', recipients: recipient, subject: subject, txt: txt};
 
                 $.getJSON(endpoint, params, function (data) {
                     if (data.error) {
