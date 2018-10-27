@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import csv
 import json
 from datetime import datetime, timedelta
 from threading import Thread
@@ -6,7 +7,7 @@ from time import strftime
 
 import requests
 from django.conf import settings
-from django.db.models import F
+from django.db import transaction
 from django.http import HttpResponse
 from django.shortcuts import render
 from django.template.defaultfilters import slugify
@@ -14,6 +15,7 @@ from django.views.generic import TemplateView
 from django.utils.translation import gettext as _
 
 from ikwen.core.utils import send_sms, get_service_instance
+from ikwen.accesscontrol.models import Member
 from math import ceil
 
 from echo.models import Campaign, SMS, Balance
@@ -28,6 +30,9 @@ sms_normal_count = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 
                     u'»', u'‘']
 sms_double_count = [u'^', u'|', u'€', u'}', u'{', u'[', u'~', u']', u'\\']
 
+all_community = "[All Community]"
+contact_file = "[Contact File]"
+
 config = get_service_instance().config
 label = config.company_name.strip()
 if len(label) > 15:
@@ -37,14 +42,14 @@ label = ''.join([tk.capitalize() for tk in label.split('-') if tk])
 
 
 def batch_send(campaign, balance):
-    fh = None
     text = campaign.text
-    filename = campaign.filename
     page_count = campaign.page_count
-    if filename:
-        path = getattr(settings, 'MEDIA_ROOT') + filename
-        fh = open(path, 'r')
-        campaign.recipient_list = fh.readlines()
+    # fh = None
+    # filename = campaign.filename
+    # if filename:
+    #     path = getattr(settings, 'MEDIA_ROOT') + filename
+    #     fh = open(path, 'r')
+    #     campaign.recipient_list = fh.readlines()
     for recipient in campaign.recipient_list[campaign.progress:]:
         if len(recipient) == 9:
             recipient = '237' + recipient
@@ -61,8 +66,8 @@ def batch_send(campaign, balance):
             balance.save()
         campaign.progress += 1
         campaign.save()
-    if fh:
-        fh.close()
+    # if fh:
+    #     fh.close()
 
 
 def count_pages(text):
@@ -111,6 +116,7 @@ class SMSCampaign(TemplateView):
         balance, update = Balance.objects.get_or_create(service=get_service_instance())
         context['balance'] = balance
         context['campaign_list'] = campaign_list
+        context['member_count'] = Member.objects.all().count()
         return context
 
     def get(self, request, *args, **kwargs):
@@ -124,35 +130,69 @@ class SMSCampaign(TemplateView):
     def start_campaign(self, request):
         member = request.user
 
-        balance = Balance.objects.get(service=get_service_instance())
-        # criteria = request.GET.get('criteria')
         subject = request.GET.get('subject')
         slug = slugify(subject)
         txt = request.GET.get('txt')
         filename = request.GET.get('filename')
-        recipient_list = []
-        if filename:
+        recipient_list = request.GET.get('recipients')
+        if recipient_list == all_community:
+            recipient_list = []
+            community_member = Member.objects.all()
+            for member in community_member:
+                recipient_list.append(member.phone)
+            recipient_count = len(recipient_list)
+        elif recipient_list == contact_file:
+
+            # Should add somme security check about file existence and type here before attempting to read it
+
             path = getattr(settings, 'MEDIA_ROOT') + filename
-            fh = open(path, 'r')
-            recipient_count = len(fh.readlines())
+            recipient_list = []
+
+            with open(path, 'r') as fh:
+                for recipient in fh.readlines():
+                    recipient_list.append(recipient)
             fh.close()
+            recipient_count = len(recipient_list)
+
+            # with open(path, 'r') as fh:
+            #     recipient = csv.reader(fh)
+            #     recipient_list = list(recipient)
+            # fh.close()
+            # recipient_count = len(recipient_list)
         else:
-            recipient_list = request.GET.get('recipients').strip().split(',')
+            # recipient_list = request.GET.get('recipients').strip().split(',')
+            recipient_list = recipient_list.strip().split(',')
             recipient_count = len(recipient_list)
         page_count = count_pages(txt)
         sms_count = page_count * recipient_count
-        if balance.sms_count < sms_count:
-            response = {"error": _("Insufficient SMS balance.")}
-            return HttpResponse(
-                json.dumps(response),
-                'content-type: text/json'
-            )
-        balance.sms_count -= sms_count
-        balance.save()
+
+        # if getattr(settings, 'UNIT_TESTING', False):
+        with transaction.atomic():
+            balance = Balance.objects.get(service=get_service_instance())
+            if balance.sms_count < sms_count:
+                response = {"error": _("Insufficient SMS balance.")}
+                return HttpResponse(
+                    json.dumps(response),
+                    'content-type: text/json'
+                )
+            balance.sms_count -= sms_count
+            balance.save()
+        # else:
+        #     # "transaction.atomic" instruction locks database during all operations inside "with" block
+        #     with transaction.atomic():
+        #         balance = Balance.objects.using('wallets').get(service=get_service_instance())
+        #         if balance.sms_count < sms_count:
+        #             response = {"error": _("Insufficient SMS balance.")}
+        #             return HttpResponse(
+        #                 json.dumps(response),
+        #                 'content-type: text/json'
+        #             )
+        #         balance.sms_count -= sms_count
+        #         balance.save()
         campaign = Campaign.objects.create(member=member, subject=subject, type="SMS", slug=slug,
-                                           recipient_list=recipient_list, total=len(recipient_list))
-        # campaign = Campaign.objects.create(member=member, subject=subject, type="SMS", slug=slug, total=recipient_count)
-        # sms = SMS.objects.create(label=label, recipient=recipient_list, text=txt, campaign=campaign)
+                                           recipient_list=recipient_list, total=sms_count)
+        # campaign = Campaign.objects.create(member=member, subject=subject, type="SMS", slug=slug,
+        #                                    total=recipient_count)
         if getattr(settings, 'UNIT_TESTING', False):
             batch_send(campaign, balance)
         else:

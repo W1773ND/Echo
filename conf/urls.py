@@ -13,6 +13,7 @@ urlpatterns = patterns(
     url(r'^i18n/', include('django.conf.urls.i18n')),
     url(r'^echo/', include('echo.urls', namespace='echo')),
     url(r'^billing/', include('ikwen.billing.urls', namespace='billing')),
+    url(r'^coupon_detail/', include('ikwen.rewarding.urls', namespace='rewarding')),
     # url(r'^cashout/', include('ikwen.cashout.urls', namespace='cashout')),
     # url(r'^retail/', include('ikwen.partnership.urls', namespace='partnership')),
     url(r'^theming/', include('ikwen.theming.urls', namespace='theming')),
