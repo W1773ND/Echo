@@ -304,10 +304,6 @@
                 }
             });
 
-            $('.modal-start-campaign').on(hiden.bs.modal, function () {
-                $('.upload-csv-label').find('div').text("");
-            });
-
             $('.send-to-all').click(function () {
                 $('.recipient-list').addClass('text-center').attr("readonly", "readonly").val('[All Community]');
                 $('.reset-recipient-list').show()

@@ -132,7 +132,7 @@ class SMSCampaign(TemplateView):
         #     return self.view_contact_file(request)
         return super(SMSCampaign, self).get(request, *args, **kwargs)
 
-    def post(self):
+    def post(self, request):
         csv_file = CSVFileForm(self.request.POST, self.request.FILES)
         if csv_file.is_valid():
             csv_file.save()
