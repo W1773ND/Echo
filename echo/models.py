@@ -17,7 +17,7 @@ TYPE_CHOICES = (
 
 
 class CSVFile(Model):
-    title = models.CharField(max_length=255, blank=True, )
+    filename = models.CharField(max_length=200)
     file = models.FileField(upload_to='Contacts files')
     uploaded_at = models.DateField(auto_now_add=True)
 
@@ -28,7 +28,7 @@ class Campaign(Model):
     related_csv_file = models.ForeignKey(CSVFile, blank=True, null=True)
     type = models.CharField(max_length=10, choices=TYPE_CHOICES)
     recipient_list = ListField()
-    filename = models.CharField(max_length=200, blank=True, null=True)
+    # filename = models.CharField(max_length=200, blank=True, null=True)
     text = models.TextField()
     page_count = models.IntegerField(default=0)
     subject = models.CharField(max_length=200)
