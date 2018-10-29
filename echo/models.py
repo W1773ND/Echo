@@ -16,9 +16,16 @@ TYPE_CHOICES = (
 )
 
 
+class CSVFile(Model):
+    title = models.CharField(max_length=255, blank=True, )
+    file = models.FileField(upload_to='Contacts files')
+    uploaded_at = models.DateField(auto_now_add=True)
+
+
 class Campaign(Model):
     service = models.ForeignKey(Service, default=get_service_instance)
     member = models.ForeignKey(Member)
+    related_csv_file = models.ForeignKey(CSVFile, blank=True, null=True)
     type = models.CharField(max_length=10, choices=TYPE_CHOICES)
     recipient_list = ListField()
     filename = models.CharField(max_length=200, blank=True, null=True)
@@ -44,12 +51,6 @@ class SMS(Model):
 
     def __unicode__(self):
         return u'%s %s' % (self.label, self.text)
-
-
-class CSVFile(Model):
-    title = models.CharField(max_length=255, blank=True, )
-    file = models.FileField(upload_to='Contacts files')
-    uploaded_at = models.DateField(auto_now_add=True)
 
 
 class Balance(Model):
