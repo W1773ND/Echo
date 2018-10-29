@@ -3,7 +3,6 @@ import csv
 import json
 from datetime import datetime, timedelta
 from threading import Thread
-from time import strftime
 
 import requests
 from django.conf import settings
@@ -18,7 +17,9 @@ from ikwen.core.utils import send_sms, get_service_instance
 from ikwen.accesscontrol.models import Member
 from math import ceil
 
-from echo.models import Campaign, SMS, Balance
+from echo.models import Campaign, SMS, Balance, CSVFile
+
+from echo.forms import CSVFileForm
 
 sms_normal_count = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h',
                     'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
@@ -39,6 +40,29 @@ if len(label) > 15:
     label = label.split(' ')[0][:15]
 label = slugify(label)
 label = ''.join([tk.capitalize() for tk in label.split('-') if tk])
+
+
+def count_pages(text):
+    max_length = 160
+    count = 0
+    for char in text:
+        if max_length >= 153:
+            if char in sms_double_count:
+                count += 2
+            else:
+                count += 1
+        else:
+            count += 1
+    for char in text:
+        if char not in sms_double_count and char not in sms_normal_count:
+            max_length = 70
+    if count > max_length:
+        if max_length >= 153:
+            max_length -= 7
+        else:
+            max_length -= 4
+    page_count = ceil(float(count) / max_length)
+    return page_count
 
 
 def batch_send(campaign, balance):
@@ -70,29 +94,6 @@ def batch_send(campaign, balance):
     #     fh.close()
 
 
-def count_pages(text):
-    max_length = 160
-    count = 0
-    for char in text:
-        if max_length >= 153:
-            if char in sms_double_count:
-                count += 2
-            else:
-                count += 1
-        else:
-            count += 1
-    for char in text:
-        if char not in sms_double_count and char not in sms_normal_count:
-            max_length = 70
-    if count > max_length:
-        if max_length >= 153:
-            max_length -= 7
-        else:
-            max_length -= 4
-    page_count = ceil(float(count) / max_length)
-    return page_count
-
-
 def restart_batch():
     timeout = datetime.now() - timedelta(minutes=5)
     raw_query = {"$where": "function() {return this.progress < this.total}"}
@@ -120,12 +121,28 @@ class SMSCampaign(TemplateView):
         return context
 
     def get(self, request, *args, **kwargs):
+        # csv_file = CSVFile.objects.all().order_by("-id")[:1]
         action = request.GET.get('action')
         if action == 'start_campaign':
             return self.start_campaign(request)
         if action == 'get_campaign_progress':
             return self.get_campaign_progress(request)
+        # if action == 'view_contact_file':
+        ##     return render(self.request, 'echo/sms_campaign.html', {'file': csv_file}) ##
+        #     return self.view_contact_file(request)
         return super(SMSCampaign, self).get(request, *args, **kwargs)
+
+    def post(self):
+        csv_file = CSVFileForm(self.request.POST, self.request.FILES)
+        if csv_file.is_valid():
+            csv_file.save()
+            response = {"is_valid": True}
+        else:
+            response = {"is_valid": False}
+        return HttpResponse(
+            json.dumps(response),
+            'content-type: text/json'
+        )
 
     def start_campaign(self, request):
         member = request.user
@@ -145,7 +162,7 @@ class SMSCampaign(TemplateView):
 
             # Should add somme security check about file existence and type here before attempting to read it
 
-            path = getattr(settings, 'MEDIA_ROOT') + filename
+            path = getattr(settings, 'MEDIA_ROOT') + '/Contacts files/' + filename
             recipient_list = []
 
             with open(path, 'r') as fh:

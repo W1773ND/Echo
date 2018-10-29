@@ -76,7 +76,7 @@
             </div>{% endcomment %}
 
             <br style="clear:both">
-            <div id="start-campaign-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="start-campaign-modal">
+            <div id="modal-start-campaign" class="modal fade modal-start-campaign" tabindex="-1" role="dialog" aria-labelledby="modal-start-campaign">
                 <div class="modal-dialog" role="document">
                     <div class="modal-content" style="text-align: center">
                       <div class="modal-header no-border " style="background: #233682; color: #ffffff">
@@ -95,7 +95,10 @@
                                   <h5><label for="all_contact">{% trans "Select all your contact" %}</label></h5>
                               </div>
                               <div class="col-sm-5 col-xs-5 p-0" id="CSVFile">
-                                  <input class="upload-csv" type="file" id="upload-csv"/>
+                                  <input class="upload-csv" type="file" name="file" id="upload-csv"
+                                        data-url="{% url 'echo:sms_campaign' %}"
+                                        data-form-data='{"csrfmiddlewaretoken": "{{ csrf_token }}"}'/>
+                                  <div class="upload-csv-label"></div>
                                   <label for="upload-csv" class="upload-csv-label">
                                       <img class="upload-csv-icon pb-10" src="{% static "echo/img/import-csv.png" %}" style="cursor: pointer; width: 90px;" title="{% trans "Import contact list from " %}CSV{% trans " file to send SMS campaign" %}">
                                       <div></div>
@@ -177,7 +180,7 @@
                             <div class="reset-recipient-list tpl">&times;</div>
                         </div>
                         <div class="col-sm-2 p-0 btn-start-campaign" style="">
-                            <i class="fa fa-bullhorn" data-toggle="modal" data-target="#start-campaign-modal" title="Start a campaign" style="font-size: 25px;  height: 33px; width: 33px; line-height: 33px"></i>
+                            <i class="fa fa-bullhorn" data-toggle="modal" data-target="#modal-start-campaign" title="Start a campaign" style="font-size: 25px;  height: 33px; width: 33px; line-height: 33px"></i>
                         </div>
                         <div class="col-sm-12 p-0">
                             <input type="text" class="form-control subject input-sm" id="subject" placeholder="Object">
@@ -269,8 +272,13 @@
 
 {% block js %}
     {{ block.super }}
+{#    <script src="{% static 'echo/js/jquery_3.2.1.js' %}" ></script>#}
     <script src="{% static 'echo/js/bootstrap-datepicker.js' %}" ></script>
     <script src="{% static 'echo/js/sms_character_counter.js' %}" ></script>
+    <script src="{% static 'echo/js/jquery.ui.widget.js' %}" ></script>
+    <script src="{% static 'echo/js/jquery.iframe-transport.js' %}" ></script>
+    <script src="{% static 'echo/js/jquery.fileupload.js' %}" ></script>
+    <script src="{% static 'echo/js/csv_file_upload.js' %}" ></script>
     <script>
         (function () {
             var filename = '';
@@ -286,6 +294,19 @@
             // Firefox bug fix
             .on( 'focus', function(){ $('.upload-csv').addClass( 'has-focus' ); })
             .on( 'blur', function(){ $('.upload-csv').removeClass( 'has-focus' ); });
+
+            $('.upload-csv').fileupload({
+                dataType : 'json',
+                done: function (e, data) {
+                    if (data.result.is_valid){
+                        $('.upload-csv-label').find('div').text(data.result.name);
+                    }
+                }
+            });
+
+            $('.modal-start-campaign').on(hiden.bs.modal, function () {
+                $('.upload-csv-label').find('div').text("");
+            });
 
             $('.send-to-all').click(function () {
                 $('.recipient-list').addClass('text-center').attr("readonly", "readonly").val('[All Community]');
@@ -303,7 +324,7 @@
                 var subject = $('.subject').val();
                 var txt = $('.text').val();
                 if (filename !== '') {
-                    var endpoint = "{% url 'echo:sms_campaign' %}"
+                    var endpoint = "{% url 'echo:sms_campaign' %}";
                     var params = {action: 'start_campaign', filename:filename, recipients: recipient, subject: subject, txt: txt};
                 }
                 else {

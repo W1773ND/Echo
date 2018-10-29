@@ -46,6 +46,12 @@ class SMS(Model):
         return u'%s %s' % (self.label, self.text)
 
 
+class CSVFile(Model):
+    title = models.CharField(max_length=255, blank=True, )
+    file = models.FileField(upload_to='Contacts files')
+    uploaded_at = models.DateField(auto_now_add=True)
+
+
 class Balance(Model):
     service = models.ForeignKey(Service)
     sms_count = models.IntegerField(default=0)
