@@ -152,13 +152,7 @@ class SMSCampaign(TemplateView):
         txt = request.GET.get('txt')
         filename = request.GET.get('filename')
         recipient_list = request.GET.get('recipients')
-        if recipient_list == all_community:
-            recipient_list = []
-            community_member = Member.objects.all()
-            for member in community_member:
-                recipient_list.append(member.phone)
-            recipient_count = len(recipient_list)
-        elif recipient_list == contact_file:
+        if filename:
 
             # Should add somme security check about file existence and type here before attempting to read it
 
@@ -170,14 +164,13 @@ class SMSCampaign(TemplateView):
                     recipient_list.append(recipient)
             fh.close()
             recipient_count = len(recipient_list)
-
-            # with open(path, 'r') as fh:
-            #     recipient = csv.reader(fh)
-            #     recipient_list = list(recipient)
-            # fh.close()
-            # recipient_count = len(recipient_list)
+        elif recipient_list == all_community:
+            recipient_list = []
+            community_member = Member.objects.all()
+            for member in community_member:
+                recipient_list.append(member.phone)
+            recipient_count = len(recipient_list)
         else:
-            # recipient_list = request.GET.get('recipients').strip().split(',')
             recipient_list = recipient_list.strip().split(',')
             recipient_count = len(recipient_list)
         page_count = count_pages(txt)
