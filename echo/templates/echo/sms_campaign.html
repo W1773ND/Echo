@@ -11,7 +11,7 @@
 {#    <link rel="stylesheet" type="text/css" href="{% static 'echo/css/bootstrap-slider.css' %}" />#}
     <link rel="stylesheet" type="text/css" href="{% static 'echo/css/swiper.min.css' %}" />
     <link rel="stylesheet" type="text/css" href="{% static 'embed-doc/css/embed-doc.css' %}" />
-    <link rel="stylesheet" type="text/css" href="{% static 'echo/css/echo.css' %}" />
+    <link rel="stylesheet" type="text/css" href="{% static 'echo/css/echo.css' %}?v=18.11.02" />
 {% endblock %}
 
 {% block breadcrumb_location %}
@@ -29,44 +29,38 @@
                 {% endif %}
             </div>
 
-
             <div class="form col-lg-4 col-sm-6 col-lg-offset-4 col-sm-offset-3">
                 <h4><label class="title">{% trans "Write your message" %}</label></h4>
-                <div class="col-sm-12 col-xs-12">
-                    <form>
-                        <div class="form-group">
-                            <div class="row">
-                                <div class="col-sm-10 col-xs-10" style="padding-left: 0;">
-                                    <input type="tel" class="form-control recipient-list input-sm" id="recipient-list" placeholder="To">
-                                    <div class="reset-recipient-list tpl">&times;</div>
-                                </div>
-                                <div class="col-sm-2 col-xs-2 btn-start-campaign">
-                                    <i class="fa fa-bullhorn" data-toggle="modal" data-target="#modal-start-campaign" title="Start a campaign" style="font-size: 25px;  height: 33px; width: 33px; line-height: 33px"></i>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="form-group row">
-                            <input type="text" class="form-control input-sm" id="subject" placeholder="Object">
-                        </div>
+                <form style="padding: 0 15px">
+                    <div class="form-group">
                         <div class="row">
-                            <textarea class="form-control input-sm text " id="text" placeholder="Message" rows="4"></textarea>
-                            <div class="row">
-                                <div class="col-sm-8 col-xs-8">
-                                    <p id="sms-char-count" class="help-block sms-char-count">0 / 160</p>
-                                </div>
-                                <div class="col-sm-4 col-xs-4">
-                                    <p id="sms-page-count" class="help-block sms-page-count pull-right">0 SMS</p>
-                                </div>
+                            <div class="col-sm-10 col-xs-10" style="padding-left: 0;">
+                                <input type="tel" class="form-control recipient-list input-sm" id="recipient-list" placeholder="To">
+                                <div class="reset-recipient-list tpl">&times;</div>
                             </div>
-                            <div class="form-group pb-15">
-                                <button class="form-control input-sm btn btn-success disabled btn-send" id="btn-send" name="btnSend" type="button" style="height:40px"> Send</button>
+                            <div class="col-sm-2 col-xs-2 btn-start-campaign">
+                                <i class="fa fa-bullhorn" data-toggle="modal" data-target="#modal-start-campaign" title="Start a campaign" style="font-size: 25px;  height: 33px; width: 33px; line-height: 33px"></i>
                             </div>
                         </div>
-                    </form>
-                </div>
-
-
-
+                    </div>
+                    <div class="form-group row">
+                        <input type="text" class="form-control input-sm" id="subject" placeholder="Object">
+                    </div>
+                    <div class="row">
+                        <textarea class="form-control input-sm text " id="text" placeholder="Message" rows="4"></textarea>
+                        <div class="row">
+                            <div class="col-sm-8 col-xs-8">
+                                <p id="sms-char-count" class="help-block sms-char-count">0 / 160</p>
+                            </div>
+                            <div class="col-sm-4 col-xs-4">
+                                <p id="sms-page-count" class="help-block sms-page-count pull-right">0 SMS</p>
+                            </div>
+                        </div>
+                        <div class="form-group pb-15">
+                            <button class="form-control input-sm btn btn-success disabled btn-send" id="btn-send" name="btnSend" type="button" style="height:40px"> Send</button>
+                        </div>
+                    </div>
+                </form>
             </div>
             <div class="col-sm-8 col-sm-offset-2" style="padding-top: 45px;">
                 <div class="col-sm-12 p-0">
@@ -131,7 +125,7 @@
             {% include 'echo/snippets/embed_doc.html' %}
         </div>
 
-        <!--All Modal definition-->
+        <!--All Modal definitions-->
 
         <!--
 
@@ -200,28 +194,36 @@
                       </div>
                       <div class="modal-body">
                           <form>
-                              <h5 class="col-sm-5 col-xs-5 m-0"><label>{% trans "Import from " %}CSV{% trans " file" %}</label></h5>
-                              <span class="col-sm-2 col-xs-2 m-0"></span>
-                              <h5 class="col-sm-5 col-xs-5 m-0"><label>{% trans "Select all your contact" %}</label></h5>
-                              <div class="col-sm-5 pb-10">
-                                  <a href="{% static "echo/ikwen_SMS_campaign_csv_model.csv" %}" style="text-decoration: none;">{% trans "Download CSV file model..." %}</a>
+                              <div class="form-group">
+                                  <h5 class="col-sm-5 col-xs-5 m-0"><label>{% trans "Import from " %}CSV{% trans " file" %}</label></h5>
+                                  <span class="col-sm-2 col-xs-2 m-0"></span>
+                                  <h5 class="col-sm-5 col-xs-5 m-0"><label>{% trans "Select all your contact" %}</label></h5>
                               </div>
-                              <div class="clearfix"></div>
-                              <div class="col-sm-5 col-xs-5 p-0" id="CSVFile">
-                                  <input class="upload-csv" type="file" name="file" id="upload-csv" accept=".csv"
-                                        data-url="{% url 'echo:sms_campaign' %}"
-                                        data-form-data='{"csrfmiddlewaretoken": "{{ csrf_token }}"}'/>
-                                  <div class="upload-csv-label"></div>
-                                  <label for="upload-csv" class="upload-csv-label">
-                                      <img class="upload-csv-icon pb-10" src="{% static 'echo/img/import-csv.png' %}" style="cursor: pointer; width: 130px;" title="{% trans 'Import contact list from' %}CSV{% trans ' file to send SMS campaign' %}">
-                                      <div></div>
-                                  </label>
+                              <div class="form-group">
+                                  <div class="col-sm-5 col-xs-5">
+                                      <a href="{% static "echo/ikwen_SMS_campaign_csv_model.csv" %}" style="text-decoration: none;">{% trans "Download CSV file model..." %}</a>
+                                  </div>
+                                  <div class="clearfix"></div>
                               </div>
-                              <div class="col-sm-5 col-xs-5 col-sm-offset-2 col-xs-offset-2 p-0">
-                                <button class="btn btn-success btn-sm send-to-all" type="button" data-dismiss="modal" title="{% trans 'Send SMS campaign to all your contact.' %}">
-                                  Contact <span class="badge"> {{ member_count }} </span>
-                                </button>
+                              <div class="form-group">
+                                   <div class="col-sm-5 col-xs-5" style="padding: 0;" id="CSVFile">
+                                      <input class="upload-csv" type="file" name="file" id="upload-csv" accept=".csv"
+                                            data-url="{% url 'echo:sms_campaign' %}"
+                                            data-form-data='{"csrfmiddlewaretoken": "{{ csrf_token }}"}'/>
+                                      <div class="upload-csv-label"></div>
+                                      <label for="upload-csv" class="upload-csv-label">
+                                          <img class="upload-csv-icon pb-10" src="{% static 'echo/img/import-csv.png' %}" style="cursor: pointer; width: 130px;" title="{% trans 'Import contact list from' %}CSV{% trans ' file to send SMS campaign' %}">
+                                          <div style="max-width: 100%; overflow-wrap: break-word"></div>
+                                      </label>
+                                  </div>
+                                  <div class="col-sm-2 col-xs-2" style="padding-top: 50px"><h4><label> {% trans "OR" %} </label></h4></div>
+                                  <div class="col-sm-5 col-xs-5">
+                                    <button class="btn btn-success btn-sm send-to-all" type="button" data-dismiss="modal" title="{% trans 'Send SMS campaign to all your contact.' %}">
+                                      Contact <span class="badge"> {{ member_count }} </span>
+                                    </button>
+                                  </div>
                               </div>
+
                           </form>
                           <div class="clear"></div>
                       </div>
@@ -285,7 +287,7 @@
 {#    <script src="{% static 'echo/js/jquery_3.2.1.js' %}" ></script>#}
     <script src="{% static 'echo/js/bootstrap-datepicker.js' %}" ></script>
     <script src="{% static 'echo/js/sms_character_counter.js' %}" ></script>
-    <script src="{% static 'echo/js/jquery.ui.widget.js' %}" ></script>
+{#    <script src="{% static 'echo/js/jquery.ui.widget.js' %}" ></script>#}
     <script src="{% static 'echo/js/jquery.iframe-transport.js' %}" ></script>
     <script src="{% static 'echo/js/jquery.fileupload.js' %}" ></script>
     <script src="{% static 'echo/js/csv_file_upload.js' %}" ></script>
@@ -298,8 +300,8 @@
             $('.upload-csv').on('change', function (csvFile) {
                 if (csvFile.target.value) {
                     filename = csvFile.target.value.split('\\').pop();
-                    $('.recipient-list').addClass('text-center').attr("readonly", "readonly").val(filename);
-                    $('.reset-recipient-list').show()
+                    {#$('.recipient-list').addClass('text-center').attr("readonly", "readonly").val(filename);#}
+
                 }
                 $('.upload-csv-label').find('div').text(filename);
             })
@@ -310,9 +312,20 @@
             $('.upload-csv').fileupload({
                 dataType : 'json',
                 done: function (e, data) {
-                    if (data.result.is_valid){
-                        $('.upload-csv-label').find('div').text(data.result.name);
+                    try {
+                        if (data.result.is_valid){
+                            $('.recipient-list').addClass('text-center').attr("readonly", "readonly").val(filename);
+                            $('.reset-recipient-list').show()
+                        }
+                        else{
+                            $('.recipient-list').addClass('text-center').attr("readonly", "readonly").val('Invalid contact file !');
+                        }
                     }
+                    catch (err){
+                        alert(err.message);
+                        $('.recipient-list').addClass('text-center').attr("readonly", "readonly").val('Invalid contact file !');
+                    }
+
                 }
             });
 
@@ -324,8 +337,10 @@
             });
 
             $('.reset-recipient-list').click(function () {
-                $(this).hide();
+                filename = '';
+                $('.upload-csv-label').find('div').text(filename);
                 $('.recipient-list').removeClass('text-center').removeAttr("readonly").focus().val("");
+                $(this).hide();
             });
 
             $('.btn-send').click(function () {

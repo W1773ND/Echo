@@ -31,8 +31,8 @@ sms_normal_count = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 
                     u'»', u'‘']
 sms_double_count = [u'^', u'|', u'€', u'}', u'{', u'[', u'~', u']', u'\\']
 
-all_community = "[All Community]"
-contact_file = "[Contact File]"
+ALL_COMMUNITY = "[All Community]"
+CONTACT_DIR = '/Contacts files/'
 
 config = get_service_instance().config
 label = config.company_name.strip()
@@ -156,7 +156,7 @@ class SMSCampaign(TemplateView):
 
             # Should add somme security check about file existence and type here before attempting to read it
 
-            path = getattr(settings, 'MEDIA_ROOT') + '/Contacts files/' + filename
+            path = getattr(settings, 'MEDIA_ROOT') + CONTACT_DIR + filename
             recipient_list = []
 
             with open(path, 'r') as fh:
@@ -164,7 +164,7 @@ class SMSCampaign(TemplateView):
                     recipient_list.append(recipient)
             fh.close()
             recipient_count = len(recipient_list)
-        elif recipient_list == all_community:
+        elif recipient_list == ALL_COMMUNITY:
             recipient_list = []
             community_member = Member.objects.all()
             for member in community_member:

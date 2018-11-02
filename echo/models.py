@@ -25,7 +25,7 @@ class CSVFile(Model):
 class Campaign(Model):
     service = models.ForeignKey(Service, default=get_service_instance)
     member = models.ForeignKey(Member)
-    related_csv_file = models.ForeignKey(CSVFile, blank=True, null=True)
+    file = models.FileField(upload_to='Contacts files')
     type = models.CharField(max_length=10, choices=TYPE_CHOICES)
     recipient_list = ListField()
     # filename = models.CharField(max_length=200, blank=True, null=True)
