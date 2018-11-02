@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from threading import Thread
 
 import requests
+from ajaxuploader.views import AjaxFileUploader
 from django.conf import settings
 from django.db import transaction
 from django.http import HttpResponse
@@ -13,13 +14,13 @@ from django.template.defaultfilters import slugify
 from django.views.generic import TemplateView
 from django.utils.translation import gettext as _
 
-from ikwen.core.utils import send_sms, get_service_instance
+from ikwen.core.utils import send_sms, get_service_instance, DefaultUploadBackend
 from ikwen.accesscontrol.models import Member
 from math import ceil
 
-from echo.models import Campaign, SMS, Balance, CSVFile
+from echo.models import Campaign, SMS, Balance
 
-from echo.forms import CSVFileForm
+# from echo.forms import CSVFileForm
 
 sms_normal_count = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h',
                     'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
@@ -32,7 +33,6 @@ sms_normal_count = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 
 sms_double_count = [u'^', u'|', u'€', u'}', u'{', u'[', u'~', u']', u'\\']
 
 ALL_COMMUNITY = "[All Community]"
-CONTACT_DIR = '/Contacts files/'
 
 config = get_service_instance().config
 label = config.company_name.strip()
@@ -132,17 +132,17 @@ class SMSCampaign(TemplateView):
         #     return self.view_contact_file(request)
         return super(SMSCampaign, self).get(request, *args, **kwargs)
 
-    def post(self, request):
-        csv_file = CSVFileForm(self.request.POST, self.request.FILES)
-        if csv_file.is_valid():
-            csv_file.save()
-            response = {"is_valid": True}
-        else:
-            response = {"is_valid": False}
-        return HttpResponse(
-            json.dumps(response),
-            'content-type: text/json'
-        )
+    # def post(self, request):
+    #     csv_file = CSVFileForm(self.request.POST, self.request.FILES)
+    #     if csv_file.is_valid():
+    #         csv_file.save()
+    #         response = {"is_valid": True}
+    #     else:
+    #         response = {"is_valid": False}
+    #     return HttpResponse(
+    #         json.dumps(response),
+    #         'content-type: text/json'
+    #     )
 
     def start_campaign(self, request):
         member = request.user
@@ -156,7 +156,7 @@ class SMSCampaign(TemplateView):
 
             # Should add somme security check about file existence and type here before attempting to read it
 
-            path = getattr(settings, 'MEDIA_ROOT') + CONTACT_DIR + filename
+            path = getattr(settings, 'MEDIA_ROOT') + filename
             recipient_list = []
 
             with open(path, 'r') as fh:
@@ -241,3 +241,6 @@ class MailHistory(TemplateView):
 
 class MailBundle(TemplateView):
     template_name = "echo/mail_bundle.html"
+
+
+csv_uploader = AjaxFileUploader(DefaultUploadBackend)

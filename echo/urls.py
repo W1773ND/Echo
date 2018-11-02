@@ -1,7 +1,7 @@
 from django.conf.urls import url, patterns
 from django.contrib.auth.decorators import permission_required
 
-from echo.views import SMSCampaign, SMSHistory, SMSBundle, MailCampaign, MailHistory, MailBundle
+from echo.views import SMSCampaign, SMSHistory, SMSBundle, MailCampaign, MailHistory, MailBundle, csv_uploader
 
 urlpatterns = patterns(
     '',
@@ -11,4 +11,5 @@ urlpatterns = patterns(
     url(r'^mail/$', permission_required('echo.ik_messaging_campaign')(MailCampaign.as_view()), name='mail_campaign'),
     url(r'^mail_hist/$', permission_required('echo.ik_messaging_campaign')(MailHistory.as_view()), name='mail_hist'),
     url(r'^mail_bundle/$', permission_required('echo.ik_messaging_campaign')(MailBundle.as_view()), name='mail_bundle'),
+    url(r'^csv_upload/$', csv_uploader, name='csv_uploader'),
 )

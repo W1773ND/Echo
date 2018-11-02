@@ -16,19 +16,17 @@ TYPE_CHOICES = (
 )
 
 
-class CSVFile(Model):
-    filename = models.CharField(max_length=200)
-    file = models.FileField(upload_to='Contacts files')
-    uploaded_at = models.DateField(auto_now_add=True)
+# class CSVFile(Model):
+#     filename = models.CharField(max_length=200)
+#     file = models.FileField(upload_to='Contacts files')
+#     uploaded_at = models.DateField(auto_now_add=True)
 
 
 class Campaign(Model):
     service = models.ForeignKey(Service, default=get_service_instance)
     member = models.ForeignKey(Member)
-    file = models.FileField(upload_to='Contacts files')
     type = models.CharField(max_length=10, choices=TYPE_CHOICES)
     recipient_list = ListField()
-    # filename = models.CharField(max_length=200, blank=True, null=True)
     text = models.TextField()
     page_count = models.IntegerField(default=0)
     subject = models.CharField(max_length=200)

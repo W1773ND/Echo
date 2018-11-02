@@ -9,9 +9,10 @@
     {{ block.super }}
 {#    <link rel="stylesheet" type="text/css" href="{% static 'echo/css/bootstrap-datepicker3.standalone.css' %}" />#}
 {#    <link rel="stylesheet" type="text/css" href="{% static 'echo/css/bootstrap-slider.css' %}" />#}
-    <link rel="stylesheet" type="text/css" href="{% static 'echo/css/swiper.min.css' %}" />
-    <link rel="stylesheet" type="text/css" href="{% static 'embed-doc/css/embed-doc.css' %}" />
-    <link rel="stylesheet" type="text/css" href="{% static 'echo/css/echo.css' %}?v=18.11.02" />
+    <link rel="stylesheet" type="text/css" href="{% static 'echo/css/swiper.min.css' %}"/>
+    <link rel="stylesheet" type="text/css" href="{% static 'ikwen/ajaxuploader/css/fileuploader.css' %}"/>
+    <link rel="stylesheet" type="text/css" href="{% static 'embed-doc/css/embed-doc.css' %}"/>
+    <link rel="stylesheet" type="text/css" href="{% static 'echo/css/echo.css' %}"/>
 {% endblock %}
 
 {% block breadcrumb_location %}
@@ -206,7 +207,7 @@
                                   <div class="clearfix"></div>
                               </div>
                               <div class="form-group">
-                                   <div class="col-sm-5 col-xs-5" style="padding: 0;" id="CSVFile">
+                                   {% comment %}<div class="col-sm-5 col-xs-5" style="padding: 0;" id="CSVFile">
                                       <input class="upload-csv" type="file" name="file" id="upload-csv" accept=".csv"
                                             data-url="{% url 'echo:sms_campaign' %}"
                                             data-form-data='{"csrfmiddlewaretoken": "{{ csrf_token }}"}'/>
@@ -215,7 +216,13 @@
                                           <img class="upload-csv-icon pb-10" src="{% static 'echo/img/import-csv.png' %}" style="cursor: pointer; width: 130px;" title="{% trans 'Import contact list from' %}CSV{% trans ' file to send SMS campaign' %}">
                                           <div style="max-width: 100%; overflow-wrap: break-word"></div>
                                       </label>
+                                  </div>{% endcomment %}
+
+                                  <div class="col-sm-5 col-xs-5" style="padding: 0;" id="upload-container">
+                                      <div class="uploader"></div>
+                                      <div class="upload-csv-label"></div>
                                   </div>
+
                                   <div class="col-sm-2 col-xs-2" style="padding-top: 50px"><h4><label> {% trans "OR" %} </label></h4></div>
                                   <div class="col-sm-5 col-xs-5">
                                     <button class="btn btn-success btn-sm send-to-all" type="button" data-dismiss="modal" title="{% trans 'Send SMS campaign to all your contact.' %}">
@@ -288,16 +295,17 @@
     <script src="{% static 'echo/js/bootstrap-datepicker.js' %}" ></script>
     <script src="{% static 'echo/js/sms_character_counter.js' %}" ></script>
 {#    <script src="{% static 'echo/js/jquery.ui.widget.js' %}" ></script>#}
-    <script src="{% static 'echo/js/jquery.iframe-transport.js' %}" ></script>
-    <script src="{% static 'echo/js/jquery.fileupload.js' %}" ></script>
-    <script src="{% static 'echo/js/csv_file_upload.js' %}" ></script>
+{#    <script src="{% static 'echo/js/jquery.iframe-transport.js' %}" ></script>#}
+{#    <script src="{% static 'echo/js/jquery.fileupload.js' %}" ></script>#}
+{#    <script src="{% static 'echo/js/csv_file_upload.js' %}" ></script>#}
     <script src="{% static 'echo/js/swiper.min.js' %}" ></script>
     <script src="{% static 'embed-doc/js/embed-doc.js' %}" ></script>
+    <script src="{% static 'ikwen/ajaxuploader/js/fileuploader.js' %}" ></script>
     <script>
         (function () {
             var filename = '';
 
-            $('.upload-csv').on('change', function (csvFile) {
+            {% comment %}$('.upload-csv').on('change', function (csvFile) {
                 if (csvFile.target.value) {
                     filename = csvFile.target.value.split('\\').pop();
                     {#$('.recipient-list').addClass('text-center').attr("readonly", "readonly").val(filename);#}
@@ -307,9 +315,9 @@
             })
             // Firefox bug fix
             .on( 'focus', function(){ $('.upload-csv').addClass( 'has-focus' ); })
-            .on( 'blur', function(){ $('.upload-csv').removeClass( 'has-focus' ); });
+            .on( 'blur', function(){ $('.upload-csv').removeClass( 'has-focus' ); });{% endcomment %}
 
-            $('.upload-csv').fileupload({
+            {% comment %}$('.upload-csv').fileupload({
                 dataType : 'json',
                 done: function (e, data) {
                     try {
@@ -326,6 +334,43 @@
                         $('.recipient-list').addClass('text-center').attr("readonly", "readonly").val('Invalid contact file !');
                     }
 
+                }
+            });{% endcomment %}
+
+            $('.uploader').on('change', function (csvFile) {
+                if (csvFile.target.value) {
+                    filename = csvFile.target.value.split('\\').pop();
+                    {#$('.recipient-list').addClass('text-center').attr("readonly", "readonly").val(filename);#}
+
+                }
+                $('.upload-csv-label').find('div').text(filename);
+            })
+            // Firefox bug fix
+            .on( 'focus', function(){ $('.upload-csv').addClass( 'has-focus' ); })
+            .on( 'blur', function(){ $('.upload-csv').removeClass( 'has-focus' ); });
+
+            var uploader = new qq.FileUploader({
+                action: "{% url 'echo:csv_uploader' %}",
+                element: $('div#upload-container .uploader')[0],
+                buttonText: "{% trans "Upload cover" %}",
+                multiple: false,
+                onProgress: function(id, fileName, loaded, total) {
+                    $('body').css('cursor', 'wait')
+                },
+                onComplete: function(id, fileName, responseJSON) {
+                    $('body').css('cursor', 'default');
+                    if(responseJSON.success) {
+                        filename = responseJSON.path;
+                        filetitle = filename.split(('\\')).pop();
+                        $('.upload-csv-label').text(filetitle);
+                    } else {
+                        alert("{% trans 'upload failed!' %}");
+                    }
+                },
+                params: {
+                    'csrf_token': '{{ csrf_token }}',
+                    'csrf_name': 'csrfmiddlewaretoken',
+                    'csrf_xname': 'X-CSRFToken'
                 }
             });
 
