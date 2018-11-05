@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import json
 
 import time
@@ -11,8 +12,7 @@ from django.utils import unittest
 from ikwen.core.utils import get_service_instance
 
 from echo.models import Campaign, Balance
-from echo.views import restart_batch, batch_send
-
+from echo.views import restart_batch, batch_send, count_pages
 
 
 def wipe_test_data(alias='default'):
@@ -111,8 +111,8 @@ class CampaignTestCase(unittest.TestCase):
     def test_SMSCampaign_start_campaign_with_insufficient_balance(self):
         self.client.login(username='arch', password='admin')
         recipient_list = "693655488,658458741,5689784125"
-        txt = 'CAMP1 UniTest'
-        subject = 'Unitest campaign 1'
+        txt = 'CAMP UniTest'
+        subject = 'Unitest campaign'
         response = self.client.get(reverse('echo:sms_campaign'),
                                    {'action': 'start_campaign', 'recipients': recipient_list,
                                     'subject': subject, 'txt': txt})
@@ -140,8 +140,8 @@ class CampaignTestCase(unittest.TestCase):
     def test_SMSCampaign_start_campaign_with_sufficient_balance(self):
         self.client.login(username='arch', password='admin')
         recipient_list = "693655488,658458741,5689784125"
-        txt = 'CAMP1 UniTest'
-        subject = 'Unitest campaign 1'
+        txt = 'CAMP2 UniTest'
+        subject = 'Unitest campaign 2'
         response = self.client.get(reverse('echo:sms_campaign'),
                                    {'action': 'start_campaign', 'subject': subject, 'recipients': recipient_list,
                                     'txt': txt})
@@ -159,8 +159,8 @@ class CampaignTestCase(unittest.TestCase):
         self.client.login(username='arch', password='admin')
         recipient_list = "[Contact File]"
         filename = "ikwen_sms_campaign_test.csv"
-        txt = 'CAMP1 UniTest'
-        subject = 'Unitest campaign 1'
+        txt = 'CAMP3 UniTest'
+        subject = 'Unitest campaign 3'
         response = self.client.get(reverse('echo:sms_campaign'),
                                    {'action': 'start_campaign', 'filename': filename, 'recipients': recipient_list,
                                     'subject': subject, 'txt': txt})
@@ -179,6 +179,25 @@ class CampaignTestCase(unittest.TestCase):
         restart_batch()
         campaign = Campaign.objects.get(service='56eb6d04b37b3379b531b102')
         self.assertGreater(campaign.progress, 0)
+
+    @override_settings(IKWEN_SERVICE_ID='56eb6d04b37b3379b531b102',
+                       UNIT_TESTING=True)
+    def test_count_pages_with_2_page_without_special_character(self):
+        text = "sldkhfsldfhklsd flksdh clshc dskhclshdcl kdshcl kshdcl kshlck sdlhkchlskd clkhc slkdhklshdc kldshclksd hclksldkhc lkshdcsdklch kdchkdchlkdchkldc hhslkdclkdschkde"
+        self.assertEqual(count_pages(text), 2)
+
+    @override_settings(IKWEN_SERVICE_ID='56eb6d04b37b3379b531b102',
+                       UNIT_TESTING=True)
+    def test_count_pages_with_3_pages_contains_special_character(self):
+        text = "'qskdhqklsdql qlscg lqsgclkq hsckmlqshc kqslhcl" \
+               "hclqskhclkqsh ck qshlclkqs chlq"
+        self.assertEqual(count_pages(text), 2)
+
+    @override_settings(IKWEN_SERVICE_ID='56eb6d04b37b3379b531b102',
+                       UNIT_TESTING=True)
+    def test_count_pages_with_2_pages_contains_special_character_and_ex_character_count_double(self):
+        text = "çsdkskdncsd clksdcnkcn lsdknc lksdcnsdlkcnlsdkcndkcnlksnckndclksndkdç(]"
+        self.assertEqual(count_pages(text), 2)
 
 
 

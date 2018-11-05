@@ -22,7 +22,7 @@ from echo.models import Campaign, SMS, Balance
 
 # from echo.forms import CSVFileForm
 
-sms_normal_count = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h',
+sms_normal_count = [' ', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h',
                     'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
                     'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
                     'T', 'U', 'V', 'W', 'X', 'Y', 'Z', u'Ä', u'ä', u'à', u'Å', u'å', u'Æ', u'æ', u'ß', u'Ç', u'è', u'é',
@@ -69,12 +69,6 @@ def count_pages(text):
 def batch_send(campaign, balance):
     text = campaign.text
     page_count = campaign.page_count
-    # fh = None
-    # filename = campaign.filename
-    # if filename:
-    #     path = getattr(settings, 'MEDIA_ROOT') + filename
-    #     fh = open(path, 'r')
-    #     campaign.recipient_list = fh.readlines()
     for recipient in campaign.recipient_list[campaign.progress:]:
         if len(recipient) == 9:
             recipient = '237' + recipient
