@@ -33,6 +33,7 @@ sms_normal_count = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 
 sms_double_count = [u'^', u'|', u'€', u'}', u'{', u'[', u'~', u']', u'\\']
 
 ALL_COMMUNITY = "[All Community]"
+UPLOAD_DIR = "/uploads/"
 
 config = get_service_instance().config
 label = config.company_name.strip()
@@ -156,7 +157,7 @@ class SMSCampaign(TemplateView):
 
             # Should add somme security check about file existence and type here before attempting to read it
 
-            path = getattr(settings, 'MEDIA_ROOT') + filename
+            path = getattr(settings, 'MEDIA_ROOT') + UPLOAD_DIR + filename
             recipient_list = []
 
             with open(path, 'r') as fh:

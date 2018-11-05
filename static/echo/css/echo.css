@@ -9,7 +9,7 @@
 
 .btn {min-width: 140px;}
 .btn.send-to-all {font-size: 20px;height: 125px;}
-.btn-start-campaign {border: 1.5px solid #dce4ec;border-radius: 3px;cursor: pointer;}
+.btn-start-campaign {border: 1.5px solid #dce4ec;border-radius: 3px;cursor: pointer; text-align: center}
 .btn-start-campaign:hover {color: #319dd5}
 
 .campaign-title{padding-bottom: 20px;}
@@ -46,6 +46,7 @@
 .upload-csv {width: 1px; height: 1px; opacity: 0; overflow: hidden; position: absolute; z-index: -1;}
 .upload-csv-icon:focus {outline: 1px dotted #000; outline: -webkit-focus-ring-color auto 5px;}
 .upload-csv-icon:hover {outline: 1px dotted #000; outline: -webkit-focus-ring-color auto 5px;}
+.upload-csv-label {color: inherit;font-family: inherit;font-weight: bold;line-height: 1.1;}
 
 
 
