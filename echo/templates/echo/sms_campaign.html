@@ -2,21 +2,19 @@
 {% load i18n humanize staticfiles auth_tokens %}
 
 {% block page_title %}
-    <title> {% trans "WEB campaign" %} - ikwen</title>
+    <title> {% trans "SMS Campaign" %} - ikwen</title>
 {% endblock %}
 
 {% block head_style %}
     {{ block.super }}
-{#    <link rel="stylesheet" type="text/css" href="{% static 'echo/css/bootstrap-datepicker3.standalone.css' %}" />#}
-{#    <link rel="stylesheet" type="text/css" href="{% static 'echo/css/bootstrap-slider.css' %}" />#}
     <link rel="stylesheet" type="text/css" href="{% static 'echo/css/swiper.min.css' %}"/>
     <link rel="stylesheet" type="text/css" href="{% static 'ikwen/ajaxuploader/css/fileuploader.css' %}"/>
     <link rel="stylesheet" type="text/css" href="{% static 'embed-doc/css/embed-doc.css' %}"/>
-    <link rel="stylesheet" type="text/css" href="{% static 'echo/css/echo.css' %}?v=18.11.06"/>
+    <link rel="stylesheet" type="text/css" href="{% static 'echo/css/echo.css' %}"/>
 {% endblock %}
 
 {% block breadcrumb_location %}
-    <li>{% trans "SMS campaign" %}</li>
+    <li>{% trans "SMS Campaign" %}</li>
 {% endblock %}
 
 {% block admin_content %}
@@ -293,66 +291,15 @@
 
 {% block js %}
     {{ block.super }}
-{#    <script src="{% static 'echo/js/jquery_3.2.1.js' %}" ></script>#}
     <script src="{% static 'echo/js/bootstrap-datepicker.js' %}" ></script>
-    <script src="{% static 'echo/js/sms_character_counter.js' %}" ></script>
-{#    <script src="{% static 'echo/js/jquery.ui.widget.js' %}" ></script>#}
-{#    <script src="{% static 'echo/js/jquery.iframe-transport.js' %}" ></script>#}
-{#    <script src="{% static 'echo/js/jquery.fileupload.js' %}" ></script>#}
-{#    <script src="{% static 'echo/js/csv_file_upload.js' %}" ></script>#}
+    <script src="{% static 'echo/js/sms-character-counter.js' %}" ></script>
     <script src="{% static 'echo/js/swiper.min.js' %}" ></script>
     <script src="{% static 'embed-doc/js/embed-doc.js' %}" ></script>
     <script src="{% static 'ikwen/ajaxuploader/js/fileuploader.js' %}" ></script>
     <script>
         (function () {
             var filename, csv_name = '';
-
-            {% comment %}$('.upload-csv').on('change', function (csvFile) {
-                if (csvFile.target.value) {
-                    filename = csvFile.target.value.split('\\').pop();
-                    {#$('.recipient-list').addClass('text-center').attr("readonly", "readonly").val(filename);#}
-
-                }
-                $('.upload-csv-label').find('div').text(filename);
-            })
-            // Firefox bug fix
-            .on( 'focus', function(){ $('.upload-csv').addClass( 'has-focus' ); })
-            .on( 'blur', function(){ $('.upload-csv').removeClass( 'has-focus' ); });{% endcomment %}
-
-            {% comment %}$('.upload-csv').fileupload({
-                dataType : 'json',
-                done: function (e, data) {
-                    try {
-                        if (data.result.is_valid){
-                            $('.recipient-list').addClass('text-center').attr("readonly", "readonly").val(filename);
-                            $('.reset-recipient-list').show()
-                        }
-                        else{
-                            $('.recipient-list').addClass('text-center').attr("readonly", "readonly").val('Invalid contact file !');
-                        }
-                    }
-                    catch (err){
-                        alert(err.message);
-                        $('.recipient-list').addClass('text-center').attr("readonly", "readonly").val('Invalid contact file !');
-                    }
-
-                }
-            });{% endcomment %}
-
-           {% comment %} $('.uploader').on('change', function (csvFile) {
-                if (csvFile.target.value) {
-                    filename = csvFile.target.value.split('\\').pop();
-                    {#$('.recipient-list').addClass('text-center').attr("readonly", "readonly").val(filename);#}
-
-                }
-                $('.upload-csv-label').find('div').text(filename);
-            })
-            // Firefox bug fix
-            .on( 'focus', function(){ $('.upload-csv').addClass( 'has-focus' ); })
-            .on( 'blur', function(){ $('.upload-csv').removeClass( 'has-focus' ); });{% endcomment %}
-
             var uploader = new qq.FileUploader({
-                {#debug: true,#}
                 template:
                 '<div class="qq-uploader">' +
                     '<div class="qq-upload-drop-area"><span></span></div>' +
