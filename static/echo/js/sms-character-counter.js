@@ -63,14 +63,9 @@ $(document).ready(function(){
         }
         pageCount = Math.ceil(count/maxlength);
         totalLength = maxlength * pageCount;
-        if (totalLength !== 0) {
-            $('.sms-char-count').text(count + " / " + totalLength);
-            $('.btn-send').removeClass('disabled');
-        }
-        else {
-            $('.sms-char-count').text(count + " / 160");
-            $('.btn-send').addClass('disabled');
-        }
-        $('.sms-page-count').text(pageCount + " SMS");
+        if (totalLength !== 0) $('.sms-btn-send').removeClass('disabled');
+        else $('.sms-btn-send').addClass('disabled');
+        $('.sms-char-count').text(count + " / " + totalLength);
+        $('.sms-page-count').text(pageCount);
     }
 });
