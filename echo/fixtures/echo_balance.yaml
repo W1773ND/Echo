@@ -1,0 +1,13 @@
+- model: echo.balance
+  pk: 1
+  fields:
+    service_id: '56eb6d04b37b3379b531b101'
+    sms_count: 2
+    mail_count: 0
+
+- model: echo.balance
+  pk: 2
+  fields:
+    service_id: '56eb6d04b37b3379b531b102'
+    sms_count: 10
+    mail_count: 0

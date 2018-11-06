@@ -12,7 +12,7 @@
     <link rel="stylesheet" type="text/css" href="{% static 'echo/css/swiper.min.css' %}"/>
     <link rel="stylesheet" type="text/css" href="{% static 'ikwen/ajaxuploader/css/fileuploader.css' %}"/>
     <link rel="stylesheet" type="text/css" href="{% static 'embed-doc/css/embed-doc.css' %}"/>
-    <link rel="stylesheet" type="text/css" href="{% static 'echo/css/echo.css' %}?v=18.11.02"/>
+    <link rel="stylesheet" type="text/css" href="{% static 'echo/css/echo.css' %}?v=18.11.06"/>
 {% endblock %}
 
 {% block breadcrumb_location %}
@@ -229,7 +229,7 @@
                                   <div class="col-sm-2 col-xs-2" style="padding-top: 30px"><h4><label> {% trans "OR" %} </label></h4></div>
                                   <div class="col-sm-5 col-xs-5">
 {#                                    <button class="btn btn-success btn-sm send-to-all" type="button" data-dismiss="modal" title="{% trans 'Send SMS campaign to all your contact.' %}">#}
-                                      <img class="send-to-all"  style="cursor: pointer;" title="{% trans 'Send SMS campaign to all your community.' %}" data-dismiss="modal" src="{% static 'echo/img/community-btn-small.png' %}" alt= {% trans 'Send SMS campaign to all community btn' %} />
+                                      <img class="modal-icon send-to-all"  style="cursor: pointer; margin-bottom: 10px;" title="{% trans 'Send SMS campaign to all your community.' %}" data-dismiss="modal" src="{% static 'echo/img/community-btn-small.png' %}" alt= {% trans 'Send SMS campaign to all community btn' %} />
                                       <div><label> &nbsp; Contact &nbsp;</label><span class="badge"> {{ member_count }} </span></div>
                                   </div>
                               </div>
@@ -357,7 +357,7 @@
                 '<div class="qq-uploader">' +
                     '<div class="qq-upload-drop-area"><span></span></div>' +
                     '<div class="qq-upload-button">' +
-                        '<img class="pb-10" src="{% static 'echo/img/import-csv-small.png' %}"' +
+                        '<img class="modal-icon pb-10" src="{% static 'echo/img/import-csv-small.png' %}"' +
                             'style="cursor: pointer;"' +
                             'title="{% trans 'Import contact list from ' %}CSV{% trans ' file to send SMS campaign' %}">' +
                     '</div>' +

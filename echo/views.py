@@ -9,7 +9,6 @@ from ajaxuploader.views import AjaxFileUploader
 from django.conf import settings
 from django.db import transaction
 from django.http import HttpResponse
-from django.shortcuts import render
 from django.template.defaultfilters import slugify
 from django.views.generic import TemplateView
 from django.utils.translation import gettext as _
@@ -27,7 +26,7 @@ sms_normal_count = [' ', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 
                     'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
                     'T', 'U', 'V', 'W', 'X', 'Y', 'Z', u'Ä', u'ä', u'à', u'Å', u'å', u'Æ', u'æ', u'ß', u'Ç', u'è', u'é',
                     u'É', u'ì', u'Ö', u'ö', u'ò', u'Ø', u'ø', u'Ñ', u'ñ', u'Ü', u'ü', u'ù', u'#', u'¤', u'%', u'&',
-                    u'(', u')', u'*', u'+', u',', u'–', u'.', u'/', u':', u';', u' <', u'>', u'=', u'§', u'$', u'!',
+                    u'(', u')', u'*', u'+', u',', u'–', u'.', u'/', u':', u';', u'<', u'>', u'=', u'§', u'$', u'!',
                     u'?', u'£', u'¿', u'¡', u'@', u'¥', u'Δ', u'Φ', u'Γ', u'Λ', u'Ω', u'Π', u'Ψ', u'Σ', u'Θ', u'Ξ',
                     u'»', u'‘']
 sms_double_count = [u'^', u'|', u'€', u'}', u'{', u'[', u'~', u']', u'\\']
@@ -94,7 +93,7 @@ def restart_batch():
     raw_query = {"$where": "function() {return this.progress < this.total}"}
     campaign_list = list(Campaign.objects.raw_query(raw_query).filter(updated_on__lt=timeout))
     for campaign in campaign_list:
-        balance = Balance(service=campaign.service)
+        balance = Balance(service_id=campaign.service)
         if getattr(settings, 'UNIT_TESTING', False):
             batch_send(campaign, balance)
         else:
@@ -109,22 +108,18 @@ class SMSCampaign(TemplateView):
         campaign_list = Campaign.objects.all().order_by("-id")[:5]
         for campaign in campaign_list:
             campaign.progress_rate = (campaign.progress / campaign.total) * 100
-        balance, update = Balance.objects.get_or_create(service=get_service_instance())
+        balance, update = Balance.objects.get_or_create(service_id=get_service_instance().id)
         context['balance'] = balance
         context['campaign_list'] = campaign_list
         context['member_count'] = Member.objects.all().count()
         return context
 
     def get(self, request, *args, **kwargs):
-        # csv_file = CSVFile.objects.all().order_by("-id")[:1]
         action = request.GET.get('action')
         if action == 'start_campaign':
             return self.start_campaign(request)
         if action == 'get_campaign_progress':
             return self.get_campaign_progress(request)
-        # if action == 'view_contact_file':
-        ##     return render(self.request, 'echo/sms_campaign.html', {'file': csv_file}) ##
-        #     return self.view_contact_file(request)
         return super(SMSCampaign, self).get(request, *args, **kwargs)
 
     # def post(self, request):
@@ -169,11 +164,24 @@ class SMSCampaign(TemplateView):
             recipient_list = recipient_list.strip().split(',')
             recipient_count = len(recipient_list)
         page_count = count_pages(txt)
-        sms_count = page_count * recipient_count
+        sms_count = int(page_count * recipient_count)
 
         # if getattr(settings, 'UNIT_TESTING', False):
+        # with transaction.atomic():
+        #     balance = Balance.objects.get(service=get_service_instance())
+        #     if balance.sms_count < sms_count:
+        #         response = {"error": _("Insufficient SMS balance.")}
+        #         return HttpResponse(
+        #             json.dumps(response),
+        #             'content-type: text/json'
+        #         )
+        #     balance.sms_count -= sms_count
+        #     balance.save()
+        # else:
+
+        # "transaction.atomic" instruction locks database during all operations inside "with" block
         with transaction.atomic():
-            balance = Balance.objects.get(service=get_service_instance())
+            balance = Balance.objects.using('wallets').get(service_id=get_service_instance().id)
             if balance.sms_count < sms_count:
                 response = {"error": _("Insufficient SMS balance.")}
                 return HttpResponse(
@@ -182,22 +190,8 @@ class SMSCampaign(TemplateView):
                 )
             balance.sms_count -= sms_count
             balance.save()
-        # else:
-        #     # "transaction.atomic" instruction locks database during all operations inside "with" block
-        #     with transaction.atomic():
-        #         balance = Balance.objects.using('wallets').get(service=get_service_instance())
-        #         if balance.sms_count < sms_count:
-        #             response = {"error": _("Insufficient SMS balance.")}
-        #             return HttpResponse(
-        #                 json.dumps(response),
-        #                 'content-type: text/json'
-        #             )
-        #         balance.sms_count -= sms_count
-        #         balance.save()
         campaign = Campaign.objects.create(member=member, subject=subject, type="SMS", slug=slug,
                                            recipient_list=recipient_list, total=sms_count)
-        # campaign = Campaign.objects.create(member=member, subject=subject, type="SMS", slug=slug,
-        #                                    total=recipient_count)
         if getattr(settings, 'UNIT_TESTING', False):
             batch_send(campaign, balance)
         else:

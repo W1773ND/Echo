@@ -52,7 +52,7 @@ class SMS(Model):
 
 
 class Balance(Model):
-    service = models.ForeignKey(Service)
+    service_id = models.CharField(max_length=24, unique=True)
     sms_count = models.IntegerField(default=0)
     mail_count = models.IntegerField(default=0)
 

@@ -11,8 +11,9 @@ from django.utils import unittest
 
 from ikwen.core.utils import get_service_instance
 
+from conf.settings import WALLETS_DB_ALIAS
 from echo.models import Campaign, Balance
-from echo.views import restart_batch, batch_send, count_pages
+from echo.views import restart_batch, count_pages
 
 
 def wipe_test_data(alias='default'):
@@ -45,11 +46,11 @@ class CampaignTestCase(unittest.TestCase):
 
     def setUp(self):
         self.client = Client()
+        call_command('loaddata', 'echo_balance.yaml', database=WALLETS_DB_ALIAS)
         for fixture in self.fixture:
             call_command('loaddata', fixture)
 
     def tearDown(self):
-        wipe_test_data()
         wipe_test_data()
 
     @override_settings(IKWEN_SERVICE_ID='56eb6d04b37b3379b531b102')
@@ -122,9 +123,9 @@ class CampaignTestCase(unittest.TestCase):
 
     @override_settings(IKWEN_SERVICE_ID='56eb6d04b37b3379b531b101',
                        UNIT_TESTING=True)
-    def test_SMSCampaign_start_campaign__csv_file_reading_with_insufficient_balance(self):
+    def test_SMSCampaign_start_campaign__with_csv_file_reading_and__insufficient_balance(self):
         self.client.login(username='arch', password='admin')
-        recipient_list = "[Contact File]"
+        recipient_list = []
         filename = "ikwen_sms_campaign_test.csv"
         txt = 'CAMP1 UniTest'
         subject = 'Unitest campaign 1'
@@ -150,14 +151,14 @@ class CampaignTestCase(unittest.TestCase):
         self.assertTrue(result['success'])
         campaign = Campaign.objects.get(subject=subject)
         self.assertEqual(campaign.progress, 3)
-        balance = Balance.objects.get(service='56eb6d04b37b3379b531b102')
+        balance = Balance.objects.using(WALLETS_DB_ALIAS).get(service_id='56eb6d04b37b3379b531b102')
         self.assertEqual(balance.sms_count, 7)
 
     @override_settings(IKWEN_SERVICE_ID='56eb6d04b37b3379b531b102',
                        UNIT_TESTING=True)
-    def test_SMSCampaign_start_campaign_csv_file_reading_with_sufficient_balance(self):
+    def test_SMSCampaign_start_campaign_with_csv_file_reading_and_sufficient_balance(self):
         self.client.login(username='arch', password='admin')
-        recipient_list = "[Contact File]"
+        recipient_list = []
         filename = "ikwen_sms_campaign_test.csv"
         txt = 'CAMP3 UniTest'
         subject = 'Unitest campaign 3'
@@ -170,7 +171,7 @@ class CampaignTestCase(unittest.TestCase):
         campaign = Campaign.objects.get(subject=subject)
         self.assertEqual(campaign.progress, 8)
         self.assertEqual(int(campaign.recipient_list[2]), 693799546)
-        balance = Balance.objects.get(service='56eb6d04b37b3379b531b102')
+        balance = Balance.objects.using(WALLETS_DB_ALIAS).get(service_id='56eb6d04b37b3379b531b102')
         self.assertEqual(balance.sms_count, 2)
 
     @override_settings(IKWEN_SERVICE_ID='56eb6d04b37b3379b531b102',
@@ -182,8 +183,9 @@ class CampaignTestCase(unittest.TestCase):
 
     @override_settings(IKWEN_SERVICE_ID='56eb6d04b37b3379b531b102',
                        UNIT_TESTING=True)
-    def test_count_pages_with_2_page_without_special_character(self):
-        text = "sldkhfsldfhklsd flksdh clshc dskhclshdcl kdshcl kshdcl kshlck sdlhkchlskd clkhc slkdhklshdc kldshclksd hclksldkhc lkshdcsdklch kdchkdchlkdchkldc hhslkdclkdschkde"
+    def test_count_pages_with_2_page_and_without_special_character(self):
+        text = "sldkhfsldfhklsd flksdh clshc dskhclshdcl kdshcl kshdcl kshlck sdlhkchlskd clkhc " \
+               "slkdhklshdc kldshclksd hclksldkhc lkshdcsdklch kdchkdchlkdchkldc hhslkdclkdschkde"
         self.assertEqual(count_pages(text), 2)
 
     @override_settings(IKWEN_SERVICE_ID='56eb6d04b37b3379b531b102',
