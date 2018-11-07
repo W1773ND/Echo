@@ -340,7 +340,6 @@
                 }
             });
 
-
             $('.send-to-all').click(function () {
                 csv_name = '';
                 $('.upload-csv-label').text(csv_name);
@@ -372,7 +371,7 @@
                         $historyTpl.find('.event-title').text(subject);
                         $historyTpl.find('.event-message').text(txt);
                         $historyTpl.prependTo('.campaign-list').addClass('running').attr('id', data.campaign.id);
-                        intervalId = setInterval(updateProgressBar, 100)
+                        intervalId = setInterval(updateProgressBar, 1000)
                     }
                 })
             });
@@ -395,20 +394,9 @@
                     });
                 }
             }
-            var intervalId = setInterval(updateProgressBar, 100);
-{% comment %}
-
-            $('.input-daterange').datepicker({
-                autoclose: true,
-                clearBtn: true,
-                format: "dd/mm/yy",
-                todayHighlight: true
-            });
-{% endcomment %}
-
+            var intervalId = setInterval(updateProgressBar, 1000);
         })();
-    </script>
-    <script>
-        embedDoc.initEmbedDoc("{% trans "Remind me later" %}", "{% trans "Got it!" %}", "{% trans "Show Help" %}")
+
+        embedDoc.initEmbedDoc("{% trans "Remind me later" %}", "{% trans "Got it!" %}", "{% trans "Show Help" %}");
     </script>
 {% endblock %}
