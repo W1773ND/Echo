@@ -16,13 +16,13 @@ $(document).ready(function(){
         smsDoubleCount = ['^', '|', '€', '}', '{', '[', '~', ']', '\\'].join(''),
         maxlength;
 
-    $('.text').keyup(function () {
+    $('.sms-text').keyup(function () {
         var count = countChars();
         countPages(count);
     });
 
     function countChars() {
-        var text = $('.text').val(),
+        var text = $('.sms-text').val(),
             char,
             count = 0;
         for (var i = 0; i < text.length; i++) {
@@ -42,7 +42,7 @@ $(document).ready(function(){
     }
 
     function countPages(count) {
-        var text = $('.text').val(),
+        var text = $('.sms-text').val(),
             char,
             pageCount,
             totalLength;
@@ -65,7 +65,7 @@ $(document).ready(function(){
         totalLength = maxlength * pageCount;
         if (totalLength !== 0) $('.sms-btn-send').removeClass('disabled');
         else $('.sms-btn-send').addClass('disabled');
-        $('.sms-char-count').text(count + " / " + totalLength);
-        $('.sms-page-count').text(pageCount);
+        $('.sms-char-count').sms-text(count + " / " + totalLength);
+        $('.sms-page-count').sms-text(pageCount);
     }
 });
