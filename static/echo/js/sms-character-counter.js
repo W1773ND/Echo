@@ -65,7 +65,7 @@ $(document).ready(function(){
         totalLength = maxlength * pageCount;
         if (totalLength !== 0) $('.sms-btn-send').removeClass('disabled');
         else $('.sms-btn-send').addClass('disabled');
-        $('.sms-char-count').sms-text(count + " / " + totalLength);
-        $('.sms-page-count').sms-text(pageCount);
+        $('.sms-char-count').text(count + " / " + totalLength);
+        $('.sms-page-count').text(pageCount);
     }
 });
