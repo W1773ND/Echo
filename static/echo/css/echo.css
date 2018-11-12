@@ -53,13 +53,10 @@
 @media only screen and (max-width: 800px) and (orientation: portrait) {
     .btn {min-width: 100px;}
     .btn.send-to-all {height: 100px;font-size: 15px;}
-
-
     .title {text-align: center !important;}
 }
 
 @media only screen and (max-width: 800px) and (orientation: landscape) {
     .btn {min-width: 120px;}
-
     .title {text-align: center !important;}
 }
