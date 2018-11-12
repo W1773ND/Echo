@@ -12,7 +12,7 @@ from django.utils import unittest
 from ikwen.core.utils import get_service_instance
 
 from conf.settings import WALLETS_DB_ALIAS
-from echo.models import Campaign, Balance
+from echo.models import Campaign, Balance, UMBRELLA
 from echo.views import restart_batch, count_pages
 
 
@@ -77,7 +77,7 @@ class CampaignTestCase(unittest.TestCase):
         Make sure the url is reachable
         """
         self.client.login(username='arch', password='admin')
-        response = self.client.get(reverse('echo:sms_hist'))
+        response = self.client.get(reverse('echo:sms_history'))
         self.assertEqual(response.status_code, 200)
 
     @override_settings(IKWEN_SERVICE_ID='56eb6d04b37b3379b531b102')
@@ -104,7 +104,7 @@ class CampaignTestCase(unittest.TestCase):
         Make sure the url is reachable
         """
         self.client.login(username='arch', password='admin')
-        response = self.client.get(reverse('echo:mail_hist'))
+        response = self.client.get(reverse('echo:mail_history'))
         self.assertEqual(response.status_code, 200)
 
     @override_settings(IKWEN_SERVICE_ID='56eb6d04b37b3379b531b101',
@@ -190,8 +190,8 @@ class CampaignTestCase(unittest.TestCase):
 
     @override_settings(IKWEN_SERVICE_ID='56eb6d04b37b3379b531b102',
                        UNIT_TESTING=True)
-    def test_count_pages_with_3_pages_contains_special_character(self):
-        text = "'qskdhqklsdql qlscg lqsgclkq hsckmlqshc kqslhcl" \
+    def test_count_pages_with_2_pages_contains_special_character(self):
+        text = "éqskdhqklsdql qlscg lqsgclkq hsckmlqshc kqslhcl" \
                "hclqskhclkqsh ck qshlclkqs chlq"
         self.assertEqual(count_pages(text), 2)
 

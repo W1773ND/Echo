@@ -12,12 +12,10 @@ from django.http import HttpResponse
 from django.template.defaultfilters import slugify
 from django.views.generic import TemplateView
 from django.utils.translation import gettext as _
-
 from ikwen.core.utils import send_sms, get_service_instance, DefaultUploadBackend, get_sms_label
 from ikwen.accesscontrol.models import Member
 from math import ceil
-
-from echo.models import Campaign, SMS, Balance
+from echo.models import Campaign, SMS, Balance, UMBRELLA
 
 # from echo.forms import CSVFileForm
 
@@ -57,11 +55,12 @@ def count_pages(text):
     return page_count
 
 
-def batch_send(campaign, balance):
+def batch_send(campaign):
     text = campaign.text
     page_count = campaign.page_count
     config = campaign.service.config
     label = get_sms_label(config)
+    balance = Balance.objects.using('wallets').get(service_id=campaign.service.id)
     for recipient in campaign.recipient_list[campaign.progress:]:
         if len(recipient) == 9:
             recipient = '237' + recipient
@@ -70,9 +69,10 @@ def batch_send(campaign, balance):
                 requests.get('http://google.com')
             else:
                 send_sms(recipient=recipient, text=text, fail_silently=False)
-            SMS.objects.create(recipient=recipient, text=text, label=label, campaign=campaign)
+            SMS.objects.using(UMBRELLA).create(recipient=recipient, text=text, label=label, campaign=campaign)
         except:
-            SMS.objects.create(recipient=recipient, text=text, label=label, campaign=campaign, is_sent=False)
+            SMS.objects.using(UMBRELLA).create(recipient=recipient, text=text, label=label, campaign=campaign,
+                                               is_sent=False)
             balance.sms_count += page_count
             balance.save()
         campaign.progress += 1
@@ -84,11 +84,10 @@ def restart_batch():
     raw_query = {"$where": "function() {return this.progress < this.total}"}
     campaign_list = list(Campaign.objects.raw_query(raw_query).filter(updated_on__lt=timeout))
     for campaign in campaign_list:
-        balance = Balance(service_id=campaign.service)
         if getattr(settings, 'UNIT_TESTING', False):
-            batch_send(campaign, balance)
+            batch_send(campaign)
         else:
-            Thread(target=batch_send, args=(campaign, balance)).start()
+            Thread(target=batch_send, args=(campaign,)).start()
 
 
 class SMSCampaign(TemplateView):
@@ -96,10 +95,10 @@ class SMSCampaign(TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super(SMSCampaign, self).get_context_data(**kwargs)
-        campaign_list = Campaign.objects.all().order_by("-id")[:5]
+        campaign_list = Campaign.objects.using(UMBRELLA).all().order_by("-id")[:5]
         for campaign in campaign_list:
             campaign.progress_rate = (campaign.progress / campaign.total) * 100
-        balance, update = Balance.objects.get_or_create(service_id=get_service_instance().id)
+        balance, update = Balance.objects.using('wallets').get_or_create(service_id=get_service_instance().id)
         context['balance'] = balance
         context['campaign_list'] = campaign_list
         context['member_count'] = Member.objects.all().count()
@@ -115,7 +114,6 @@ class SMSCampaign(TemplateView):
 
     def start_campaign(self, request):
         member = request.user
-
         subject = request.GET.get('subject')
         slug = slugify(subject)
         txt = request.GET.get('txt')
@@ -123,7 +121,7 @@ class SMSCampaign(TemplateView):
         recipient_list = request.GET.get('recipients')
         if filename:
             # Should add somme security check about file existence and type here before attempting to read it
-            path = getattr(settings, 'MEDIA_ROOT') + DefaultUploadBackend.UPLOAD_DIR + filename
+            path = getattr(settings, 'MEDIA_ROOT') + '/' + DefaultUploadBackend.UPLOAD_DIR + '/' + filename
             recipient_list = []
 
             with open(path, 'r') as fh:
@@ -133,7 +131,11 @@ class SMSCampaign(TemplateView):
             recipient_count = len(recipient_list)
         elif recipient_list == ALL_COMMUNITY:
             recipient_list = []
+
+            # Segmentation fault incoming with big community
             community_member = Member.objects.all()
+            # Segmentation fault incoming with big community
+
             for member in community_member:
                 recipient_list.append(member.phone)
             recipient_count = len(recipient_list)
@@ -154,11 +156,13 @@ class SMSCampaign(TemplateView):
                 )
             balance.sms_count -= sms_count
             balance.save()
-        campaign = Campaign.objects.create(member=member, subject=subject, type="SMS", slug=slug,
-                                           recipient_list=recipient_list, total=sms_count)
+        service = get_service_instance(using=UMBRELLA)
+        campaign = Campaign.objects.using(UMBRELLA).create(service=service, member=member, subject=subject, type="SMS",
+                                                           slug=slug, recipient_list=recipient_list, total=sms_count)
         if getattr(settings, 'UNIT_TESTING', False):
-            batch_send(campaign, balance)
-        else:
+            batch_send(campaign)
+        elif recipient_count < 50:
+            # for small campaign ie minor than 50, send sms directly from application server
             Thread(target=batch_send, args=(campaign, balance)).start()
         response = {"success": True, "campaign": campaign.to_dict()}
         return HttpResponse(

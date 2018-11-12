@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
-import os
 
 from django.db import models
 from django_mongodb_engine.contrib import MongoDBManager
 from djangotoolbox.fields import ListField
 from ikwen.core.models import Model, Service
-from ikwen.core.utils import get_service_instance
+from ikwen.accesscontrol.backends import UMBRELLA
 from ikwen.accesscontrol.models import Member
 
 MAIL = 'Mail'
@@ -14,10 +13,11 @@ TYPE_CHOICES = (
     (MAIL,  'Mail'),
     (SMS, 'SMS')
 )
+UMBRELLA = UMBRELLA
 
 
 class Campaign(Model):
-    service = models.ForeignKey(Service, default=get_service_instance)
+    service = models.ForeignKey(Service)
     member = models.ForeignKey(Member)
     type = models.CharField(max_length=10, choices=TYPE_CHOICES)
     recipient_list = ListField()
