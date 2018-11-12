@@ -16,12 +16,6 @@ TYPE_CHOICES = (
 )
 
 
-# class CSVFile(Model):
-#     filename = models.CharField(max_length=200)
-#     file = models.FileField(upload_to='Contacts files')
-#     uploaded_at = models.DateField(auto_now_add=True)
-
-
 class Campaign(Model):
     service = models.ForeignKey(Service, default=get_service_instance)
     member = models.ForeignKey(Member)
@@ -41,7 +35,7 @@ class Campaign(Model):
 
 
 class SMS(Model):
-    campaign = models.ForeignKey(Campaign)
+    campaign = models.ForeignKey(Campaign, blank=True, null=True)
     label = models.CharField(max_length=15)
     recipient = models.CharField(max_length=15, db_index=True)
     text = models.TextField()
@@ -58,6 +52,7 @@ class Balance(Model):
 
 
 class Refill(Model):
+    service_id = models.CharField(max_length=24, unique=True)
     type = models.CharField(max_length=10, choices=TYPE_CHOICES)
     amount = models.IntegerField()
     credit = models.IntegerField()
