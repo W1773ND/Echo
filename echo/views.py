@@ -13,7 +13,7 @@ from django.template.defaultfilters import slugify
 from django.views.generic import TemplateView
 from django.utils.translation import gettext as _
 
-from ikwen.core.utils import send_sms, get_service_instance, DefaultUploadBackend
+from ikwen.core.utils import send_sms, get_service_instance, DefaultUploadBackend, get_sms_label
 from ikwen.accesscontrol.models import Member
 from math import ceil
 
@@ -28,18 +28,10 @@ sms_normal_count = [' ', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 
                     u'É', u'ì', u'Ö', u'ö', u'ò', u'Ø', u'ø', u'Ñ', u'ñ', u'Ü', u'ü', u'ù', u'#', u'¤', u'%', u'&',
                     u'(', u')', u'*', u'+', u',', u'–', u'.', u'/', u':', u';', u'<', u'>', u'=', u'§', u'$', u'!',
                     u'?', u'£', u'¿', u'¡', u'@', u'¥', u'Δ', u'Φ', u'Γ', u'Λ', u'Ω', u'Π', u'Ψ', u'Σ', u'Θ', u'Ξ',
-                    u'»', u'‘', "'", '"']
+                    u'»', u'‘', "'", '"', '-']
 sms_double_count = [u'^', u'|', u'€', u'}', u'{', u'[', u'~', u']', u'\\']
 
 ALL_COMMUNITY = "[All Community]"
-UPLOAD_DIR = "/uploads/"
-
-config = get_service_instance().config
-label = config.company_name.strip()
-if len(label) > 15:
-    label = label.split(' ')[0][:15]
-label = slugify(label)
-label = ''.join([tk.capitalize() for tk in label.split('-') if tk])
 
 
 def count_pages(text):
@@ -68,15 +60,16 @@ def count_pages(text):
 def batch_send(campaign, balance):
     text = campaign.text
     page_count = campaign.page_count
+    config = campaign.service.config
+    label = get_sms_label(config)
     for recipient in campaign.recipient_list[campaign.progress:]:
         if len(recipient) == 9:
             recipient = '237' + recipient
         try:
-            if not getattr(settings, 'UNIT_TESTING', False):
-                if getattr(settings, 'REQUEST_TESTING', False):
-                    requests.get('http://google.com')
-                else:
-                    send_sms(recipient=recipient, text=text, fail_silently=False)
+            if getattr(settings, 'UNIT_TESTING', False):
+                requests.get('http://google.com')
+            else:
+                send_sms(recipient=recipient, text=text, fail_silently=False)
             SMS.objects.create(recipient=recipient, text=text, label=label, campaign=campaign)
         except:
             SMS.objects.create(recipient=recipient, text=text, label=label, campaign=campaign, is_sent=False)
@@ -84,8 +77,6 @@ def batch_send(campaign, balance):
             balance.save()
         campaign.progress += 1
         campaign.save()
-    # if fh:
-    #     fh.close()
 
 
 def restart_batch():
@@ -122,18 +113,6 @@ class SMSCampaign(TemplateView):
             return self.get_campaign_progress(request)
         return super(SMSCampaign, self).get(request, *args, **kwargs)
 
-    # def post(self, request):
-    #     csv_file = CSVFileForm(self.request.POST, self.request.FILES)
-    #     if csv_file.is_valid():
-    #         csv_file.save()
-    #         response = {"is_valid": True}
-    #     else:
-    #         response = {"is_valid": False}
-    #     return HttpResponse(
-    #         json.dumps(response),
-    #         'content-type: text/json'
-    #     )
-
     def start_campaign(self, request):
         member = request.user
 
@@ -143,10 +122,8 @@ class SMSCampaign(TemplateView):
         filename = request.GET.get('filename')
         recipient_list = request.GET.get('recipients')
         if filename:
-
             # Should add somme security check about file existence and type here before attempting to read it
-
-            path = getattr(settings, 'MEDIA_ROOT') + UPLOAD_DIR + filename
+            path = getattr(settings, 'MEDIA_ROOT') + DefaultUploadBackend.UPLOAD_DIR + filename
             recipient_list = []
 
             with open(path, 'r') as fh:
@@ -165,19 +142,6 @@ class SMSCampaign(TemplateView):
             recipient_count = len(recipient_list)
         page_count = count_pages(txt)
         sms_count = int(page_count * recipient_count)
-
-        # if getattr(settings, 'UNIT_TESTING', False):
-        # with transaction.atomic():
-        #     balance = Balance.objects.get(service=get_service_instance())
-        #     if balance.sms_count < sms_count:
-        #         response = {"error": _("Insufficient SMS balance.")}
-        #         return HttpResponse(
-        #             json.dumps(response),
-        #             'content-type: text/json'
-        #         )
-        #     balance.sms_count -= sms_count
-        #     balance.save()
-        # else:
 
         # "transaction.atomic" instruction locks database during all operations inside "with" block
         with transaction.atomic():
