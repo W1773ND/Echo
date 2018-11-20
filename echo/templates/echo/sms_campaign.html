@@ -309,7 +309,7 @@
                         filename = responseJSON.filename;
                         csv_name = filename.split('.').shift();
                         $('.upload-csv-label').text(csv_name);
-                        $('.recipient-list').addClass('text-center').attr("readonly", "readonly").val(csv_name);
+                        $('.recipient-list').addClass('text-center').removeClass('warning').attr("readonly", "readonly").val(csv_name);
                         $('.reset-recipient-list').show()
                     } else {
                         alert("{% trans 'upload failed!' %}");
@@ -325,10 +325,14 @@
                 }
             });
 
+
+            if ($('#subject').val() !== '') $('#subject').removeClass('warning');
+            if ($('.sms-text').val() !== '') $('.sms-text').removeClass('warning');
+
             $('.send-to-all').click(function () {
                 csv_name = '';
                 $('.upload-csv-label').text(csv_name);
-                $('.recipient-list').addClass('text-center').attr("readonly", "readonly").val('[All Community]');
+                $('.recipient-list').addClass('text-center').removeClass('warning').attr("readonly", "readonly").val('[All Community]');
                 $('.reset-recipient-list').show()
             });
 
@@ -339,11 +343,33 @@
                 $(this).hide();
             });
 
+            $('.recipient-list').keyup(function () {
+                if ($(this).val() !== '') $(this).removeClass('warning');
+            });
+
+
+            $('#subject').keyup(function () {
+                if ($(this).val() !== '') $(this).removeClass('warning');
+            });
+
+            $('.sms-text').keyup(function () {
+                if ($('.recipient-list').val() !== '' && $('#subject').val() !== '' && $(this).val() !== '') {
+                    $(this).removeClass('warning');
+                    $('.btn-send').removeClass('disabled');
+                }
+                else $('.btn-send').addClass('disabled');
+            });
+
             $('.btn-send').click(function () {
-                if ($('.btn-send').hasClass('disabled')) return;
+                if ($('.btn-send').hasClass('disabled')) {
+                    if ($('.recipient-list').val() === '') $('.recipient-list').addClass('warning');
+                    if ($('#subject').val() === '') $('#subject').addClass('warning');
+                    if ($('.sms-text').val() === '') $('.sms-text').addClass('warning');
+                    return;
+                }
                 var recipient = $('.recipient-list').val();
                 var subject = $('.subject').val();
-                var txt = $('.text').val();
+                var txt = $('.sms-text').val();
                 var endpoint = "{% url 'echo:sms_campaign' %}";
                 var params = {action: 'start_campaign', filename:filename, recipients: recipient, subject: subject, txt: txt};
 

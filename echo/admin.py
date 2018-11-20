@@ -1,3 +1,4 @@
 from django.contrib import admin
+from echo.models import Bundle
 
-# Register your models here.
+admin.site.register(Bundle)

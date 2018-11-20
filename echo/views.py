@@ -7,17 +7,25 @@ from threading import Thread
 import requests
 from ajaxuploader.views import AjaxFileUploader
 from django.conf import settings
+from django.contrib.auth.models import Group
+from django.core.mail import EmailMessage
+from django.core.urlresolvers import reverse
 from django.db import transaction
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 from django.template.defaultfilters import slugify
+from django.utils.http import urlquote
 from django.views.generic import TemplateView
 from django.utils.translation import gettext as _
-from ikwen.core.utils import send_sms, get_service_instance, DefaultUploadBackend, get_sms_label
-from ikwen.accesscontrol.models import Member
+from ikwen.core.constants import CONFIRMED
+from ikwen.core.utils import send_sms, get_service_instance, DefaultUploadBackend, get_sms_label, add_event, \
+    get_mail_content
+from ikwen.accesscontrol.models import Member, SUDO
+from ikwen.billing.mtnmomo.views import MTN_MOMO
 from math import ceil
-from echo.models import Campaign, SMS, Balance, UMBRELLA
+from echo.models import Campaign, SMSObject, Balance, UMBRELLA, Bundle, Refill, SMS
 
-# from echo.forms import CSVFileForm
+ALL_COMMUNITY = "[All Community]"
+MESSAGING_CREDIT_REFILL = "MessagingCreditRefill"
 
 sms_normal_count = [' ', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h',
                     'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
@@ -29,7 +37,6 @@ sms_normal_count = [' ', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 
                     u'»', u'‘', "'", '"', '-']
 sms_double_count = [u'^', u'|', u'€', u'}', u'{', u'[', u'~', u']', u'\\']
 
-ALL_COMMUNITY = "[All Community]"
 
 
 def count_pages(text):
@@ -69,10 +76,10 @@ def batch_send(campaign):
                 requests.get('http://google.com')
             else:
                 send_sms(recipient=recipient, text=text, fail_silently=False)
-            SMS.objects.using(UMBRELLA).create(recipient=recipient, text=text, label=label, campaign=campaign)
+            SMSObject.objects.using(UMBRELLA).create(recipient=recipient, text=text, label=label, campaign=campaign)
         except:
-            SMS.objects.using(UMBRELLA).create(recipient=recipient, text=text, label=label, campaign=campaign,
-                                               is_sent=False)
+            SMSObject.objects.using(UMBRELLA).create(recipient=recipient, text=text, label=label, campaign=campaign,
+                                                     is_sent=False)
             balance.sms_count += page_count
             balance.save()
         campaign.progress += 1
@@ -88,6 +95,72 @@ def restart_batch():
             batch_send(campaign)
         else:
             Thread(target=batch_send, args=(campaign,)).start()
+
+
+def set_bundle_checkout(request, *args, **kwargs):
+    """
+    This function has no URL associated with it.
+    It serves as ikwen setting "MOMO_BEFORE_CHECKOUT"
+    """
+    referrer = request.META.get('HTTP_REFERER')
+    if request.user.is_anonymous():
+        next_url = reverse('ikwen:sign_in')
+        if referrer:
+            next_url += '?' + urlquote(referrer)
+        return HttpResponseRedirect(next_url)
+    service = get_service_instance()
+    bundle_id = request.POST['product_id']
+    type = request.POST['type']
+    bundle = Bundle.objects.using(UMBRELLA).get(pk=bundle_id)
+    amount = bundle.cost
+    refill = Refill.objects.using(UMBRELLA).create(service=service, type=type, amount=amount, credit=bundle.credit)
+    request.session['amount'] = amount
+    request.session['model_name'] = 'echo.Refill'
+    request.session['object_id'] = refill.id
+
+    mean = request.GET.get('mean', MTN_MOMO)
+    request.session['mean'] = mean
+    request.session['notif_url'] = service.url  # Orange Money only
+    request.session['cancel_url'] = referrer  # Orange Money only
+    request.session['return_url'] = referrer
+
+
+def confirm_bundle_payment(request, *args, **kwargs):
+    """
+    This function has no URL associated with it.
+    It serves as ikwen setting "MOMO_AFTER_CHECKOUT"
+    """
+    service = get_service_instance()
+    config = service.config
+    refill_id = request.session['object_id']
+    
+    with transaction.atomic(using='wallets'):
+        refill = Refill.objects.using(UMBRELLA).get(pk=refill_id)
+        refill.status = CONFIRMED
+        refill.save()
+        balance = Balance.objects.using('wallets').get(service_id=service.id)
+        if refill.type == SMS:
+            balance.sms_count += refill.credit
+        else:
+            balance.mail_count += refill.credit
+        balance.save()
+
+    member = request.user
+    sudo_group = Group.objects.get(name=SUDO)
+    add_event(service, MESSAGING_CREDIT_REFILL, group_id=sudo_group.id, model='echo.Refill', object_id=refill.id)
+    if member.email:
+        subject = _("")
+        html_content = get_mail_content(subject, template_name='echo/mails/successful_refill.html',
+                                        extra_context={'member_name': member.first_name, 'refill': refill})
+        sender = '%s <no-reply@%s>' % (config.company_name, service.domain)
+        msg = EmailMessage(subject, html_content, sender, [member.email])
+        msg.content_subtype = "html"
+        if member != service.member:
+            msg.cc = [service.member.email]
+        Thread(target=lambda m: m.send(), args=(msg,)).start()
+    return HttpResponseRedirect(request.session['return_url'])
+
+
 
 
 class SMSCampaign(TemplateView):
@@ -146,7 +219,7 @@ class SMSCampaign(TemplateView):
         sms_count = int(page_count * recipient_count)
 
         # "transaction.atomic" instruction locks database during all operations inside "with" block
-        with transaction.atomic():
+        with transaction.atomic(using='wallets'):
             balance = Balance.objects.using('wallets').get(service_id=get_service_instance().id)
             if balance.sms_count < sms_count:
                 response = {"error": _("Insufficient SMS balance.")}
@@ -186,6 +259,24 @@ class SMSHistory(TemplateView):
 
 class SMSBundle(TemplateView):
     template_name = "echo/sms_bundle.html"
+
+    def get_context_data(self, **kwargs):
+        context = super(SMSBundle, self).get_context_data(**kwargs)
+        balance, update = Balance.objects.using('wallets').get_or_create(service_id=get_service_instance().id)
+        bundle_list = Bundle.objects.filter(type='SMS')
+        context['balance'] = balance
+        context['bundle_list'] = bundle_list
+        context['payment_conf'] = 'messaging_bundle'
+        return context
+
+    def get(self, request, *args, **kwargs):
+        action = request.GET.get('action')
+        if action == 'refill_sms':
+            return self.refill_sms(request)
+        return super(SMSBundle, self).get(request, *args, **kwargs)
+
+    def refill_sms(self, request):
+        balance = Balance.objects.using('wallets').get(service_id=get_service_instance().id)
 
 
 class MailCampaign(TemplateView):

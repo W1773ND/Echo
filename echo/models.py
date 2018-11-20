@@ -3,6 +3,7 @@
 from django.db import models
 from django_mongodb_engine.contrib import MongoDBManager
 from djangotoolbox.fields import ListField
+from ikwen.core.constants import PENDING
 from ikwen.core.models import Model, Service
 from ikwen.accesscontrol.backends import UMBRELLA
 from ikwen.accesscontrol.models import Member
@@ -34,7 +35,7 @@ class Campaign(Model):
         return u'%s %s' % (self.type, self.subject)
 
 
-class SMS(Model):
+class SMSObject(Model):
     campaign = models.ForeignKey(Campaign, blank=True, null=True)
     label = models.CharField(max_length=15)
     recipient = models.CharField(max_length=15, db_index=True)
@@ -52,10 +53,11 @@ class Balance(Model):
 
 
 class Refill(Model):
-    service_id = models.CharField(max_length=24, unique=True)
+    service = models.ForeignKey(Service)
     type = models.CharField(max_length=10, choices=TYPE_CHOICES)
     amount = models.IntegerField()
     credit = models.IntegerField()
+    status = models.CharField(max_length=15, default=PENDING)
 
     def __unicode__(self):
         return u'%s' % self.type
