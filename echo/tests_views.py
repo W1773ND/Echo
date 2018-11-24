@@ -9,11 +9,10 @@ from django.test.client import Client
 from django.test.utils import override_settings
 from django.utils import unittest
 
-from ikwen.core.utils import get_service_instance
-
 from conf.settings import WALLETS_DB_ALIAS
-from echo.models import Campaign, Balance, UMBRELLA
+from echo.models import Campaign, Balance
 from echo.views import restart_batch, count_pages
+from echo.cron_sender import restart_batch
 
 
 def wipe_test_data(alias='default'):

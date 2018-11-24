@@ -5,7 +5,6 @@ from django_mongodb_engine.contrib import MongoDBManager
 from djangotoolbox.fields import ListField
 from ikwen.core.constants import PENDING
 from ikwen.core.models import Model, Service
-from ikwen.accesscontrol.backends import UMBRELLA
 from ikwen.accesscontrol.models import Member
 
 MAIL = 'Mail'
@@ -14,11 +13,10 @@ TYPE_CHOICES = (
     (MAIL,  'Mail'),
     (SMS, 'SMS')
 )
-UMBRELLA = UMBRELLA
 
 
 class Campaign(Model):
-    service = models.ForeignKey(Service)
+    service = models.ForeignKey(Service, related_name='+')
     member = models.ForeignKey(Member)
     type = models.CharField(max_length=10, choices=TYPE_CHOICES)
     recipient_list = ListField()
@@ -53,7 +51,7 @@ class Balance(Model):
 
 
 class Refill(Model):
-    service = models.ForeignKey(Service)
+    service = models.ForeignKey(Service, related_name='+')
     type = models.CharField(max_length=10, choices=TYPE_CHOICES)
     amount = models.IntegerField()
     credit = models.IntegerField()
@@ -72,5 +70,3 @@ class Bundle(Model):
 
     def __unicode__(self):
         return u'%s %s' % (self.type, self.name)
-
-

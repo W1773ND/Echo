@@ -20,9 +20,10 @@ from ikwen.core.constants import CONFIRMED
 from ikwen.core.utils import send_sms, get_service_instance, DefaultUploadBackend, get_sms_label, add_event, \
     get_mail_content
 from ikwen.accesscontrol.models import Member, SUDO
+from ikwen.accesscontrol.backends import UMBRELLA
 from ikwen.billing.mtnmomo.views import MTN_MOMO
 from math import ceil
-from echo.models import Campaign, SMSObject, Balance, UMBRELLA, Bundle, Refill, SMS
+from echo.models import Campaign, SMSObject, Balance, Bundle, Refill, SMS
 
 ALL_COMMUNITY = "[All Community]"
 MESSAGING_CREDIT_REFILL = "MessagingCreditRefill"
@@ -36,7 +37,6 @@ sms_normal_count = [' ', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 
                     u'?', u'£', u'¿', u'¡', u'@', u'¥', u'Δ', u'Φ', u'Γ', u'Λ', u'Ω', u'Π', u'Ψ', u'Σ', u'Θ', u'Ξ',
                     u'»', u'‘', "'", '"', '-']
 sms_double_count = [u'^', u'|', u'€', u'}', u'{', u'[', u'~', u']', u'\\']
-
 
 
 def count_pages(text):
@@ -65,9 +65,10 @@ def count_pages(text):
 def batch_send(campaign):
     text = campaign.text
     page_count = campaign.page_count
-    config = campaign.service.config
+    service = campaign.service
+    config = service.config
     label = get_sms_label(config)
-    balance = Balance.objects.using('wallets').get(service_id=campaign.service.id)
+    balance = Balance.objects.using('wallets').get(service_id=service.id)
     for recipient in campaign.recipient_list[campaign.progress:]:
         if len(recipient) == 9:
             recipient = '237' + recipient
@@ -84,17 +85,6 @@ def batch_send(campaign):
             balance.save()
         campaign.progress += 1
         campaign.save()
-
-
-def restart_batch():
-    timeout = datetime.now() - timedelta(minutes=5)
-    raw_query = {"$where": "function() {return this.progress < this.total}"}
-    campaign_list = list(Campaign.objects.raw_query(raw_query).filter(updated_on__lt=timeout))
-    for campaign in campaign_list:
-        if getattr(settings, 'UNIT_TESTING', False):
-            batch_send(campaign)
-        else:
-            Thread(target=batch_send, args=(campaign,)).start()
 
 
 def set_bundle_checkout(request, *args, **kwargs):
@@ -159,8 +149,6 @@ def confirm_bundle_payment(request, *args, **kwargs):
             msg.cc = [service.member.email]
         Thread(target=lambda m: m.send(), args=(msg,)).start()
     return HttpResponseRedirect(request.session['return_url'])
-
-
 
 
 class SMSCampaign(TemplateView):
