@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
-import csv
 import json
-from datetime import datetime, timedelta
+import logging
 from threading import Thread
 
 import requests
@@ -24,6 +23,8 @@ from ikwen.accesscontrol.backends import UMBRELLA
 from ikwen.billing.mtnmomo.views import MTN_MOMO
 from math import ceil
 from echo.models import Campaign, SMSObject, Balance, Bundle, Refill, SMS
+
+logger = logging.getLogger('ikwen')
 
 ALL_COMMUNITY = "[All Community]"
 MESSAGING_CREDIT_REFILL = "MessagingCreditRefill"
@@ -76,6 +77,7 @@ def batch_send(campaign):
             if getattr(settings, 'UNIT_TESTING', False):
                 requests.get('http://google.com')
             else:
+                logger.debug("Sending SMS to %s" % recipient)
                 send_sms(recipient=recipient, text=text, fail_silently=False)
             SMSObject.objects.using(UMBRELLA).create(recipient=recipient, text=text, label=label, campaign=campaign)
         except:
@@ -159,6 +161,8 @@ class SMSCampaign(TemplateView):
         campaign_list = Campaign.objects.using(UMBRELLA).all().order_by("-id")[:5]
         for campaign in campaign_list:
             campaign.progress_rate = (campaign.progress / campaign.total) * 100
+            campaign.sample_sms = campaign.get_sample_sms()
+            campaign.recipients = ', '.join(campaign.recipient_list[:5])
         balance, update = Balance.objects.using('wallets').get_or_create(service_id=get_service_instance().id)
         context['balance'] = balance
         context['campaign_list'] = campaign_list
@@ -207,25 +211,31 @@ class SMSCampaign(TemplateView):
         sms_count = int(page_count * recipient_count)
 
         # "transaction.atomic" instruction locks database during all operations inside "with" block
-        with transaction.atomic(using='wallets'):
+        try:
             balance = Balance.objects.using('wallets').get(service_id=get_service_instance().id)
             if balance.sms_count < sms_count:
-                response = {"error": _("Insufficient SMS balance.")}
+                response = {"insufficient_balance": _("Insufficient SMS balance.")}
                 return HttpResponse(
                     json.dumps(response),
                     'content-type: text/json'
                 )
-            balance.sms_count -= sms_count
-            balance.save()
-        service = get_service_instance(using=UMBRELLA)
-        campaign = Campaign.objects.using(UMBRELLA).create(service=service, member=member, subject=subject, type="SMS",
-                                                           slug=slug, recipient_list=recipient_list, total=sms_count)
-        if getattr(settings, 'UNIT_TESTING', False):
-            batch_send(campaign)
-        elif recipient_count < 50:
-            # for small campaign ie minor than 50, send sms directly from application server
-            Thread(target=batch_send, args=(campaign, balance)).start()
-        response = {"success": True, "campaign": campaign.to_dict()}
+            with transaction.atomic(using='wallets'):
+                balance.sms_count -= sms_count
+                balance.save()
+                service = get_service_instance(using=UMBRELLA)
+                mbr = Member.objects.using(UMBRELLA).get(pk=member.id)
+                campaign = Campaign.objects.using(UMBRELLA).create(service=service, member=mbr, subject=subject,
+                                                                   type="SMS", slug=slug, recipient_list=recipient_list,
+                                                                   text=txt, total=sms_count)
+                if getattr(settings, 'UNIT_TESTING', False):
+                    batch_send(campaign)
+                elif recipient_count < 50:
+                    # for small campaign ie minor than 50, send sms directly from application server
+                    Thread(target=batch_send, args=(campaign, )).start()
+                response = {"success": True, "balance": balance.sms_count, "campaign": campaign.to_dict()}
+        except:
+            response = {"error": "Error while submiting SMS. Please try again later."}
+
         return HttpResponse(
             json.dumps(response),
             'content-type: text/json'
@@ -233,7 +243,7 @@ class SMSCampaign(TemplateView):
 
     def get_campaign_progress(self, request):
         campaign_id = request.GET['campaign_id']
-        campaign = Campaign.objects.get(pk=campaign_id)
+        campaign = Campaign.objects.using(UMBRELLA).get(pk=campaign_id)
         response = {"progress": campaign.progress, "total": campaign.total}
         return HttpResponse(
             json.dumps(response),

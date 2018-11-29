@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from django.db import models
+from django.template.defaultfilters import truncatechars
 from django_mongodb_engine.contrib import MongoDBManager
 from djangotoolbox.fields import ListField
 from ikwen.core.constants import PENDING
@@ -22,12 +23,27 @@ class Campaign(Model):
     recipient_list = ListField()
     text = models.TextField()
     page_count = models.IntegerField(default=0)
-    subject = models.CharField(max_length=200)
+    subject = models.CharField(max_length=200, blank=True, null=True)
     slug = models.SlugField(max_length=240)
     total = models.IntegerField(default=0)
     progress = models.IntegerField(default=0)
 
     objects = MongoDBManager()
+
+    def get_sample_sms(self):
+        """
+        Gets the first SMS of this campaign. Might be the only one in case on a single send
+        """
+        try:
+            return self.smsobject_set.all()[0]
+        except:
+            pass
+
+    def to_dict(self):
+        var = self.to_dict()
+        recipient_list = ', '.join(self.recipient_list[:5])
+        var['recipient_list'] = truncatechars(recipient_list, 30)
+        return var
 
     def __unicode__(self):
         return u'%s %s' % (self.type, self.subject)
