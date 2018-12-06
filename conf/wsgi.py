@@ -7,7 +7,8 @@ For more information on this file, see
 https://docs.djangoproject.com/en/1.6/howto/deployment/wsgi/
 """
 
-import os, sys
+import os
+import sys
 
 sys.path.append('/home/w177/PycharmProjects/Echo/')
 
