@@ -11,6 +11,8 @@ from django.conf import settings
 from echo.models import Campaign
 from echo.views import batch_send
 
+from ikwen.core.log import CRONS_LOGGING
+logging.config.dictConfig(CRONS_LOGGING)
 logger = logging.getLogger('ikwen.crons')
 
 
