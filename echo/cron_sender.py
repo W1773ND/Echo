@@ -1,9 +1,12 @@
 # -*- coding: utf-8 -*-
 
 import os
+import sys
 import logging
 from datetime import datetime, timedelta
 from threading import Thread
+
+sys.path.append("/home/libran/virtualenv/lib/python2.7/site-packages")
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "ikwen.conf.settings")
 
