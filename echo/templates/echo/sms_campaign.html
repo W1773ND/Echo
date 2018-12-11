@@ -359,6 +359,7 @@
             });
 
             $('.sms-text').keyup(function () {
+                $('#text').removeClass('warning');
                 if ($('.recipient-list').val() !== '' && $(this).val() !== '')
                     $('.btn-send').removeClass('disabled');
                 else
@@ -366,7 +367,12 @@
             });
 
             $('.btn-send').click(function () {
-                if ($(this).hasClass('disabled')) return;
+                if ($(this).hasClass('disabled'))
+                {
+                    $('#text').addClass('warning');
+                    if ($('#recipient-list').val() === '') $('#recipient-list').addClass('warning');
+                    return;
+                }
                 var recipient = $('.recipient-list').val(),
                     subject = $('.subject').val(),
                     txt = $('.sms-text').val();
