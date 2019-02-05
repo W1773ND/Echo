@@ -82,6 +82,7 @@ class Bundle(Model):
     name = models.CharField(max_length=20)
     cost = models.IntegerField()
     credit = models.IntegerField()
+    image = models.ImageField(upload_to='echo_bundles', blank=True, null=True)
     is_active = models.BooleanField(default=True)
 
     def __unicode__(self):

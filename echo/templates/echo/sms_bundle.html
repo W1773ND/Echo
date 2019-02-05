@@ -1,8 +1,8 @@
 {% extends 'core/app_base_admin.html' %}
-{% load i18n humanize staticfiles auth_tokens %}
+{% load i18n humanize static auth_tokens %}
 
 {% block page_title %}
-    <title> {% trans "WEB campaign pricing" %} - ikwen</title>
+    <title> {% trans "SMS Bundles" %} - ikwen</title>
 {% endblock %}
 
 {% block head_style %}
@@ -17,32 +17,31 @@
 {% block admin_content %}
     <div id="admin-content">
         <div class="container-fluid">
-
             <div class="sold" style="text-align: right">
                 <strong>{% trans "Remainig SMS : " %}<span class="balance">{{ balance.sms_count }}</span></strong>
             </div>
-            <div class="panel bundle-pricing-table">
-                {% for bundle in bundle_list %}
-                <div class="bundle-pricing-plan">
-                    {% if bundle.name == 'PERSONAL' %}
-                    <img src="{% static 'echo/img/paper-plane.png' %}" alt="" class="pricing-img">
-                    {% elif bundle.name == 'PROFESSIONAL' %}
-                    <img src="{% static 'echo/img/plane.png' %}" alt="" class="pricing-img">
-                    {% else %}
-                    <img src="{% static 'echo/img/space-ship.png' %}" alt="" class="pricing-img">
-                    {% endif %}
-                    <h2 class="bundle-header">{{ bundle.name }}</h2>
-                    <div class="bundle-features">
-                      <span class="bundle-features-item">{{ bundle.credit }} SMS</span>
-                    </div>
-                    <p class="bundle-price"> <span class="currency">XAF </span> {{ bundle.cost | intcomma }}</p>
-                    <button class=" btn btn-primary btn-buy-bundle payment-start animated infinite pulse" data-product-id="{{ bundle.id }}">{% trans "Buy" %}</button>
+            <div id="stage" style="float: none; margin: auto">
+                <div class="panel bundle-pricing-table">
+                    {% for bundle in bundle_list %}
+                        <div class="col-sm-4">
+                            <div class="bundle-pricing-plan">
+                                <img src="{{ settings.IKWEN_MEDIA_URL }}{{ bundle.image.name }}" alt="" class="pricing-img">
+                                <h2 class="bundle-header">{{ bundle.name }}</h2>
+                                <div class="bundle-features">
+                                    <span class="bundle-features-item">{{ bundle.credit }} SMS</span>
+                                </div>
+                                <p class="bundle-price"> <span class="currency">XAF</span> {{ bundle.cost | intcomma }}</p>
+                                <button class=" btn btn-primary btn-buy-bundle payment-start animated infinite pulse" data-product-id="{{ bundle.id }}">{% trans "Buy" %}</button>
+                            </div>
+                        </div>
+                    {% endfor %}
                 </div>
-                {% endfor %}
             </div>
         </div>
     </div>
-    {% include 'billing/snippets/modal_payment_options.html' %}
+    {% with payment_conf='messaging_bundle' %}
+        {% include 'billing/snippets/modal_payment_options.html' %}
+    {% endwith %}
 {% endblock %}
 
 {% block js %}
