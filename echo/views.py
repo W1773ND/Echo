@@ -100,7 +100,7 @@ def set_bundle_checkout(request, *args, **kwargs):
         if referrer:
             next_url += '?' + urlquote(referrer)
         return HttpResponseRedirect(next_url)
-    service = get_service_instance()
+    service = get_service_instance(using=UMBRELLA)
     bundle_id = request.POST['product_id']
     type = request.POST['type']
     bundle = Bundle.objects.using(UMBRELLA).get(pk=bundle_id)
@@ -141,15 +141,18 @@ def confirm_bundle_payment(request, *args, **kwargs):
     sudo_group = Group.objects.get(name=SUDO)
     add_event(service, MESSAGING_CREDIT_REFILL, group_id=sudo_group.id, model='echo.Refill', object_id=refill.id)
     if member.email:
-        subject = _("")
-        html_content = get_mail_content(subject, template_name='echo/mails/successful_refill.html',
-                                        extra_context={'member_name': member.first_name, 'refill': refill})
-        sender = '%s <no-reply@%s>' % (config.company_name, service.domain)
-        msg = EmailMessage(subject, html_content, sender, [member.email])
-        msg.content_subtype = "html"
-        if member != service.member:
-            msg.cc = [service.member.email]
-        Thread(target=lambda m: m.send(), args=(msg,)).start()
+        try:
+            subject = _("Successful refill of %d %s" % (refill.credit, refill.type))
+            html_content = get_mail_content(subject, template_name='echo/mails/successful_refill.html',
+                                            extra_context={'member_name': member.first_name, 'refill': refill})
+            sender = '%s <no-reply@%s>' % (config.company_name, service.domain)
+            msg = EmailMessage(subject, html_content, sender, [member.email])
+            msg.content_subtype = "html"
+            if member != service.member:
+                msg.cc = [service.member.email]
+            Thread(target=lambda m: m.send(), args=(msg,)).start()
+        except:
+            pass
     return HttpResponseRedirect(request.session['return_url'])
 
 
@@ -261,20 +264,10 @@ class SMSBundle(TemplateView):
     def get_context_data(self, **kwargs):
         context = super(SMSBundle, self).get_context_data(**kwargs)
         balance, update = Balance.objects.using('wallets').get_or_create(service_id=get_service_instance().id)
-        bundle_list = Bundle.objects.filter(type='SMS')
+        bundle_list = Bundle.objects.using(UMBRELLA).filter(type=SMS, is_active=True)
         context['balance'] = balance
         context['bundle_list'] = bundle_list
-        context['payment_conf'] = 'messaging_bundle'
         return context
-
-    def get(self, request, *args, **kwargs):
-        action = request.GET.get('action')
-        if action == 'refill_sms':
-            return self.refill_sms(request)
-        return super(SMSBundle, self).get(request, *args, **kwargs)
-
-    def refill_sms(self, request):
-        balance = Balance.objects.using('wallets').get(service_id=get_service_instance().id)
 
 
 class MailCampaign(TemplateView):
