@@ -64,6 +64,14 @@ class Balance(Model):
     service_id = models.CharField(max_length=24, unique=True)
     sms_count = models.IntegerField(default=0)
     mail_count = models.IntegerField(default=0)
+    last_low_sms_notice = models.DateTimeField(blank=True, null=True, db_index=True,
+                                           help_text="Last time the person was informed of low SMS credit")
+    last_low_mail_notice = models.DateTimeField(blank=True, null=True, db_index=True,
+                                            help_text="Last time the person was informed of low Email credit")
+    last_empty_sms_notice = models.DateTimeField(blank=True, null=True, db_index=True,
+                                           help_text="Last time the person was informed of empty SMS credit")
+    last_empty_mail_notice = models.DateTimeField(blank=True, null=True, db_index=True,
+                                            help_text="Last time the person was informed of empty Email credit")
 
 
 class Refill(Model):
