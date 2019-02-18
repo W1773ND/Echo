@@ -11,8 +11,6 @@ from ikwen.core.models import Service
 from ikwen.core.utils import get_mail_content
 from ikwen.conf.settings import IKWEN_SERVICE_ID
 
-logger = logging.getLogger('ikwen.crons')
-
 EMAIL = "Email"
 SMS = "SMS"
 EMAIL_AND_SMS = "Email and SMS"
@@ -37,11 +35,13 @@ def notify_for_low_messaging_credit(service, balance):
         subject = _("Your are running out of SMS credit.")
         last_notice = copy(balance.last_low_sms_notice)
         account = "SMS"
+        credit_left = balance.sms_count
         balance.last_low_sms_notice = now
     elif 0 < balance.mail_count < LOW_MAIL_LIMIT:
         subject = _("Your are running out of Email credit.")
         last_notice = copy(balance.last_low_mail_notice)
         account = "Email"
+        credit_left = balance.mail_count
         balance.last_low_mail_notice = now
 
     if last_notice:
@@ -51,7 +51,7 @@ def notify_for_low_messaging_credit(service, balance):
 
     ikwen_service = Service.objects.get(pk=IKWEN_SERVICE_ID)
     html_content = get_mail_content(subject, service=ikwen_service, template_name='echo/mails/low_messaging_credit.html',
-                                    extra_context={'account': account})
+                                    extra_context={'account': account, 'credit_left': credit_left})
     sender = 'ikwen <no-reply@ikwen.com>'
     msg = EmailMessage(subject, html_content, sender, [member.email])
     msg.content_subtype = "html"
