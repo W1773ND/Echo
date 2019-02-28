@@ -215,18 +215,17 @@ class SMSCampaign(TemplateView):
 
         elif recipient_list == SELECTED_PROFILES:
             recipient_list = []
-            profiles_list_to_send = {}
-            member_profile_list = {}
-            profiles_checked_list = profiles_checked.strip(',')
+            profiles_id_list_to_send = {}
+            member_in_profile_list = {}
+            profiles_checked_list = profiles_checked.split(',')
             for profile_id in profiles_checked_list:
-                profiles_list_to_send = ProfileTag.objects.filter(id=profile_id)
-            for profile in profiles_list_to_send:
-                member_profile_list = MemberProfile.objects.filter(tag_fk_list=profile)
-            member_list_to_send = set(member_profile_list)
+                profiles_id_list_to_send = ProfileTag.objects.filter(id=profile_id)
+            for profile_id in profiles_id_list_to_send:
+                member_in_profile_list = MemberProfile.objects.filter(tag_fk_list=profile_id)
+            member_list_to_send = set(member_in_profile_list)
             for member in member_list_to_send:
                 recipient_list.append(member.member.phone)
             recipient_count = len(recipient_list)
-
         else:
             recipient_list = recipient_list.strip().split(',')
             recipient_count = len(recipient_list)
