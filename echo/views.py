@@ -204,27 +204,35 @@ class SMSCampaign(TemplateView):
 
         elif recipient_list == ALL_COMMUNITY:
             recipient_list = []
-
-            # Segmentation fault incoming with big community
-            community_member = Member.objects.all()
-            # Segmentation fault incoming with big community
-
-            for member in community_member:
-                recipient_list.append(member.phone)
+            member_queryset = Member.objects.all()
+            total = member_queryset.count()
+            chunks = total / 500 + 1
+            for i in range(chunks):
+                start = i * 500
+                finish = (i + 1) * 500
+                for member in member_queryset[start:finish]:
+                    if member.phone:
+                        recipient_list.append(member.phone)
             recipient_count = len(recipient_list)
 
         elif recipient_list == SELECTED_PROFILES:
             recipient_list = []
-            profiles_id_list_to_send = {}
-            member_in_profile_list = {}
-            profiles_checked_list = profiles_checked.split(',')
-            for profile_id in profiles_checked_list:
-                profiles_id_list_to_send = ProfileTag.objects.filter(id=profile_id)
-            for profile_id in profiles_id_list_to_send:
-                member_in_profile_list = MemberProfile.objects.filter(tag_fk_list=profile_id)
-            member_list_to_send = list(set(member_in_profile_list))
-            for member in member_list_to_send:
-                recipient_list.append(member.member.phone)
+            checked_profile_tag_id_list = profiles_checked.split(',')
+            member_queryset = Member.objects.all()
+            total = member_queryset.count()
+            chunks = total / 500 + 1
+            for i in range(chunks):
+                start = i * 500
+                finish = (i + 1) * 500
+                for member in member_queryset[start:finish]:
+                    try:
+                        profile = MemberProfile.objects.get(member=member)
+                    except MemberProfile.DoesNotExist:
+                        continue
+                    match = set(profile.tag_fk_list) & set(checked_profile_tag_id_list)
+                    if len(match) > 0:
+                        if member.phone:
+                            recipient_list.append(member.phone)
             recipient_count = len(recipient_list)
         else:
             recipient_list = recipient_list.strip().split(',')
