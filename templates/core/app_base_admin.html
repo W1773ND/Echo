@@ -16,5 +16,17 @@
                 </li>
             </ul>
         </li>
+        <hr>
+        <li role="presentation" class="menus">
+            <a href="javascript:;" data-toggle="collapse" data-target="#kako" style="padding-right: 0;">
+                kako
+                <i class="fa fa-fw fa-caret-down"></i>
+            </a>
+            <ul id="kako" class="nav nav-pills nav-stacked" style="padding-left: 15px;">
+                <li class="kako-categories">
+                    <a href="{% url "revival:profiletag_list" %}">Profiles</a>
+                </li>
+            </ul>
+        </li>
     </ul>
 {% endblock %}

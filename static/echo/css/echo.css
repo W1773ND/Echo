@@ -6,6 +6,19 @@
         Echo/sms_campaign styles
 */
 
+a:hover, a:focus { color: #319dd5 !important; text-decoration: none !important; }
+
+.badge {
+
+}
+.badge-custom {
+    padding: 4px 11px;
+    font-size: 20px;
+    line-height: 1;
+    text-align: center;
+    background-color: #319dd5;
+    border-radius: 3px;
+    }
 
 .btn {min-width: 140px;}
 .btn.send-to-all {font-size: 20px;height: 125px;}
@@ -24,6 +37,8 @@
 
 .fa-bullhorn:hover {color: #319dd5 !important;}
 
+label.checkbox-label { padding-left: 0 !important; }
+
 .m-0 {margin: 0 !important;}
 
 
@@ -33,6 +48,9 @@
 .p-0 {padding: 0 !important;}
 .pb-10 {padding-bottom: 10px !important;}
 .pb-15 {padding-bottom: 15px !important;}
+
+.panel-custom {border-color: #ecf0f1; padding: 4vh 2vh !important;position: relative !important;width: 95% !important;margin: 3vh auto !important;}
+.panel-title { line-height: 1.6 !important }
 
 .placeholder {list-style-type: none;}
 

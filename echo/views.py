@@ -21,6 +21,7 @@ from ikwen.core.utils import send_sms, get_service_instance, DefaultUploadBacken
 from ikwen.accesscontrol.models import Member, SUDO
 from ikwen.accesscontrol.backends import UMBRELLA
 from ikwen.billing.mtnmomo.views import MTN_MOMO
+from ikwen.revival.models import ProfileTag, MemberProfile
 from math import ceil
 from echo.models import Campaign, SMSObject, Balance, Bundle, Refill, SMS
 
@@ -28,6 +29,7 @@ logger = logging.getLogger('ikwen')
 
 ALL_COMMUNITY = "[All Community]"
 MESSAGING_CREDIT_REFILL = "MessagingCreditRefill"
+SELECTED_PROFILES = "[Selected profile]"
 
 sms_normal_count = [' ', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h',
                     'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
@@ -170,6 +172,7 @@ class SMSCampaign(TemplateView):
         context['balance'] = balance
         context['campaign_list'] = campaign_list
         context['member_count'] = Member.objects.all().count()
+        context['profiletag_list'] = ProfileTag.objects.filter(is_active=True, is_auto=False)
         return context
 
     def get(self, request, *args, **kwargs):
@@ -187,6 +190,7 @@ class SMSCampaign(TemplateView):
         txt = request.GET.get('txt')
         filename = request.GET.get('filename')
         recipient_list = request.GET.get('recipients')
+        profiles_checked = request.GET.get('profiles')
         if filename:
             # Should add somme security check about file existence and type here before attempting to read it
             path = getattr(settings, 'MEDIA_ROOT') + '/' + DefaultUploadBackend.UPLOAD_DIR + '/' + filename
@@ -197,6 +201,7 @@ class SMSCampaign(TemplateView):
                     recipient_list.append(recipient)
             fh.close()
             recipient_count = len(recipient_list)
+
         elif recipient_list == ALL_COMMUNITY:
             recipient_list = []
 
@@ -207,6 +212,21 @@ class SMSCampaign(TemplateView):
             for member in community_member:
                 recipient_list.append(member.phone)
             recipient_count = len(recipient_list)
+
+        elif recipient_list == SELECTED_PROFILES:
+            recipient_list = []
+            profiles_list_to_send = {}
+            member_profile_list = {}
+            profiles_checked_list = profiles_checked.strip(',')
+            for profile_id in profiles_checked_list:
+                profiles_list_to_send = ProfileTag.objects.filter(id=profile_id)
+            for profile in profiles_list_to_send:
+                member_profile_list = MemberProfile.objects.filter(tag_fk_list=profile)
+            member_list_to_send = set(member_profile_list)
+            for member in member_list_to_send:
+                recipient_list.append(member.member.phone)
+            recipient_count = len(recipient_list)
+
         else:
             recipient_list = recipient_list.strip().split(',')
             recipient_count = len(recipient_list)

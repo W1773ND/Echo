@@ -11,7 +11,7 @@ from ikwen.accesscontrol.models import Member
 MAIL = 'Mail'
 SMS = 'SMS'
 TYPE_CHOICES = (
-    (MAIL,  'Mail'),
+    (MAIL, 'Mail'),
     (SMS, 'SMS')
 )
 
@@ -65,13 +65,13 @@ class Balance(Model):
     sms_count = models.IntegerField(default=0)
     mail_count = models.IntegerField(default=0)
     last_low_sms_notice = models.DateTimeField(blank=True, null=True, db_index=True,
-                                           help_text="Last time the person was informed of low SMS credit")
+                                               help_text="Last time the person was informed of low SMS credit")
     last_low_mail_notice = models.DateTimeField(blank=True, null=True, db_index=True,
-                                            help_text="Last time the person was informed of low Email credit")
+                                                help_text="Last time the person was informed of low Email credit")
     last_empty_sms_notice = models.DateTimeField(blank=True, null=True, db_index=True,
-                                           help_text="Last time the person was informed of empty SMS credit")
+                                                 help_text="Last time the person was informed of empty SMS credit")
     last_empty_mail_notice = models.DateTimeField(blank=True, null=True, db_index=True,
-                                            help_text="Last time the person was informed of empty Email credit")
+                                                  help_text="Last time the person was informed of empty Email credit")
 
 
 class Refill(Model):

@@ -19,7 +19,9 @@ urlpatterns = patterns(
     url(r'^theming/', include('ikwen.theming.urls', namespace='theming')),
     url(r'^kakocase/', include('ikwen_kakocase.kakocase.urls', namespace='kakocase')),
     # url(r'^shavida/', include('ikwen_shavida.shavida.urls', namespace='shavida')),
-    # url(r'^webnode/', include('ikwen_webnode.webnode.urls', namespace='webnode')),
+    url(r'^webnode/', include('ikwen_webnode.webnode.urls', namespace='webnode')),
     url(r'^ikwen/', include('ikwen.core.urls', namespace='ikwen')),
+    url(r'^kako/', include('ikwen_kakocase.kako.urls', namespace='kako')),
+    url(r'^revival/', include('ikwen.revival.urls', namespace='revival')),
     # url(r'^page/(?P<url>[-\w]+)/$', FlatPageView.as_view(), name='flatpage'),
 )
