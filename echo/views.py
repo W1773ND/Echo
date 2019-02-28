@@ -222,7 +222,7 @@ class SMSCampaign(TemplateView):
                 profiles_id_list_to_send = ProfileTag.objects.filter(id=profile_id)
             for profile_id in profiles_id_list_to_send:
                 member_in_profile_list = MemberProfile.objects.filter(tag_fk_list=profile_id)
-            member_list_to_send = set(member_in_profile_list)
+            member_list_to_send = list(set(member_in_profile_list))
             for member in member_list_to_send:
                 recipient_list.append(member.member.phone)
             recipient_count = len(recipient_list)
