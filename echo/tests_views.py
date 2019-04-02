@@ -10,8 +10,8 @@ from django.test.utils import override_settings
 from django.utils import unittest
 
 from conf.settings import WALLETS_DB_ALIAS
-from echo.models import Campaign, Balance
-from echo.views import restart_batch, count_pages
+from echo.models import SMSCampaign, Balance
+from echo.views import count_pages
 from echo.cron_sender import restart_batch
 
 
@@ -35,7 +35,7 @@ def wipe_test_data(alias='default'):
     for name in ('UserPermissionList', 'GroupPermissionList',):
         model = getattr(permission_backend_nonrel.models, name)
         model.objects.using(alias).all().delete()
-    for name in ('Campaign', 'SMS', 'Balance', 'Refill', 'Bundle', ):
+    for name in ('SMSCampaign', 'SMS', 'Balance', 'Refill', 'Bundle', ):
         model = getattr(echo.models, name)
         model.objects.using(alias).all().delete()
 
@@ -148,7 +148,7 @@ class CampaignTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         result = json.loads(response.content)
         self.assertTrue(result['success'])
-        campaign = Campaign.objects.get(subject=subject)
+        campaign = SMSCampaign.objects.get(subject=subject)
         self.assertEqual(campaign.progress, 3)
         balance = Balance.objects.using(WALLETS_DB_ALIAS).get(service_id='56eb6d04b37b3379b531b102')
         self.assertEqual(balance.sms_count, 7)
@@ -167,7 +167,7 @@ class CampaignTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         result = json.loads(response.content)
         self.assertTrue(result['success'])
-        campaign = Campaign.objects.get(subject=subject)
+        campaign = SMSCampaign.objects.get(subject=subject)
         self.assertEqual(campaign.progress, 8)
         self.assertEqual(int(campaign.recipient_list[2]), 693799546)
         balance = Balance.objects.using(WALLETS_DB_ALIAS).get(service_id='56eb6d04b37b3379b531b102')
@@ -177,7 +177,7 @@ class CampaignTestCase(unittest.TestCase):
                        UNIT_TESTING=True)
     def test_restart_batch(self):
         restart_batch()
-        campaign = Campaign.objects.get(service='56eb6d04b37b3379b531b102')
+        campaign = SMSCampaign.objects.get(service='56eb6d04b37b3379b531b102')
         self.assertGreater(campaign.progress, 0)
 
     @override_settings(IKWEN_SERVICE_ID='56eb6d04b37b3379b531b102',

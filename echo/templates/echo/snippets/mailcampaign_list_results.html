@@ -1,0 +1,57 @@
+{% load i18n static humanize %}
+<ul class="object-list campaign-list list-group">
+    {% for campaign in objects_page.object_list %}
+    {% url change_object_url_name campaign.id as obj_url %}
+    <li class="col-sm-12 event{% if campaign.total > campaign.progress %} running{% endif %}" id= "{{ campaign.id }}">
+        <div class="subtle-shade event-detail">
+            <div class="event-icon">
+                <img src="{% static 'foulassi/img/report-card-icon.png' %}" />
+            </div>
+            <div class="event-content">
+                <div>
+                    <div class="event-recipient-list">{{ campaign.recipients|truncatechars:"30" }}</div>
+                    {% if campaign.subject %}
+                        <span class="event-title">{{ campaign.subject }}</span>
+                    {% else %}
+                        <em class="event-title text-muted">&lt;{% trans "No subject" %}&gt;</em>
+                    {% endif %}
+                    {% if campaign.recipient_count == 1 and not campaign.sample.is_sent %}
+                        <i class="fas fa-exclamation-triangle text-danger pull-right"></i>
+                    {% endif %}
+                </div>
+                <p class="event-message">{{ campaign.text }}</p>
+                {% if campaign.progress < campaign.total  %}
+                <div class="progress">
+                    <div class="progress-bar progress-bar-success" role="progressbar" aria-valuenow="10" aria-valuemin="0" aria-valuemax="100" style="width: {{ campaign.progress_rate }}%;"></div>
+                </div>
+                {% endif %}
+                <div class="actions">
+                    <a href="{{ obj_url }}" class="btn btn-warning pull-right btn-sm"> {% trans "Detail" %}</a>
+                </div>
+            </div>
+            <div class="clearfix"></div>
+        </div>
+    </li>
+    {% endfor %}
+</ul>
+{% if objects_page.paginator.num_pages > 1 %}
+<ul class="pagination">
+    <li class="disabled"><a href="#" aria-label="Previous"><span aria-hidden="true">«</span></a></li>
+    {% for page in objects_page.paginator.page_range %}
+        <li class="page{% if page == objects_page.number %} active{% endif %}" data-val="{{ page }}">
+            <a href="#">
+                {{ page }} {% if page == objects_page.number %}<span class="sr-only">(current)</span>{% endif %}
+            </a>
+        </li>
+    {% endfor %}
+    <li><a href="#" aria-label="Next"><span aria-hidden="true">»</span></a></li>
+</ul>
+{% endif %}
+<div id="page-navigation" class="text-muted">
+    {% if objects_page.paginator.num_pages > 1 %}
+        <p>{% blocktrans with count=objects_page.paginator.count start=objects_page.start_index end=objects_page.end_index %}
+            {{ start }} – {{ end }} of {{ count }} results{% endblocktrans %}</p>
+    {% else %}
+        <p>{% blocktrans with count=objects_page.paginator.count %}{{ count }} results{% endblocktrans %}</p>
+    {% endif %}
+</div>

@@ -1,0 +1,129 @@
+{% extends 'core/change_object_base.html' %}
+{% load i18n humanize staticfiles auth_tokens %}
+
+{% block head_style %}
+    {{ block.super }}
+    <link rel="stylesheet" type="text/css" href="{% static 'echo/css/swiper.min.css' %}"/>
+    <link rel="stylesheet" type="text/css" href="{% static 'ikwen/ajaxuploader/css/fileuploader.css' %}"/>
+    <link rel="stylesheet" type="text/css" href="{% static 'embed-doc/css/embed-doc.css' %}"/>
+    <link rel="stylesheet" type="text/css" href="{% static 'echo/css/echo.css' %}"/>
+{% endblock %}
+
+{% block head_js %}
+    {{ block.super }}
+    <script src="{% static 'ikwen/ajaxuploader/js/fileuploader.js' %}" ></script>
+{% endblock %}
+
+{% block js %}
+    {{ block.super }}
+    <script src="{% static 'echo/js/bootstrap-datepicker.js' %}" ></script>
+    <script src="{% static 'echo/js/swiper.min.js' %}" ></script>
+    <script src="{% static 'embed-doc/js/embed-doc.js' %}" ></script>
+    <script>
+        (function () {
+            $('#admin-content .modal').each(function() {
+                $(this).appendTo('body')
+            });
+            var csv_name = '';
+            ikwen.checkedProfiles = [];
+            var uploader = new qq.FileUploader({
+                template:
+                '<div class="qq-uploader">' +
+                    '<div class="qq-upload-drop-area"><span></span></div>' +
+                    '<div class="qq-upload-button">' +
+                        '<img class="modal-icon pb-10" src="{% static 'echo/img/import-csv-small.png' %}"' +
+                            'style="cursor: pointer;"' +
+                            'title="{% trans 'Import contact list from CSV file to send campaign' %}">' +
+                    '</div>' +
+                    '<ul class="qq-upload-list"></ul>' +
+                '</div>',
+                allowedExtensions: ['csv'],
+                action: "{% url 'echo:csv_uploader' %}",
+                element: $('div#csv-upload-container .uploader')[0],
+                buttonText: "{% trans "Upload cover" %}",
+                multiple: false,
+                onProgress: function(id, fileName, loaded, total) {
+                    $('body').css('cursor', 'wait')
+                },
+                onComplete: function(id, fileName, responseJSON) {
+                    $('body').css('cursor', 'default');
+                    if(responseJSON.success) {
+                        ikwen.filename = responseJSON.filename;
+                        csv_name = ikwen.filename.split('.').shift();
+                        {#$('.upload-csv-label').text(csv_name);#}
+                        $('.recipient-list').addClass('text-center').removeClass('warning').attr("readonly", "readonly").val(csv_name);
+                        $('.reset-recipient-list').show()
+                    } else {
+                        alert("{% trans 'upload failed!' %}");
+                    }
+                },
+                message: {
+                    typeError: "Please give a valid CSV file, use our given example to avoid error."
+                },
+                params: {
+                    'csrf_token': '{{ csrf_token }}',
+                    'csrf_name': 'csrfmiddlewaretoken',
+                    'csrf_xname': 'X-CSRFToken'
+                }
+            });
+
+            $('.btn-confirm-modal').click(function () {
+                $("input[name='profiles']:checked").each(function () {
+                    ikwen.checkedProfiles.push($(this).val());
+                });
+                if (ikwen.checkedProfiles.length !== 0) {
+                    $('.recipient-list').addClass('text-center').removeClass('warning').attr("readonly", "readonly").val('[Selected profiles]');
+                    $('.reset-recipient-list').show()
+                }
+            });
+
+
+            if ($('#subject').val() !== '') $('#subject').removeClass('warning');
+            if ($('.sms-text').val() !== '') $('.sms-text').removeClass('warning');
+
+            $('.send-to-all').click(function () {
+                csv_name = '';
+                $('.upload-csv-label').text(csv_name);
+                $('.recipient-list').addClass('text-center').removeClass('warning').attr("readonly", "readonly").val('[All Community]');
+                $('.reset-recipient-list').show()
+            });
+
+            $('.reset-recipient-list').click(function () {
+                csv_name = '';
+                $('.upload-csv-label').text(csv_name);
+                $('input:checkbox.profiles').removeAttr('checked');
+                $('.collapse').removeClass('in');
+                $('.recipient-list').removeClass('text-center').removeAttr("readonly").focus().val("");
+                $(this).hide();
+            });
+
+            $('.recipient-list').keyup(function () {
+                if ($(this).val() !== '') $(this).removeClass('warning');
+            });
+
+            $('#subject').keyup(function () {
+                if ($(this).val() !== '') $(this).removeClass('warning');
+            });
+
+            ikwen.updateProgressBar = function() {
+                if ($('.event.running').length === 0) {
+                    clearInterval(ikwen.intervalId);
+                    return;
+                }
+                $('.event.running').each(function () {
+                    var campaignId = $(this).attr('id');
+                    var params = {action: 'get_campaign_progress', campaign_id: campaignId};
+
+                    $.getJSON('', params, function (data) {
+                        var progressState = (data.progress / data.total) * 100;
+                        $('#' + campaignId + ' .progress-bar').css('width', progressState + '%');
+                        if (progressState === 100) $('#' + campaignId).removeClass('running')
+                    });
+                });
+            };
+            ikwen.intervalId = setInterval(ikwen.updateProgressBar, 1000);
+        })();
+
+        embedDoc.initEmbedDoc("{% trans "Remind me later" %}", "{% trans "Got it!" %}", "{% trans "Show Help" %}");
+    </script>
+{% endblock %}

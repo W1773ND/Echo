@@ -1,29 +1,42 @@
 # -*- coding: utf-8 -*-
 import json
 import logging
+import os
 from threading import Thread
 
 import requests
 from ajaxuploader.views import AjaxFileUploader
+from currencies.models import Currency
 from django.conf import settings
+from django.contrib import messages
 from django.contrib.auth.models import Group
+from django.core import mail
+from django.core.files import File
 from django.core.mail import EmailMessage
 from django.core.urlresolvers import reverse
 from django.db import transaction
-from django.http import HttpResponse, HttpResponseRedirect
+from django.db.models import get_model
+from django.http import HttpResponse, HttpResponseRedirect, Http404
+from django.shortcuts import render
 from django.template.defaultfilters import slugify
 from django.utils.http import urlquote
 from django.views.generic import TemplateView
 from django.utils.translation import gettext as _
+
+from ikwen.conf import settings as ikwen_settings
+from ikwen.conf.settings import WALLETS_DB_ALIAS
 from ikwen.core.constants import CONFIRMED
+from ikwen.core.views import ChangeObjectBase, HybridListView
 from ikwen.core.utils import send_sms, get_service_instance, DefaultUploadBackend, get_sms_label, add_event, \
-    get_mail_content
+    get_mail_content, get_model_admin_instance, get_item_list
 from ikwen.accesscontrol.models import Member, SUDO
 from ikwen.accesscontrol.backends import UMBRELLA
 from ikwen.billing.mtnmomo.views import MTN_MOMO
 from ikwen.revival.models import ProfileTag, MemberProfile
 from math import ceil
-from echo.models import Campaign, SMSObject, Balance, Bundle, Refill, SMS
+
+from echo.admin import MailCampaignAdmin
+from echo.models import SMSCampaign, MailCampaign, SMSObject, Balance, Bundle, Refill, SMS, MAIL
 
 logger = logging.getLogger('ikwen')
 
@@ -89,6 +102,58 @@ def batch_send(campaign):
             balance.save()
         campaign.progress += 1
         campaign.save()
+
+
+def batch_send_mail(campaign):
+    service = campaign.service
+    config = service.config
+    balance = Balance.objects.using('wallets').get(service_id=service.id)
+
+    connection = mail.get_connection()
+    try:
+        connection.open()
+    except:
+        response = {'error': 'Failed to connect to mail server. Please check your internet'}
+        return HttpResponse(json.dumps(response))
+
+    for email in campaign.recipient_list[campaign.progress:]:
+        email = email.strip()
+        subject = campaign.subject
+        try:
+            member = Member.objects.filter(email=email)[0]
+            message = campaign.content.replace('$client', member.first_name)
+        except:
+            message = campaign.content.replace('$client', "")
+        sender = '%s <no-reply@%s>' % (config.company_name, service.domain)
+        media_url = ikwen_settings.CLUSTER_MEDIA_URL + service.project_name_slug + '/'
+        product_list = []
+        if campaign.items_fk_list:
+            app_label, model_name = campaign.model_name.split('.')
+            item_model = get_model(app_label, model_name)
+            product_list = item_model._default_manager.filter(pk__in=campaign.items_fk_list)
+        try:
+            currency = Currency.objects.get(is_base=True)
+        except Currency.DoesNotExist:
+            currency = None
+        html_content = get_mail_content(subject, message, template_name='echo/mails/campaign.html',
+                                        extra_context={'media_url': media_url, 'product_list': product_list,
+                                                       'campaign': campaign, 'currency': currency})
+        msg = EmailMessage(subject, html_content, sender, [email])
+        msg.content_subtype = "html"
+        try:
+            with transaction.atomic(using='wallets'):
+                if not msg.send():
+                    balance.mail_count += 1
+                    balance.save()
+        except:
+            pass
+        campaign.progress += 1
+        campaign.save()
+
+    try:
+        connection.close()
+    except:
+        pass
 
 
 def set_bundle_checkout(request, *args, **kwargs):
@@ -158,17 +223,18 @@ def confirm_bundle_payment(request, *args, **kwargs):
     return HttpResponseRedirect(request.session['return_url'])
 
 
-class SMSCampaign(TemplateView):
-    template_name = "echo/sms_campaign.html"
+class CampaignBaseView(TemplateView):
+    model = None
 
     def get_context_data(self, **kwargs):
-        context = super(SMSCampaign, self).get_context_data(**kwargs)
-        campaign_list = Campaign.objects.using(UMBRELLA).all().order_by("-id")[:5]
+        context = super(CampaignBaseView, self).get_context_data(**kwargs)
+        campaign_list = self.model._default_manager.using(UMBRELLA).order_by("-id")[:5]
         for campaign in campaign_list:
             campaign.progress_rate = (campaign.progress / campaign.total) * 100
-            campaign.sample_sms = campaign.get_sample_sms()
+            campaign.sample = campaign.get_sample()
             campaign.recipients = ', '.join(campaign.recipient_list[:5])
         balance, update = Balance.objects.using('wallets').get_or_create(service_id=get_service_instance().id)
+        balance.mail_count = 150
         context['balance'] = balance
         context['campaign_list'] = campaign_list
         context['member_count'] = Member.objects.all().count()
@@ -181,16 +247,13 @@ class SMSCampaign(TemplateView):
             return self.start_campaign(request)
         if action == 'get_campaign_progress':
             return self.get_campaign_progress(request)
-        return super(SMSCampaign, self).get(request, *args, **kwargs)
+        return super(CampaignBaseView, self).get(request, *args, **kwargs)
 
-    def start_campaign(self, request):
-        member = request.user
-        subject = request.GET.get('subject')
-        slug = slugify(subject)
-        txt = request.GET.get('txt')
-        filename = request.GET.get('filename')
-        recipient_list = request.GET.get('recipients')
-        profiles_checked = request.GET.get('profiles')
+    def get_recipient_list(self, request):
+        filename = request.GET.get('filename', request.POST.get('filename'))
+        recipient_list = request.GET.get('recipients', request.POST.get('recipients'))
+        profiles_checked = request.GET.get('profiles', request.POST.get('profiles'))
+        campaign_type = SMS if self.model == SMSCampaign else MAIL
         if filename:
             # Should add somme security check about file existence and type here before attempting to read it
             path = getattr(settings, 'MEDIA_ROOT') + '/' + DefaultUploadBackend.UPLOAD_DIR + '/' + filename
@@ -200,8 +263,6 @@ class SMSCampaign(TemplateView):
                 for recipient in fh.readlines():
                     recipient_list.append(recipient)
             fh.close()
-            recipient_count = len(recipient_list)
-
         elif recipient_list == ALL_COMMUNITY:
             recipient_list = []
             member_queryset = Member.objects.all()
@@ -211,10 +272,10 @@ class SMSCampaign(TemplateView):
                 start = i * 500
                 finish = (i + 1) * 500
                 for member in member_queryset[start:finish]:
-                    if member.phone:
+                    if campaign_type == SMS and member.phone:
                         recipient_list.append(member.phone)
-            recipient_count = len(recipient_list)
-
+                    elif campaign_type == MAIL and member.email:
+                        recipient_list.append(member.email)
         elif recipient_list == SELECTED_PROFILES:
             recipient_list = []
             checked_profile_tag_id_list = profiles_checked.split(',')
@@ -231,12 +292,39 @@ class SMSCampaign(TemplateView):
                         continue
                     match = set(profile.tag_fk_list) & set(checked_profile_tag_id_list)
                     if len(match) > 0:
-                        if member.phone:
+                        if campaign_type == SMS and member.phone:
                             recipient_list.append(member.phone)
-            recipient_count = len(recipient_list)
+                        elif campaign_type == MAIL and member.email:
+                            recipient_list.append(member.email)
+
         else:
             recipient_list = recipient_list.strip().split(',')
-            recipient_count = len(recipient_list)
+        return recipient_list
+
+    def start_campaign(self, request):
+        pass
+
+    def get_campaign_progress(self, request):
+        campaign_id = request.GET['campaign_id']
+        campaign = self.model._default_manager.using(UMBRELLA).get(pk=campaign_id)
+        response = {"progress": campaign.progress, "total": campaign.total}
+        return HttpResponse(
+            json.dumps(response),
+            'content-type: text/json'
+        )
+
+
+class SMSCampaignView(CampaignBaseView):
+    template_name = "echo/sms_campaign.html"
+    model = SMSCampaign
+
+    def start_campaign(self, request):
+        member = request.user
+        subject = request.GET.get('subject')
+        txt = request.GET.get('txt')
+        recipient_list = self.get_recipient_list(request)
+        recipient_count = len(recipient_list)
+        slug = slugify(subject)
         page_count = count_pages(txt)
         sms_count = int(page_count * recipient_count)
 
@@ -254,9 +342,10 @@ class SMSCampaign(TemplateView):
                 balance.save()
                 service = get_service_instance(using=UMBRELLA)
                 mbr = Member.objects.using(UMBRELLA).get(pk=member.id)
-                campaign = Campaign.objects.using(UMBRELLA).create(service=service, member=mbr, subject=subject,
-                                                                   type="SMS", slug=slug, recipient_list=recipient_list,
-                                                                   text=txt, total=sms_count)
+                campaign = SMSCampaign.objects.using(UMBRELLA).create(service=service, member=mbr, subject=subject,
+                                                                      slug=slug, text=txt, total=sms_count,
+                                                                      recipient_list=recipient_list)
+
                 if getattr(settings, 'UNIT_TESTING', False):
                     batch_send(campaign)
                 elif recipient_count < 50:
@@ -271,14 +360,202 @@ class SMSCampaign(TemplateView):
             'content-type: text/json'
         )
 
-    def get_campaign_progress(self, request):
+
+class MailCampaignList(HybridListView):
+    template_name = 'echo/mailcampaign_list.html'
+    html_results_template_name = 'echo/snippets/mailcampaign_list_results.html'
+    model = MailCampaign
+    queryset = MailCampaign.objects.using(UMBRELLA).all()
+    search_field = 'subject'
+
+
+class ChangeMailCampaign(CampaignBaseView, ChangeObjectBase):
+    template_name = "echo/change_mailcampaign.html"
+    model = MailCampaign
+    model_admin = MailCampaignAdmin
+    context_object_name = 'campaign'
+
+    def get_context_data(self, **kwargs):
+        context = super(ChangeMailCampaign, self).get_context_data(**kwargs)
+        obj = context['obj']
+        items_fk_list = []
+        if self.request.GET.get('items_fk_list'):
+            items_fk_list = self.request.GET.get('items_fk_list').split(',')
+            obj.items_fk_list = items_fk_list
+            obj.save(using=UMBRELLA)
+            context['set_cyclic'] = True
+        context['items_fk_list'] = ','.join(items_fk_list)
+        context['item_list'] = get_item_list('kako.Product', items_fk_list)
+        return context
+
+    def get_object(self, **kwargs):
+        object_id = kwargs.get('object_id')  # May be overridden with the one from GET data
+        if object_id:
+            try:
+                return MailCampaign.objects.using(UMBRELLA).get(pk=object_id)
+            except MailCampaign.DoesNotExist:
+                raise Http404()
+
+    def get(self, request, *args, **kwargs):
+        action = request.GET.get('action')
+        if action == 'run_test':
+            return self.run_test(request)
+        return super(ChangeMailCampaign, self).get(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        object_admin = get_model_admin_instance(self.model, self.model_admin)
+        object_id = kwargs.get('object_id')
+        service = get_service_instance(using=UMBRELLA)
+        member = request.user
+        mbr = Member.objects.using(UMBRELLA).get(pk=member.id)
+        if object_id:
+            obj = MailCampaign.objects.using(UMBRELLA).get(pk=object_id)
+        else:
+            obj = self.model()
+        model_form = object_admin.get_form(request)
+        form = model_form(request.POST, instance=obj)
+        if form.is_valid():
+            subject = form.cleaned_data['subject']
+            content = form.cleaned_data['content']
+            pre_header = form.cleaned_data['pre_header']
+            recipient_list = self.get_recipient_list(request)
+            slug = slugify(subject)
+            if not object_id:
+                obj = MailCampaign(service=service, member=mbr)
+
+            obj.subject = subject
+            obj.slug = slug
+            obj.pre_header = pre_header
+            obj.content = content
+            obj.recipient_list = recipient_list
+            obj.total = len(recipient_list)
+            obj.save(using=UMBRELLA)
+
+            image_url = request.POST.get('image_url')
+            if image_url:
+                s = get_service_instance()
+                image_field_name = request.POST.get('image_field_name', 'image')
+                image_field = obj.__getattribute__(image_field_name)
+                if not image_field.name or image_url != image_field.url:
+                    filename = image_url.split('/')[-1]
+                    media_root = getattr(settings, 'MEDIA_ROOT')
+                    media_url = getattr(settings, 'MEDIA_URL')
+                    path = image_url.replace(media_url, '')
+                    try:
+                        with open(media_root + path, 'r') as f:
+                            content = File(f)
+                            destination = media_root + obj.UPLOAD_TO + "/" + s.project_name_slug + '_' + filename
+                            image_field.save(destination, content)
+                        os.unlink(media_root + path)
+                    except IOError as e:
+                        if getattr(settings, 'DEBUG', False):
+                            raise e
+                        return {'error': 'File failed to upload. May be invalid or corrupted image file'}
+            if request.POST.get('keep_editing'):
+                next_url = self.get_change_object_url(request, obj, *args, **kwargs)
+            else:
+                next_url = self.get_object_list_url(request, obj, *args, **kwargs)
+            if object_id:
+                messages.success(request, obj._meta.verbose_name.capitalize() + ' <strong>' + str(obj).decode('utf8') + '</strong> ' + _('successfully updated'))
+            else:
+                messages.success(request, obj._meta.verbose_name.capitalize() + ' <strong>' + str(obj).decode('utf8') + '</strong> ' + _('successfully created'))
+            return HttpResponseRedirect(next_url)
+        else:
+            context = self.get_context_data(**kwargs)
+            context['errors'] = form.errors
+            return render(request, self.template_name, context)
+
+    def start_campaign(self, request):
         campaign_id = request.GET['campaign_id']
-        campaign = Campaign.objects.using(UMBRELLA).get(pk=campaign_id)
-        response = {"progress": campaign.progress, "total": campaign.total}
+        campaign = MailCampaign.objects.using(UMBRELLA).get(pk=campaign_id)
+        # "transaction.atomic" instruction locks database during all operations inside "with" block
+        try:
+            balance = Balance.objects.using('wallets').get(service_id=get_service_instance().id)
+            if balance.mail_count < campaign.total:
+                response = {"insufficient_balance": _("Insufficient Email balance.")}
+                return HttpResponse(
+                    json.dumps(response),
+                    'content-type: text/json'
+                )
+            with transaction.atomic(using='wallets'):
+                balance.mail_count -= campaign.total
+                balance.save()
+                if getattr(settings, 'UNIT_TESTING', False):
+                    batch_send_mail(campaign)
+                elif campaign.total < 50:
+                    # for small campaign ie minor than 50, send sms directly from application server
+                    Thread(target=batch_send_mail, args=(campaign, )).start()
+                response = {"success": True, "balance": balance.mail_count, "campaign": campaign.to_dict()}
+        except:
+            response = {"error": "Error while submiting SMS. Please try again later."}
+
         return HttpResponse(
             json.dumps(response),
             'content-type: text/json'
         )
+
+    def run_test(self, request):
+        campaign_id = request.GET['campaign_id']
+        campaign = MailCampaign.objects.using(UMBRELLA).get(pk=campaign_id)
+        test_email_list = request.GET['test_email_list'].split(',')
+        service = get_service_instance()
+        balance = Balance.objects.using(WALLETS_DB_ALIAS).get(service_id=service.id)
+        if balance.mail_count == 0:
+            response = {'error': 'Insufficient Email and SMS credit'}
+            return HttpResponse(json.dumps(response))
+
+        connection = mail.get_connection()
+        try:
+            connection.open()
+        except:
+            response = {'error': 'Failed to connect to mail server. Please check your internet'}
+            return HttpResponse(json.dumps(response))
+        config = service.config
+
+        warning = []
+        for email in test_email_list:
+            if balance.mail_count == 0:
+                warning.append('Insufficient email Credit')
+                break
+            email = email.strip()
+            subject = campaign.subject
+            try:
+                member = Member.objects.filter(email=email)[0]
+                message = campaign.content.replace('$client', member.first_name)
+            except:
+                message = campaign.content.replace('$client', "")
+            sender = '%s <no-reply@%s>' % (config.company_name, service.domain)
+            media_url = ikwen_settings.CLUSTER_MEDIA_URL + service.project_name_slug + '/'
+            product_list = []
+            if campaign.items_fk_list:
+                app_label, model_name = campaign.model_name.split('.')
+                item_model = get_model(app_label, model_name)
+                product_list = item_model._default_manager.filter(pk__in=campaign.items_fk_list)
+            try:
+                currency = Currency.objects.get(is_base=True)
+            except Currency.DoesNotExist:
+                currency = None
+            html_content = get_mail_content(subject, message, template_name='echo/mails/campaign.html',
+                                            extra_context={'media_url': media_url, 'product_list': product_list,
+                                                           'campaign': campaign, 'currency': currency})
+            msg = EmailMessage(subject, html_content, sender, [email])
+            msg.content_subtype = "html"
+            try:
+                with transaction.atomic(using='wallets'):
+                    balance.mail_count -= 1
+                    balance.save()
+                    if not msg.send():
+                        transaction.rollback(using='wallets')
+                        warning.append('Mail not sent to %s' % email)
+            except:
+                pass
+        try:
+            connection.close()
+        except:
+            pass
+
+        response = {'success': True, 'warning': warning}
+        return HttpResponse(json.dumps(response))
 
 
 class SMSHistory(TemplateView):
@@ -295,10 +572,6 @@ class SMSBundle(TemplateView):
         context['balance'] = balance
         context['bundle_list'] = bundle_list
         return context
-
-
-class MailCampaign(TemplateView):
-    template_name = "echo/mail_campaign.html"
 
 
 class MailHistory(TemplateView):

@@ -1,0 +1,65 @@
+{% extends 'core/object_list_base.html' %}
+{% load i18n humanize static %}
+
+{% block head_style %}
+    {{ block.super }}
+    <link rel="stylesheet" type="text/css" href="{% static 'embed-doc/css/embed-doc.css' %}"/>
+    <link rel="stylesheet" type="text/css" href="{% static 'echo/css/echo.css' %}"/>
+{% endblock %}
+
+{% block admin_content %}
+    <div id="admin-content">
+        <div class="container-fluid stage">
+            <div id="admin-tools" class="ceil bottom-shade-xs">
+                <form id="admin-tools-form" onsubmit="return false">
+                    <div>
+                        <div>
+                            <i class="glyphicon glyphicon-search"></i>
+                            <i class="glyphicon glyphicon-menu-left hide-search back"></i>
+                            <input type="text" id="context-search" class="tool search form-input input-sm" placeholder="{% blocktrans %}Search {{ verbose_name }}{% endblocktrans %}"/>
+                        </div>
+                        {% if filter and filter|length > 0 %}
+                            <div class="filter-trigger">
+                                <i class="glyphicon glyphicon-filter"></i>
+                                <i class="glyphicon glyphicon-menu-left hide-filter back"></i>
+                                {% for elt in filter %}
+                                <div class="tool filter">
+                                    <label for="{{ elt.parameter_name }}" class="sr-only">{% trans elt.title %}</label>
+                                    <select id="{{ elt.parameter_name }}" style="float: left; width: 120px" class="form-control input-sm {{ elt.parameter_name }} widget" name="{{ elt.parameter_name }}">
+                                        <option value="">{% trans "All" %} {% trans elt.title %}</option>
+                                        {% for choice in elt.choices %}
+                                            <option value="{{ choice.0 }}">{{ choice.1 }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </form>
+                {% url change_object_url_name as change_object_url %}
+                <a href="{{ change_object_url }}" class="btn btn-sm btn-success cta add pull-right action"
+                        title="{% trans "Add new " %} {{ verbose_name }}">
+                    <i class="glyphicon glyphicon-plus"></i>
+                    <span class="hidden-xs">{% trans "Add" %}</span>
+                </a>
+                <div class="clearfix"></div>
+            </div>
+            <div id="results" class="col-sm-8 col-sm-offset-2">
+                {% include 'core/snippets/spinner.html' %}
+                {% include 'echo/snippets/mailcampaign_list_results.html' %}
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block js %}
+    {{ block.super }}
+    {% include 'core/snippets/sort_and_actions.html' %}
+    <script type="text/javascript">
+        (function() {
+            var target = '{{ verbose_name_plural|slugify }}' ? '{{ verbose_name_plural|slugify }}' : 'blank';
+            $('div#admin-nav .' + target).addClass('active');
+        })()
+    </script>
+{% endblock %}

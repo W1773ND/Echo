@@ -1,16 +1,8 @@
-{% extends 'core/app_base_admin.html' %}
+{% extends 'echo/campaign_base.html' %}
 {% load i18n humanize staticfiles auth_tokens %}
 
 {% block page_title %}
     <title> {% trans "SMS Campaign" %} - ikwen</title>
-{% endblock %}
-
-{% block head_style %}
-    {{ block.super }}
-    <link rel="stylesheet" type="text/css" href="{% static 'echo/css/swiper.min.css' %}"/>
-    <link rel="stylesheet" type="text/css" href="{% static 'ikwen/ajaxuploader/css/fileuploader.css' %}"/>
-    <link rel="stylesheet" type="text/css" href="{% static 'embed-doc/css/embed-doc.css' %}"/>
-    <link rel="stylesheet" type="text/css" href="{% static 'echo/css/echo.css' %}"/>
 {% endblock %}
 
 {% block breadcrumb_location %}
@@ -21,10 +13,8 @@
     <div id="admin-content">
         <div class="container-fluid">
             <div class="sold" style="text-align: right">
-                <span>{% trans "Remaining SMS : " %}<strong class="sms-balance text-muted">{{ balance.sms_count|intcomma }}</strong></span>
-                {% if balance.sms_count <= 200 %}
-                    <a style="text-decoration: none" href="{% url 'echo:sms_bundle' %}"><span><p>{% trans "Refill ? " %}</p></span></a>
-                {% endif %}
+                <span>{% trans "Remaining SMS : " %}<strong class="messaging-balance text-muted">{{ balance.sms_count|intcomma }}</strong></span>
+                <a style="text-decoration: none" href="{% url 'echo:sms_bundle' %}"><span><p>{% trans "Refill ? " %}</p></span></a>
             </div>
 
             <div class="form col-lg-4 col-sm-6 col-lg-offset-4 col-sm-offset-3">
@@ -137,184 +127,7 @@
             </div>
 {#            {% include 'echo/snippets/embed_doc.html' %}#}
         </div>
-
-        <!--All Modal definitions-->
-
-            {% comment %}<br style="clear:both">
-            <div id="start-campaign-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="start-campaign-modal" aria-hidden="false">
-                <div class="modal-dialog modal-dialog-centered" role="document">
-                    <div class="modal-content">
-                      <div class="modal-header">
-                        <h2 class="modal-title" id="campaign_modal_title">{% trans "Let's make something big together" %}</h2>
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                          <span aria-hidden="true">&times;</span>
-                        </button>
-                      </div>
-                      <div class="modal-body">
-                          <form>
-                              <div class="row">
-                                  <div class="col-sm-6 p-0">
-                                      <label for="campaign_title" data-toggle="tooltip" title="{% trans "Enter your campaign subject" %}" style="text-align: center;">{% trans "Campaign title" %}</label>
-                                  </div>
-                                  <div class="col-sm-12 p-0 pb-15">
-                                      <input type="text" class="form-control campaign-title" id="campaign_title" placeholder="Title">
-                                  </div>
-                                  <div class="col-sm-6 p-0">
-                                      <label for="purchase_datepicker" data-toggle="tooltip" title="{% trans "Set interval of" %}">{% trans "Last purchase date" %}</label>
-                                  </div>
-                                  <div class="form-group col-sm-6 input-daterange input-group p-0" id="purchase_datepicker" data-provide="datepicker">
-                                    <input type="text" class="input-sm form-control" name="start" />
-                                    <span class="input-group-addon" style=" color: #555; text-align: center; background-color: #eee; border: 1px solid #ccc;">to</span>
-                                    <input type="text" class="input-sm form-control" name="end" />
-                                  </div>
-                                  <div class="col-sm-6 p-0">
-                                      <label for="visit_datepicker" data-toggle="tooltip" title="{% trans "Set interval of" %}">{% trans "Last visit date" %}</label>
-                                  </div>
-                                  <div class="form-group col-sm-10 input-daterange input-group p-0" id="visit_datepicker" data-provide="datepicker">
-                                    <input type="text" class="input-sm form-control" name="start" />
-                                    <span class="input-group-addon" style=" color: #555; text-align: center; background-color: #eee; border: 1px solid #ccc;">to</span>
-                                    <input type="text" class="input-sm form-control" name="end" />
-                                  </div>
-                                  <div class="col-sm-6 p-0">
-                                      <label for="subscription_datepicker" data-toggle="tooltip" title="{% trans "Set interval of" %}">{% trans "Subscription date" %}</label>
-                                  </div>
-                                  <div class="form-group col-sm-10 input-daterange input-group p-0" id="subscription_datepicker" data-provide="datepicker">
-                                    <input type="text" class="input-sm form-control" name="start" />
-                                    <span class="input-group-addon" style=" color: #555; text-align: center; background-color: #eee; border: 1px solid #ccc;">to</span>
-                                    <input type="text" class="input-sm form-control" name="end" />
-                                  </div>
-                              </div>
-                          </form>
-                      </div>
-                      <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                        <button type="button" class="btn btn-primary">Save changes</button>
-                      </div>
-                    </div>
-                </div>
-            </div>{% endcomment %}
-
-        {% comment %}<div id="modal-start-campaign" class="modal fade modal-start-campaign" tabindex="-1" role="dialog" aria-labelledby="modal-start-campaign">
-            <div class="modal-dialog" role="document">
-                <div class="modal-content" style="text-align: center">
-                    <div class="modal-header no-border " style="background: #233682; color: #ffffff">
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true" style="color: #ffffff">&times;</span></button>
-                        <h4 class="modal-title" id="campaign_modal_title" style="text-align: center">{% trans "CONFIGURE YOUR AUDIENCE" %}</h4>
-                    </div>
-                    <div class="modal-body">
-                        <form>
-                            <div class="form-group">
-                                <h5 class="col-sm-5 hidden-xs m-0"><label>{% trans "Import from " %}CSV{% trans " file" %}</label></h5>
-                                <span class="col-sm-2 col-xs-2 m-0"></span>
-                                <h5 class="col-sm-5 hidden-xs m-0"><label>{% trans "Select all your contact" %}</label></h5>
-                            </div>
-                          <div class="form-group">
-                              <div class="col-sm-5 hidden-xs">
-                                  <a href="{% static "echo/ikwen_SMS_campaign_csv_model.csv" %}" style="text-decoration: none;">{% trans "Download CSV file model..." %}</a>
-                              </div>
-                              <div class="clearfix"></div>
-                          </div>
-                          <div class="form-group">
-                              <div class="col-sm-5 col-xs-5" style="padding: 0;" id="upload-container">
-                                  <div class="uploader"></div>
-                                  <div class="upload-csv-label"></div>
-                              </div>
-                              <div class="col-sm-2 col-xs-2" style="padding-top: 30px"><h4><label> {% trans "OR" %} </label></h4></div>
-                              <div class="col-sm-5 col-xs-5">
-                                  <img class="modal-icon send-to-all"  style="cursor: pointer; margin-bottom: 10px;" title="{% trans 'Send SMS campaign to all your community.' %}" data-dismiss="modal" src="{% static 'echo/img/community-btn-small.png' %}" alt= {% trans 'Send SMS campaign to all community btn' %} />
-                                  <div><label> &nbsp; Contact &nbsp;</label><span class="badge"> {{ member_count }} </span></div>
-                              </div>
-                          </div>
-                        </form>
-                        <div class="clearfix"></div>
-                    </div>
-                    <div class="modal-footer no-border" style="padding-top: 0 !important; text-align: center !important;">
-                        <button type="button" class="btn btn-primary " data-dismiss="modal">{% trans "Done" %}</button>
-                    </div>
-                </div>
-            </div>
-        </div>{% endcomment %}
-
-        <div id="modal-start-campaign" class="modal fade modal-start-campaign" tabindex="-1" role="dialog" aria-labelledby="modal-start-campaign">
-            <div class="modal-dialog" role="document">
-                <div class="modal-content modal-lg" style="text-align: center">
-                    <div class="modal-header no-border " style="background: #319dd5; color: #ffffff">
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true" style="color: #ffffff">&times;</span></button>
-                        <h4 class="modal-title" id="campaign_modal_title" style="text-align: center">{% trans "CONFIGURE YOUR AUDIENCE" %}</h4>
-                    </div>
-                    <div class="modal-body">
-                        <div class="">
-                            <div class="panel-group" id="accordion">
-                                <div class="panel panel-custom">
-                                    <div class="">
-                                        <h4 class="panel-title">
-                                            <a data-toggle="collapse" data-parent="#accordion" href="#importCSV">{% trans "Import contact from CSV file" %}</a>
-                                        </h4>
-                                    </div>
-                                    <div id="importCSV" class="panel-collapse collapse">
-                                        <div class="panel-body hidden-xs" style="padding-top: 1.5vh;">
-                                            <a href="{% static "echo/ikwen_SMS_campaign_csv_model.csv" %}" style="text-decoration: none;">{% trans "Download CSV file model..." %}</a>
-                                        </div>
-                                        <form>
-                                          <div class="form-group">
-                                              <div class="text-center" style="padding-top: 3vh;" id="upload-container">
-                                                  <div class="uploader"></div>
-                                                  <div class="upload-csv-label"></div>
-                                              </div>
-                                          </div>
-                                        </form>
-                                        <div class="clearfix"></div>
-                                    </div>
-                                </div>
-                                <div class="panel panel-custom">
-                                    <div class="">
-                                        <h4 class="panel-title">
-                                            <a data-toggle="collapse" data-parent="#accordion" href="#collapseTwo">{% trans "Send message to selected profile" %}</a>
-                                        </h4>
-                                    </div>
-                                    <div id="collapseTwo" class="panel-collapse collapse">
-                                        <div class="panel-body">
-                                            <div class="" id="new-contact-profiles" style="padding-top: 2vh; text-align: left">
-                                                <div class="row center-on-mobil">
-                                                {% for profile in profiletag_list %}
-                                                    <div class="checkbox tile col-xs-6 col-sm-4 col-md-3">
-                                                        <label for="squaredThree">
-                                                             <h5>
-                                                                 <input type="checkbox" id="{{ profile.id }}" value="{{ profile.id }}" name="profiles" class="profiles">
-                                                                 <label for="{{ profile.id }}" class="checkbox-label">{{ profile.name }}</label>
-                                                             </h5>
-                                                        </label>
-                                                    </div>
-                                                {% endfor %}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="panel panel-custom">
-                                    <div class="">
-                                        <h4 class="panel-title">
-                                            <a class="send-to-all" data-dismiss="modal" href="#">
-                                                {% trans "Send SMS campaign to all your community" %}&nbsp;&nbsp;<span class="badge badge-custom"> {{ member_count }} </span>
-                                            </a>
-                                        </h4>
-                                    </div>
-                                    <div id="collapseThree" class="panel-collapse collapse">
-                                        <div class="panel-body">
-                                            <p>CSS stands for Cascading Style Sheet. CSS allows you to specify various style properties for a given HTML element such as colors, backgrounds, fonts etc. <a href="https://www.tutorialrepublic.com/css-tutorial/" target="_blank">Learn more.</a></p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="modal-footer no-border" style="padding-top: 0 !important; text-align: center !important;">
-                        <button type="button" class="btn btn-success btn-confirm-modal " data-dismiss="modal">{% trans "Done" %}</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
+        {% include 'echo/snippets/campaign_modals.html' %}
         <div id="sms-detail-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="sms-detail-modal" aria-hidden="false">
             <div class="modal-dialog modal-dialog-centered" role="document">
                 <div class="modal-content">
@@ -335,119 +148,15 @@
                 </div>
             </div>
         </div>
-
-        <div id="insufficient-balance-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="insufficient-balance-modal" aria-hidden="false">
-            <div class="modal-dialog" role="document">
-                <div class="modal-content">
-                    <div class="modal-header no-border " style="background: #233682; color: #ffffff">
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true" style="color: #ffffff">&times;</span></button>
-                        <h4 class="modal-title" id="insufficient_balance_modal_title" style="text-align: center">{% trans "NOT ENOUGHT CREDIT..." %}</h4>
-                    </div>
-                    <div class="modal-body">
-                    <div class="detail-content text-center">
-                        <img src="..." alt="{% trans "Insufficient balance" %}">
-                    </div>
-                    </div>
-                    <div class="modal-footer no-border" style="text-align: center !important;">
-                        <button type="button" class="btn btn-primary"><a href="{% url 'echo:sms_bundle' %}" style="text-decoration: none; color: #ffffff">{% trans "Refill" %}</a></button>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 {% endblock %}
 
 {% block js %}
     {{ block.super }}
-    <script src="{% static 'echo/js/bootstrap-datepicker.js' %}" ></script>
     <script src="{% static 'echo/js/sms-character-counter.js' %}" ></script>
-    <script src="{% static 'echo/js/swiper.min.js' %}" ></script>
-    <script src="{% static 'embed-doc/js/embed-doc.js' %}" ></script>
-    <script src="{% static 'ikwen/ajaxuploader/js/fileuploader.js' %}" ></script>
     <script>
         (function () {
-            var filename, csv_name = '';
-            var checked = [];
-            var uploader = new qq.FileUploader({
-                template:
-                '<div class="qq-uploader">' +
-                    '<div class="qq-upload-drop-area"><span></span></div>' +
-                    '<div class="qq-upload-button">' +
-                        '<img class="modal-icon pb-10" src="{% static 'echo/img/import-csv-small.png' %}"' +
-                            'style="cursor: pointer;"' +
-                            'title="{% trans 'Import contact list from ' %}CSV{% trans ' file to send SMS campaign' %}">' +
-                    '</div>' +
-                    '<ul class="qq-upload-list"></ul>' +
-                '</div>',
-                allowedExtensions: ['csv'],
-                action: "{% url 'echo:csv_uploader' %}",
-                element: $('div#upload-container .uploader')[0],
-                buttonText: "{% trans "Upload cover" %}",
-                multiple: false,
-                onProgress: function(id, fileName, loaded, total) {
-                    $('body').css('cursor', 'wait')
-                },
-                onComplete: function(id, fileName, responseJSON) {
-                    $('body').css('cursor', 'default');
-                    if(responseJSON.success) {
-                        filename = responseJSON.filename;
-                        csv_name = filename.split('.').shift();
-                        {#$('.upload-csv-label').text(csv_name);#}
-                        $('.recipient-list').addClass('text-center').removeClass('warning').attr("readonly", "readonly").val(csv_name);
-                        $('.reset-recipient-list').show()
-                    } else {
-                        alert("{% trans 'upload failed!' %}");
-                    }
-                },
-                message: {
-                    typeError: "Please give a valid CSV file, use our given example to avoid error."
-                },
-                params: {
-                    'csrf_token': '{{ csrf_token }}',
-                    'csrf_name': 'csrfmiddlewaretoken',
-                    'csrf_xname': 'X-CSRFToken'
-                }
-            });
-
-            $('.btn-confirm-modal').click(function () {
-                $("input[name='profiles']:checked").each(function () {
-                    checked.push($(this).val());
-                });
-                if (checked.length !== 0) {
-                    $('.recipient-list').addClass('text-center').removeClass('warning').attr("readonly", "readonly").val('[Selected profiles]');
-                    $('.reset-recipient-list').show()
-                }
-            });
-
-
-            if ($('#subject').val() !== '') $('#subject').removeClass('warning');
             if ($('.sms-text').val() !== '') $('.sms-text').removeClass('warning');
-
-            $('.send-to-all').click(function () {
-                csv_name = '';
-                $('.upload-csv-label').text(csv_name);
-                $('.recipient-list').addClass('text-center').removeClass('warning').attr("readonly", "readonly").val('[All Community]');
-                $('.reset-recipient-list').show()
-            });
-
-            $('.reset-recipient-list').click(function () {
-                csv_name = '';
-                $('.upload-csv-label').text(csv_name);
-                {#$('.profiles').prop("checked", false);#}
-                $('input:checkbox.profiles').removeAttr('checked');
-                $('.collapse').removeClass('in');
-                $('.recipient-list').removeClass('text-center').removeAttr("readonly").focus().val("");
-                $(this).hide();
-            });
-
-            $('.recipient-list').keyup(function () {
-                if ($(this).val() !== '') $(this).removeClass('warning');
-            });
-
-
-            $('#subject').keyup(function () {
-                if ($(this).val() !== '') $(this).removeClass('warning');
-            });
 
             $('.sms-text').keyup(function () {
                 $('#text').removeClass('warning');
@@ -458,8 +167,7 @@
             });
 
             $('.btn-send').click(function () {
-                if ($(this).hasClass('disabled'))
-                {
+                if ($(this).hasClass('disabled')) {
                     $('#text').addClass('warning');
                     if ($('#recipient-list').val() === '') $('#recipient-list').addClass('warning');
                     return;
@@ -472,7 +180,8 @@
                     if (!txt) $('.sms-text').addClass('warning');
                     return
                 }
-                var params = {action: 'start_campaign', filename:filename, recipients: recipient, profiles:checked, subject: subject, txt: txt};
+                var params = {action: 'start_campaign', filename: ikwen.filename, recipients: recipient,
+                    profiles: ikwen.checkedProfiles, subject: subject, txt: txt};
 
                 $.getJSON('', params, function (data) {
                     if (data.insufficient_balance) {
@@ -488,31 +197,11 @@
                             $historyTpl.find('em.event-title').show();
                         $historyTpl.find('.event-message').text(txt);
                         $historyTpl.prependTo('.campaign-list').addClass('running').attr('id', data.campaign.id);
-                        $('.sms-balance').text(data.balance);
-                        intervalId = setInterval(updateProgressBar, 1000)
+                        $('.messaging-balance').text(data.balance);
+                        ikwen.intervalId = setInterval(ikwen.updateProgressBar, 1000)
                     }
                 })
             });
-
-            function updateProgressBar() {
-                if ($('.event.running').length === 0) {
-                    clearInterval(intervalId);
-                    return;
-                }
-                $('.event.running').each(function () {
-                    var campaignId = $(this).attr('id');
-                    var params = {action: 'get_campaign_progress', campaign_id: campaignId};
-
-                    $.getJSON('', params, function (data) {
-                        var progressState = (data.progress / data.total) * 100;
-                        $('#' + campaignId + ' .progress-bar').css('width', progressState + '%');
-                        if (progressState === 100) $('#' + campaignId).removeClass('running')
-                    });
-                });
-            }
-            var intervalId = setInterval(updateProgressBar, 1000);
         })();
-
-        embedDoc.initEmbedDoc("{% trans "Remind me later" %}", "{% trans "Got it!" %}", "{% trans "Show Help" %}");
     </script>
 {% endblock %}

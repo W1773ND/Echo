@@ -18,11 +18,8 @@ TYPE_CHOICES = (
 
 class Campaign(Model):
     service = models.ForeignKey(Service, related_name='+')
-    member = models.ForeignKey(Member)
-    type = models.CharField(max_length=10, choices=TYPE_CHOICES)
+    member = models.ForeignKey(Member, related_name='+')
     recipient_list = ListField()
-    text = models.TextField()
-    page_count = models.IntegerField(default=0)
     subject = models.CharField(max_length=200, blank=True, null=True)
     slug = models.SlugField(max_length=240)
     total = models.IntegerField(default=0)
@@ -30,14 +27,8 @@ class Campaign(Model):
 
     objects = MongoDBManager()
 
-    def get_sample_sms(self):
-        """
-        Gets the first SMS of this campaign. Might be the only one in case on a single send
-        """
-        try:
-            return self.smsobject_set.all()[0]
-        except:
-            pass
+    class Meta:
+        abstract = True
 
     def to_dict(self):
         var = self.to_dict()
@@ -46,11 +37,46 @@ class Campaign(Model):
         return var
 
     def __unicode__(self):
-        return u'%s %s' % (self.type, self.subject)
+        return self.subject
+
+
+class SMSCampaign(Campaign):
+    text = models.TextField()
+    page_count = models.IntegerField(default=0)
+
+    def get_sample(self):
+        """
+        Gets the first SMS of this campaign. Might be the only one in case on a single send
+        """
+        try:
+            return self.smsobject_set.all()[0]
+        except:
+            pass
+
+
+class MailCampaign(Campaign):
+    UPLOAD_TO = 'mail_campaigns'
+
+    pre_header = models.TextField()
+    image = models.ImageField(upload_to=UPLOAD_TO)
+    content = models.TextField()
+    items_fk_list = ListField()
+
+    def get_sample(self):
+        """
+        Gets the first Mail of this campaign. Might be the only one in case on a single send
+        """
+        try:
+            return self.emailobject_set.all()[0]
+        except:
+            pass
+
+    # def get_obj_details(self):
+
 
 
 class SMSObject(Model):
-    campaign = models.ForeignKey(Campaign, blank=True, null=True)
+    campaign = models.ForeignKey(SMSCampaign, blank=True, null=True)
     label = models.CharField(max_length=15)
     recipient = models.CharField(max_length=15, db_index=True)
     text = models.TextField()
@@ -58,6 +84,19 @@ class SMSObject(Model):
 
     def __unicode__(self):
         return u'%s %s' % (self.label, self.text)
+
+
+class EmailObject(Model):
+    campaign = models.ForeignKey(MailCampaign, blank=True, null=True,
+                                 related_name='+')
+    sender = models.CharField(max_length=15)
+    recipient = models.CharField(max_length=150, db_index=True)
+    subject = models.CharField(max_length=150, db_index=True)
+    pre_header = models.CharField(max_length=150, db_index=True)
+    is_sent = models.BooleanField(default=True)
+
+    def __unicode__(self):
+        return u'%s %s' % (self.recipient, self.subject)
 
 
 class Balance(Model):
