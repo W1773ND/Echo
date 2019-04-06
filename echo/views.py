@@ -234,7 +234,6 @@ class CampaignBaseView(TemplateView):
             campaign.sample = campaign.get_sample()
             campaign.recipients = ', '.join(campaign.recipient_list[:5])
         balance, update = Balance.objects.using('wallets').get_or_create(service_id=get_service_instance().id)
-        balance.mail_count = 150
         context['balance'] = balance
         context['campaign_list'] = campaign_list
         context['member_count'] = Member.objects.all().count()
