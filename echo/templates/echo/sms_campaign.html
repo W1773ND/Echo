@@ -13,12 +13,12 @@
     <div id="admin-content">
         <div class="container-fluid">
             <div class="sold" style="text-align: right">
-                <span>{% trans "Remaining SMS : " %}<strong class="messaging-balance text-muted">{{ balance.sms_count|intcomma }}</strong></span>
+                <strong>{% trans "Remaining SMS : " %}<span class="messaging-balance text-muted">{{ balance.sms_count|intcomma }}</span></strong>
                 <a style="text-decoration: none" href="{% url 'echo:sms_bundle' %}"><span><p>{% trans "Refill ? " %}</p></span></a>
             </div>
 
             <div class="form col-lg-4 col-sm-6 col-lg-offset-4 col-sm-offset-3">
-                <h4><label class="title">{% trans "Write your message" %}</label></h4>
+                <h3><label class="title">{% trans "Write your message" %}</label></h3>
                 <form style="padding: 0 15px">
                     <div class="form-group">
                         <div class="row">
@@ -33,10 +33,10 @@
                         </div>
                     </div>
                     <div class="form-group row">
-                        <input type="text" class="form-control input-sm" id="subject" placeholder="{% trans "Subject" %}">
+                        <input type="text" class="form-control input-sm" id="sms-subject" placeholder="{% trans "Subject" %}">
                     </div>
                     <div class="row">
-                        <textarea class="form-control input-sm sms-text " id="text" placeholder="Message" rows="4"></textarea>
+                        <textarea class="form-control input-sm sms-text " id="sms-text" placeholder="Message" rows="4"></textarea>
                         <div class="row">
                             <div class="col-sm-8 col-xs-8">
                                 <p id="sms-char-count" class="help-block sms-char-count">0 / 160</p>
@@ -66,9 +66,9 @@
                                 </div>
                                 <div class="event-content">
                                     <div>
-                                        <div class="event-recipient-list">{{ campaign.recipients|truncatechars:"30" }}</div>
+                                        <div class="event-recipient-list">{{ campaign.recipient_label|truncatechars:"30" }}</div>
                                         {% if campaign.subject %}
-                                            <span class="event-title">{{ campaign.subject }}</span>
+                                            <em class="event-title text-muted" style="">{{ campaign.subject }}</em>
                                         {% else %}
                                             <em class="event-title text-muted">&lt;{% trans "No subject" %}&gt;</em>
                                         {% endif %}
@@ -172,16 +172,17 @@
                     if ($('#recipient-list').val() === '') $('#recipient-list').addClass('warning');
                     return;
                 }
+                $(this).addClass('disabled');
                 var recipient = $('.recipient-list').val(),
-                    subject = $('.subject').val(),
-                    txt = $('.sms-text').val();
+                    subject = $('#sms-subject').val(),
+                    txt = $('#sms-text').val();
                 if (!(recipient && txt)) {
                     if (!recipient) $('.recipient-list').addClass('warning');
-                    if (!txt) $('.sms-text').addClass('warning');
+                    if (!txt) $('#sms-text').addClass('warning');
                     return
                 }
                 var params = {action: 'start_campaign', filename: ikwen.filename, recipients: recipient,
-                    profiles: ikwen.checkedProfiles, subject: subject, txt: txt};
+                    profiles: ikwen.checkedProfiles.join(','), subject: subject, txt: txt};
 
                 $.getJSON('', params, function (data) {
                     if (data.insufficient_balance) {
@@ -190,7 +191,7 @@
                         ikwen.showFloatingNotice(data.error, '', 6)
                     } else {
                         var $historyTpl = $('.event.tpl').clone().removeClass('tpl');
-                        $historyTpl.find('.event-recipient-list').text(data.campaign.recipient_list);
+                        $historyTpl.find('.event-recipient-list').text(data.campaign.recipient_label.substr(0,30));
                         if (subject)
                             $historyTpl.find('span.event-title').text(subject).show();
                         else
@@ -198,7 +199,7 @@
                         $historyTpl.find('.event-message').text(txt);
                         $historyTpl.prependTo('.campaign-list').addClass('running').attr('id', data.campaign.id);
                         $('.messaging-balance').text(data.balance);
-                        ikwen.intervalId = setInterval(ikwen.updateProgressBar, 1000)
+                        ikwen.intervalId = setInterval(ikwen.updateProgressBar, 5000)
                     }
                 })
             });

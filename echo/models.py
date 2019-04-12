@@ -20,6 +20,7 @@ class Campaign(Model):
     service = models.ForeignKey(Service, related_name='+')
     member = models.ForeignKey(Member, related_name='+')
     recipient_list = ListField()
+    recipient_label = models.CharField(max_length=200, blank=True, null=True)
     subject = models.CharField(max_length=200, blank=True, null=True)
     slug = models.SlugField(max_length=240)
     total = models.IntegerField(default=0)
@@ -31,7 +32,7 @@ class Campaign(Model):
         abstract = True
 
     def to_dict(self):
-        var = self.to_dict()
+        var = super(Campaign, self).to_dict()
         recipient_list = ', '.join(self.recipient_list[:5])
         var['recipient_list'] = truncatechars(recipient_list, 30)
         return var
@@ -61,6 +62,7 @@ class MailCampaign(Campaign):
     image = models.ImageField(upload_to=UPLOAD_TO)
     content = models.TextField()
     items_fk_list = ListField()
+    is_running = models.BooleanField(default=False)
 
     def get_sample(self):
         """

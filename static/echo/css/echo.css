@@ -68,6 +68,12 @@ label.checkbox-label { padding-left: 0 !important; }
 .modal-icon:hover {outline: 1px dotted #000 !important; outline: -webkit-focus-ring-color auto 5px !important;}
 .upload-csv-label {color: inherit;font-family: inherit;font-weight: bold;line-height: 1.1;}
 
+div.modal-campaign-uploader>.qq-uploader {
+	background: rgba(0, 0, 0, 0) !important;
+	height: auto;
+	padding-top: 8px;
+}
+
 
 .warning { border-color: #FF0000;}
 

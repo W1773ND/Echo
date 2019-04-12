@@ -1,7 +1,7 @@
 from django.conf.urls import url, patterns
 from django.contrib.auth.decorators import permission_required
 
-from echo.views import SMSCampaignView, SMSHistory, SMSBundle, MailCampaignList, ChangeMailCampaign, MailHistory, MailBundle, csv_uploader
+from echo.views import SMSCampaignView, SMSHistory, SMSBundle, MailCampaignList, ChangeMailCampaign, MailBundle, csv_uploader
 
 urlpatterns = patterns(
     '',
@@ -11,7 +11,7 @@ urlpatterns = patterns(
     url(r'^mailCampaignList/$', permission_required('echo.ik_messaging_campaign')(MailCampaignList.as_view()), name='mailcampaign_list'),
     url(r'^mailCampaign/$', permission_required('echo.ik_messaging_campaign')(ChangeMailCampaign.as_view()), name='change_mailcampaign'),
     url(r'^mailCampaign/(?P<object_id>[-\w]+)/$', permission_required('echo.ik_messaging_campaign')(ChangeMailCampaign.as_view()), name='change_mailcampaign'),
-    url(r'^mailHistory/$', permission_required('echo.ik_messaging_campaign')(MailHistory.as_view()), name='mail_history'),
+    # url(r'^mailHistory/$', permission_required('echo.ik_messaging_campaign')(MailHistory.as_view()), name='mail_history'),
     url(r'^mailBundles/$', permission_required('echo.ik_messaging_campaign')(MailBundle.as_view()), name='mail_bundle'),
     url(r'^csv_upload/$', csv_uploader, name='csv_uploader'),
 )

@@ -1,29 +1,54 @@
 {% extends 'core/app_base_admin.html' %}
-{% load i18n humanize staticfiles auth_tokens %}
+{% load i18n humanize static auth_tokens %}
 
 {% block page_title %}
-    <title> {% trans "WEB campaign pricing" %} - ikwen</title>
+    <title> {% trans "Email Bundles" %} - ikwen</title>
 {% endblock %}
 
 {% block head_style %}
     {{ block.super }}
+    <link rel="stylesheet" type="text/css" href="{% static 'echo/css/echo.css' %}" />
 {% endblock %}
 
 {% block breadcrumb_location %}
-    <li>{% trans "Mail pricing plan" %}</li>
+    <li>{% trans "Email pricing plan" %}</li>
 {% endblock %}
 
 {% block admin_content %}
     <div id="admin-content">
         <div class="container-fluid">
-
+            <div class="sold" style="text-align: right">
+                <strong>{% trans "Remainig Email : " %}<span class="balance">{{ balance.mail_count }}</span></strong>
+            </div>
+            <div id="stage" style="float: none; margin: auto">
+                <div class="panel bundle-pricing-table">
+                    {% for bundle in bundle_list %}
+                        <div class="col-sm-4">
+                            <div class="bundle-pricing-plan">
+                                <img src="{{ settings.IKWEN_MEDIA_URL }}{{ bundle.image.name }}" alt="" class="pricing-img">
+                                <h2 class="bundle-header">{{ bundle.name }}</h2>
+                                <div class="bundle-features">
+                                    <span class="bundle-features-item">{{ bundle.credit|intcomma }} Mail</span>
+                                </div>
+                                <p class="bundle-price"> <span class="currency">XAF</span> {{ bundle.cost | intcomma }}</p>
+                                <button class=" btn btn-primary btn-buy-bundle payment-start animated infinite pulse" data-product-id="{{ bundle.id }}">{% trans "Buy" %}</button>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
         </div>
     </div>
-
+    {% with payment_conf='messaging_bundle' %}
+        {% include 'billing/snippets/modal_payment_options.html' %}
+    {% endwith %}
 {% endblock %}
 
 {% block js %}
     {{ block.super }}
     <script>
+        (function () {
+            $('<input type="hidden" name="type" value="SMS" />').appendTo('#payment-start-flow');
+        })();
     </script>
 {% endblock %}
