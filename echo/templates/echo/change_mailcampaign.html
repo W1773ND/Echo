@@ -8,6 +8,9 @@
 {% block head_style %}
     {{ block.super }}
     <link rel="stylesheet" href="{% static 'ikwen/css/uploader-single.css' %}" />
+    <style>
+        .mce-container { width: auto!important; }
+    </style>
 {% endblock %}
 
 {% block head_js %}
@@ -26,6 +29,7 @@
                 ],
                 paste_data_images: true,
                 selector: '#mail-content',
+                width : 200,
                 height: 150,
                 toolbar: 'undo redo | bold italic underline | bullist numlist | alignleft aligncenter alignright | link code',
                 content_css: [
@@ -33,12 +37,39 @@
                     '//www.tinymce.com/css/codepen.min.css'
                 ]
             };
-            if ($(window).width() >= 768) {
-                properties['width'] = 550;
-            }
+            {% comment %}if ($(window).width() >= 768) {
+                properties['width'] = 435;
+            }{% endcomment %}
             tinymce.init(properties);
         })()
     </script>
+{##}
+{#    <script src='https://cloud.tinymce.com/5/tinymce.min.js?apiKey=vaq5s47grhmo48gjkb0q1i0foiieunppuposvba5fqxef9fu'></script>#}
+{#    <script>#}
+{#        (function () {#}
+{#            var properties = {#}
+{#                paste_data_images: true,#}
+{#                selector: '#mail-content',#}
+{#                height: 500,#}
+{#                menubar: false,#}
+{#                plugins: [#}
+{#                'advlist autolink lists link image charmap print preview anchor textcolor',#}
+{#                'searchreplace visualblocks code fullscreen',#}
+{#                'insertdatetime media table paste code help wordcount'#}
+{#                ],#}
+{#                toolbar: 'undo redo | formatselect | bold italic backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | help',#}
+{#                content_css: [#}
+{#                '//fonts.googleapis.com/css?family=Lato:300,300i,400,400i',#}
+{#                '//www.tiny.cloud/css/codepen.min.css'#}
+{#                ]#}
+{#            };#}
+{#            if ($(window).width() >= 768) {#}
+{#                properties['width'] = 550;#}
+{#            }#}
+{#            tinymce.init(properties);#}
+{#        })()#}
+{#    </script>#}
+
 {% endblock %}
 
 {% block admin_content %}
@@ -48,7 +79,7 @@
                 <strong><p>{% trans "Remaining mail : " %}<span class="messaging-balance text-muted">{{ balance.mail_count }}</span></p></strong>
                 <a style="text-decoration: none;" href="{% url 'echo:mail_bundle' %}"><strong><p>{% trans "Refill ? " %}</p></strong></a>
             </div>
-            <div class="form col-lg-4 col-sm-6 col-lg-offset-4 col-sm-offset-3">
+            <div class="form col-lg-4 col-sm-6 col-lg-offset-4 col-sm-offset-3 all-content">
                 <h3><label class="title"> {% trans "Email campaign" %}</label></h3>
                 <form style="" class="campaign" method="post">{% csrf_token %}
 
@@ -94,8 +125,8 @@
                         </div>
                     </div>
                     <div class="form-group">
-                        <div class="col-xs-10 col-sm-8 col-sm-offset-2 text-center">
-                            {% with image=campaign.image img_help_text='Add an image to your mail: 800px x 500px' %}
+                        <div class="col-xs-12 col-md-offset-1">
+                            {% with image=campaign.image img_help_text='Add an image to your mail: 800x500px' %}
                                 <input type="hidden" name="image_url" id="image_url" value="{% if image.name %}{{ image.url }}{% endif %}" />
                                 {% include 'core/snippets/uploader_single.html' %}
                             {% endwith %}
@@ -105,11 +136,14 @@
                     </div>
 
                     <div class="form-group">
-                        <h5><label class="text-center" for="mail-content">{% trans "Message" %}</label></h5>
-                        <div class="mail-content">
-                            <textarea class="form-control input-sm"
-                                      id="mail-content" name="content">{{ campaign.content|safe }}</textarea>
+                        <div class="">
+                            <h5><label class="text-center" for="mail-content">{% trans "Message" %}</label></h5>
+                            <div class="mail-content">
+                                <textarea class="form-control input-sm"
+                                          id="mail-content" name="content">{{ campaign.content|safe }}</textarea>
+                            </div>
                         </div>
+
                     </div>
                     <input type="hidden" name="items_fk_list" value="{{ items_fk_list }}" />
                     <section class="content" style="width: 100%">
@@ -141,6 +175,23 @@
                             </li>
                         </ul>
                     </section>
+                    <section class="call-to-action" style="border-bottom: 1px solid #eee ; padding-top: 8vh">
+                        <div class="form-group">
+                            <div class="">
+                                <label for="cta-label">{% trans "Call-to-action button title" %}</label>
+                                <input type="text" class="form-control input-sm" id="cta-label"
+                                   name="cta_label" value="{{ campaign.cta }}" placeholder="{% trans 'Ex: Buy now' %}" />
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="">
+                                <label for="cta-url">{% trans "Call-to-action url link" %}</label>
+                                <input type="text" class="form-control input-sm" id="cta-url"
+                                   name="cta_url" value="{{ campaign.cta_url }}" placeholder="{% trans 'Ex: http://www.mysite.com/product' %}" />
+                            </div>
+                        </div>
+                    </section>
+
                     <div class="form-group col-xs-12 col-sm-6 col-sm-offset-3" style="clear: both; padding-top: 15px">
                         <button class="btn btn-sm btn-success btn-block">{% trans "Save" %}</button>
                     </div>

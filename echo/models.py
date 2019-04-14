@@ -62,6 +62,8 @@ class MailCampaign(Campaign):
     image = models.ImageField(upload_to=UPLOAD_TO)
     content = models.TextField()
     items_fk_list = ListField()
+    cta = models.CharField(max_length=15, blank=True, null=True)
+    cta_url = models.URLField(max_length=250, blank=True, null=True)
     is_running = models.BooleanField(default=False)
 
     def get_sample(self):
@@ -74,7 +76,6 @@ class MailCampaign(Campaign):
             pass
 
     # def get_obj_details(self):
-
 
 
 class SMSObject(Model):
