@@ -6,6 +6,7 @@ from threading import Thread
 
 from django.conf import settings
 from django.core.mail import EmailMessage
+from django.core.urlresolvers import reverse
 from django.utils.translation import activate, gettext as _
 from ikwen.core.models import Service
 from ikwen.core.utils import get_mail_content
@@ -37,12 +38,15 @@ def notify_for_low_messaging_credit(service, balance):
         account = "SMS"
         credit_left = balance.sms_count
         balance.last_low_sms_notice = now
+        refill_url = service.url + reverse('ikwen:service_detail')
     elif 0 < balance.mail_count < LOW_MAIL_LIMIT:
         subject = _("Your are running out of Email credit.")
         last_notice = copy(balance.last_low_mail_notice)
         account = "Email"
         credit_left = balance.mail_count
         balance.last_low_mail_notice = now
+        refill_url = service.url + reverse('ikwen:service_detail')
+    balance.save()
 
     if last_notice:
         diff = now - last_notice
@@ -51,7 +55,8 @@ def notify_for_low_messaging_credit(service, balance):
 
     ikwen_service = Service.objects.get(pk=IKWEN_SERVICE_ID)
     html_content = get_mail_content(subject, service=ikwen_service, template_name='echo/mails/low_messaging_credit.html',
-                                    extra_context={'account': account, 'credit_left': credit_left})
+                                    extra_context={'account': account, 'credit_left': credit_left,
+                                                   'website': service, 'refill_url': refill_url})
     sender = 'ikwen <no-reply@ikwen.com>'
     msg = EmailMessage(subject, html_content, sender, [member.email])
     msg.content_subtype = "html"
@@ -86,6 +91,8 @@ def notify_for_empty_messaging_credit(service, balance):
         last_notice = copy(balance.last_empty_mail_notice)
         account = "Email"
         balance.last_empty_mail_notice = now
+    refill_url = service.url + reverse('ikwen:service_detail')
+    balance.save()
 
     if last_notice:
         diff = now - last_notice
@@ -94,7 +101,7 @@ def notify_for_empty_messaging_credit(service, balance):
 
     ikwen_service = Service.objects.get(pk=IKWEN_SERVICE_ID)
     html_content = get_mail_content(subject, service=ikwen_service, template_name='echo/mails/empty_messaging_credit.html',
-                                    extra_context={'account': account})
+                                    extra_context={'account': account, 'website': service, 'refill_url': refill_url})
     sender = 'ikwen <no-reply@ikwen.com>'
     msg = EmailMessage(subject, html_content, sender, [member.email])
     msg.content_subtype = "html"
