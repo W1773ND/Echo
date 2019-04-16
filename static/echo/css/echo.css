@@ -1,9 +1,10 @@
 /**
-    Document   : echo
-    Created on : Oct 04, 2018, 18:15
-    Author     : W1773ND
-    Description:
-        Echo/sms_campaign styles
+    Document    : echo
+    Created on  : Oct 04, 2018, 18:15
+    Author      : W1773ND
+    Contributors:
+    Description :
+        Echo/sms_campaign, and mail_campaign styles
 */
 
 a:hover, a:focus { color: #319dd5 !important; text-decoration: none !important; }
@@ -30,7 +31,7 @@ a:hover, a:focus { color: #319dd5 !important; text-decoration: none !important; 
 .event .btn {width: 120px;}
 .event-content {padding-left: 105px;}
 .event-content p {margin-top: 10px;}
-.event-detail {border: 1px solid #ddd; height: 160px; margin-top: 10px; padding: 15px;}
+.event-detail {border: 1px solid #ddd; margin-top: 10px; padding: 15px;}
 .event-icon {border-right: 1px solid #eee; height: 160px; line-height: 140px; margin: -15px 0 0 -15px; position: absolute; text-align: center; width: 90px;}
 .event-icon img {width: 60px;}
 
@@ -62,16 +63,13 @@ label.checkbox-label { padding-left: 0 !important; }
 
 .text {line-height: 20px;}
 
+.upload-title { display: none; }
 .upload-csv {width: 1px; height: 1px; opacity: 0; overflow: hidden; position: absolute; z-index: -1;}
 .modal-icon:focus {outline: 1px dotted #000 !important; outline: -webkit-focus-ring-color auto 5px !important;}
 .modal-icon:hover {outline: 1px dotted #000 !important; outline: -webkit-focus-ring-color auto 5px !important;}
 .upload-csv-label {color: inherit;font-family: inherit;font-weight: bold;line-height: 1.1;}
 
-div.modal-campaign-uploader>.qq-uploader {
-	background: rgba(0, 0, 0, 0) !important;
-	height: auto;
-	padding-top: 8px;
-}
+div.modal-campaign-uploader > .qq-uploader { background: rgba(0, 0, 0, 0) !important; height: auto; padding-top: 8px; }
 
 
 .warning { border-color: #FF0000;}

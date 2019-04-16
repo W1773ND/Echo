@@ -59,14 +59,17 @@
 
                 <ul class="campaign-list p-0">
                     {% for campaign in campaign_list %}
-                        <li class="col-sm-12 event{% if campaign.total > campaign.progress %} running{% endif %}" id= "{{ campaign.id }}">
+                        <li class="col-sm-12 event{% if campaign.total > campaign.progress %} running{% endif %}" id="{{ campaign.id }}"
+                            data-total-recipient="{{ campaign.total }}" data-page-count="{{ campaign.page_count }}" >
                             <div class="subtle-shade event-detail">
                                 <div class="event-icon">
                                     <img src="{% static 'foulassi/img/report-card-icon.png' %}" />
                                 </div>
                                 <div class="event-content">
                                     <div>
-                                        <div class="event-recipient-list">{{ campaign.recipient_label|truncatechars:"30" }}</div>
+                                        <div class="col-md-6 row event-recipient-list">{{ campaign.recipient_label|truncatechars:"30" }}</div>
+                                        <div class="col-md-4 col-md-offset-2 event-date text-muted text-right" style="padding-right: 0;">{{ campaign.created_on }}</div>
+                                        <div class="clearfix"></div>
                                         {% if campaign.subject %}
                                             <em class="event-title text-muted" style="">{{ campaign.subject }}</em>
                                         {% else %}
@@ -76,18 +79,15 @@
                                             <i class="fas fa-exclamation-triangle text-danger pull-right"></i>
                                         {% endif %}
                                     </div>
-                                    <p class="event-message">{{ campaign.text }}</p>
+                                    <p class="event-message">{{ campaign.text | truncatechars:"190" }}</p>
+                                    <p class="event-message-full tpl">{{ campaign.text }}</p>
                                     {% if campaign.progress < campaign.total  %}
                                     <div class="progress">
                                         <div class="progress-bar progress-bar-success" role="progressbar" aria-valuenow="10" aria-valuemin="0" aria-valuemax="100" style="width: {{ campaign.progress_rate }}%;"></div>
                                     </div>
                                     {% endif %}
                                     <div class="actions">
-{#                                        {% if campaign %}#}
-{#                                            <a class="btn btn-warning pull-right btn-sm" href="{% url "echo:history" %}" target="_blank"> {% trans "Detail" %}</a>#}
-{#                                        {% else %}#}
-                                            <button type="button" class="btn btn-warning pull-right btn-sm" data-toggle="modal" data-target="#sms-detail-modal" style> {% trans "Detail" %}</button>
-{#                                        {% endif %}#}
+                                        <button type="button" class="btn btn-warning pull-right btn-sm btn-detail" data-toggle="modal" data-target="#sms-detail-modal" style> {% trans "Detail" %}</button>
                                     </div>
                                 </div>
                                 <div class="clearfix"></div>
@@ -109,15 +109,15 @@
                                     <em class="event-title text-muted tpl">&lt;{% trans "No subject" %}&gt;</em>
                                 </div>
                                 <p class="event-message"></p>
-                                <div class="progress">
+                                <div class="progress" style="height: 10px">
                                     <div class="progress-bar progress-bar-success" role="progressbar" aria-valuenow="80" aria-valuemin="0" aria-valuemax="100" style="width: 2%;"></div>
                                 </div>
                                 <div class="actions">
-                                    {% if campaign %}
+                                    {% comment %}{% if campaign %}
                                         <a class="btn btn-warning pull-right btn-sm" href="{% url 'echo:sms_hist' %}" target="_blank"> {% trans "Detail" %}</a>
                                     {% else %}
                                         <button type="button" class="btn btn-warning pull-right btn-sm" data-toggle="modal" data-target="#sms-detail-modal" style> {% trans "Detail" %}</button>
-                                    {% endif %}
+                                    {% endif %}{% endcomment %}
                                 </div>
                             </div>
                             <div class="clearfix"></div>
@@ -133,17 +133,19 @@
                 <div class="modal-content">
                   <div class="modal-header">
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                    <h4 class="modal-title" id="sms_detail__modal_title" style="text-align: center">{% trans "SMS Detail" %}</h4>
+                    <h4 class="modal-title" style="text-align: center">{% trans "SMS Detail" %}</h4>
                   </div>
                   <div class="modal-body">
                     <div class="detail-content">
-                        <strong class="title-message">{{ campaign.subject }}</strong>
-                        <hr>
-                        <p class="detail-message">{{ campaign.sms_set.all.0.text }}</p>
+                        <div class="">
+                            <strong class="title-message"></strong>
+                            <em class="total-sms"></em>
+                        </div>
+                        <p class="detail-message"></p>
                     </div>
                   </div>
                   <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-sm btn-secondary" data-dismiss="modal">Close</button>
                   </div>
                 </div>
             </div>
@@ -196,12 +198,25 @@
                             $historyTpl.find('span.event-title').text(subject).show();
                         else
                             $historyTpl.find('em.event-title').show();
-                        $historyTpl.find('.event-message').text(txt);
+                        if (txt.length > 190) $historyTpl.find('.event-message').text(txt.substr(0,190)+"...");
+                        else $historyTpl.find('.event-message').text(txt);
                         $historyTpl.prependTo('.campaign-list').addClass('running').attr('id', data.campaign.id);
                         $('.messaging-balance').text(data.balance);
                         ikwen.intervalId = setInterval(ikwen.updateProgressBar, 5000)
                     }
                 })
+            });
+
+            $('body').on('click', '.btn-detail', function () {
+                var full_text = $(this).parents('.event').find('.event-message-full').text();
+                var title = $(this).parents('.event').find('.event-title').text();
+                var total_recipient = $(this).parents('.event').data('total-recipient');
+                var page_count = $(this).parents('.event').data('page-count');
+                console.log(page_count, total_recipient);
+                var total_sms = total_recipient * page_count;
+                $('#sms-detail-modal').find('.title-message').text(title);
+                $('#sms-detail-modal').find('.total-sms').text('( '+ total_sms + ' SMS )');
+                $('#sms-detail-modal').find('.detail-message').text(full_text);
             });
         })();
     </script>

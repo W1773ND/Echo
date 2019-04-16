@@ -359,7 +359,8 @@ class SMSCampaignView(CampaignBaseView):
                 mbr = Member.objects.using(UMBRELLA).get(pk=member.id)
                 campaign = SMSCampaign.objects.using(UMBRELLA).create(service=service, member=mbr, subject=subject,
                                                                       slug=slug, text=txt, total=recipient_count,
-                                                                      recipient_list=recipient_list, recipient_label=recipient_label)
+                                                                      recipient_list=recipient_list, recipient_label=recipient_label,
+                                                                      page_count=page_count)
 
                 if getattr(settings, 'UNIT_TESTING', False):
                     batch_send(campaign)

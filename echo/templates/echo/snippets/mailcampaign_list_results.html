@@ -9,7 +9,9 @@
             </div>
             <div class="event-content">
                 <div>
-                    <div class="event-recipient-list">{{ campaign.recipients|truncatechars:"30" }}</div>
+                    <div class="col-md-6 row event-recipient-list">{{ campaign.recipients|truncatechars:"30" }}</div>
+                    <div class="col-md-4 col-md-offset-2 event-date text-muted text-right" style="padding-right: 0;">{{ campaign.created_on }}</div>
+                <div class="clearfix"></div>
                     {% if campaign.subject %}
                         <span class="event-title">{{ campaign.subject }}</span>
                     {% else %}
