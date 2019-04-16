@@ -18,7 +18,9 @@ from django.db import transaction
 from django.db.models import get_model
 from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.shortcuts import render
+from django.template import Context
 from django.template.defaultfilters import slugify
+from django.template.loader import get_template
 from django.utils.http import urlquote
 from django.views.generic import TemplateView
 from django.utils.translation import gettext as _
@@ -26,6 +28,7 @@ from django.utils.translation import gettext as _
 from ikwen.conf import settings as ikwen_settings
 from ikwen.conf.settings import WALLETS_DB_ALIAS
 from ikwen.core.constants import CONFIRMED
+from ikwen.core.models import Service
 from ikwen.core.views import ChangeObjectBase, HybridListView
 from ikwen.core.utils import send_sms, get_service_instance, DefaultUploadBackend, get_sms_label, add_event, \
     get_mail_content, get_model_admin_instance, get_item_list
@@ -169,7 +172,7 @@ def set_bundle_checkout(request, *args, **kwargs):
     if request.user.is_anonymous():
         next_url = reverse('ikwen:sign_in')
         if referrer:
-            next_url += '?' + urlquote(referrer)
+            next_url += '?next=' + urlquote(referrer)
         return HttpResponseRedirect(next_url)
     service = get_service_instance(using=UMBRELLA)
     bundle_id = request.POST['product_id']
@@ -194,7 +197,7 @@ def confirm_bundle_payment(request, *args, **kwargs):
     It serves as ikwen setting "MOMO_AFTER_CHECKOUT"
     """
     service = get_service_instance()
-    config = service.config
+    ikwen_service = Service.objects.get(service_id=ikwen_settings.IKWEN_SERVICE_ID)
     refill_id = request.session['object_id']
     
     with transaction.atomic(using='wallets'):
@@ -210,13 +213,15 @@ def confirm_bundle_payment(request, *args, **kwargs):
 
     member = request.user
     sudo_group = Group.objects.get(name=SUDO)
-    add_event(service, MESSAGING_CREDIT_REFILL, group_id=sudo_group.id, model='echo.Refill', object_id=refill.id)
+    ikwen_sudo_group = Group.objects.using(UMBRELLA).get(name=SUDO)
+    add_event(ikwen_service, MESSAGING_CREDIT_REFILL, group_id=sudo_group.id, model='echo.Refill', object_id=refill.id)
+    add_event(ikwen_service, MESSAGING_CREDIT_REFILL, group_id=ikwen_sudo_group.id, model='echo.Refill', object_id=refill.id)
     if member.email:
         try:
             subject = _("Successful refill of %d %s" % (refill.credit, refill.type))
             html_content = get_mail_content(subject, template_name='echo/mails/successful_refill.html',
                                             extra_context={'member_name': member.first_name, 'refill': refill})
-            sender = '%s <no-reply@%s>' % (config.company_name, service.domain)
+            sender = 'ikwen <no-reply@ikwen.com>'
             msg = EmailMessage(subject, html_content, sender, [member.email])
             msg.content_subtype = "html"
             if member != service.member:
@@ -628,3 +633,35 @@ class MailBundle(TemplateView):
 
 
 csv_uploader = AjaxFileUploader(DefaultUploadBackend)
+
+
+def render_credit_refill_event(event, request):
+    from ikwen.conf import settings as ikwen_settings
+    ikwen_service = Service.objects.using(UMBRELLA).get(pk=ikwen_settings.IKWEN_SERVICE_ID)
+    currency_symbol = ikwen_service.config.currency_symbol
+    try:
+        refill = Refill.objects.using(UMBRELLA).get(pk=event.object_id)
+    except Refill.DoesNotExist:
+        return ''
+    service_deployed = invoice.service
+    member = service_deployed.member
+    if request.GET['member_id'] != member.id:
+        data = {'title': 'New service deployed',
+                'details': service_deployed.details,
+                'member': member,
+                'service_deployed': True}
+        template_name = 'billing/events/notice.html'
+    else:
+        template_name = 'core/events/service_deployed.html'
+        data = {'obj': invoice,
+                'project_name': service_deployed.project_name,
+                'service_url': service_deployed.url,
+                'due_date': invoice.due_date,
+                'show_pay_now': invoice.status != Invoice.PAID}
+    data.update({'currency_symbol': currency_symbol,
+                 'details_url': IKWEN_BASE_URL + reverse('billing:invoice_detail', args=(invoice.id,)),
+                 'amount': invoice.amount,
+                 'MEMBER_AVATAR': ikwen_settings.MEMBER_AVATAR, 'IKWEN_MEDIA_URL': ikwen_settings.MEDIA_URL})
+    c = Context(data)
+    html_template = get_template(template_name)
+    return html_template.render(c)
