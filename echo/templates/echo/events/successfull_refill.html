@@ -1,0 +1,44 @@
+{% load i18n staticfiles humanize auth_tokens %}
+<div style="padding: 0 15px">
+    <div class="row">
+        <div class="col-xs-4 col-sm-3">
+            {% if service_deployed %}
+                <i class="glyphicon glyphicon-cloud-upload" style="color: #3F51B5; font-size: 5em; margin-top: .2em"></i>
+            {% else %}
+                <img src="{% static 'ikwen/img/invoice-icon.png' %}" alt="Invoice" class="img-responsive" style="margin-top: 1em" />
+            {% endif %}
+        </div>
+        <div class="col-xs-8 col-sm-9">
+            <h4 class="text-{% if danger %}danger{% else %}primary{% endif %}">{{ title|safe }}</h4>
+            <p>
+                {% trans "Successfull refill" %}:<br>
+                {{ details|safe }}
+            </p>
+            <p>
+                <span class="text-primary" style="font-size: 21px">{{ currency_symbol }}</span>
+                <strong class="text-primary" style="font-size: 21px">{{ amount|intcomma }}</strong>
+            </p>
+        </div>
+    </div>
+    {% if member %}
+        <div class="card-signature">
+            <div class="photo">
+                {% url 'ikwen:profile' member.id as member_url %}
+                <a href="{{ member_url|ikwenize }}">
+                    {% if member.photo.name %}
+                        <img src="{{ IKWEN_MEDIA_URL }}{{ member.photo.thumb_name }}" alt="{{ member.full_name }}" class="img-responsive" />
+                    {% else %}
+                        <img src="{% static MEMBER_AVATAR %}" alt="{{ member.full_name }}" class="img-responsive" />
+                    {% endif %}
+                </a>
+            </div>
+            <div class="member-info">
+                <p class="member-name">
+                    {% url 'ikwen:profile' member.id as member_url %}
+                    <a href="{{ member_url|ikwenize }}">{{ member.full_name }}</a>
+                </p>
+            </div>
+        </div>
+    {% endif %}
+    <div class="clearfix"></div>
+</div>
