@@ -1,25 +1,22 @@
-- model: echo.campaign
+- model: echo.SMSCampaign
   pk: 56eb6d04b37b3379b531e200
   fields:
     service: 56eb6d04b37b3379b531b102
     member: 56eb6d04b37b3379b531e011
-    type: 'SMS'
-    text: 'Test restart batch'
     recipient_list: ['693799544']
+    text: 'Test restart batch'
     page_count: 5
     subject: 'Batch restart testing'
     slug: 'Batch-restart-testing'
     total: 5
-    progress: 0
     updated_on: 2018-10-24 19:05:27.000Z
 
 
-- model: echo.campaign
+- model: echo.SMSCampaign
   pk: 56eb6d04b37b3379b531e201
   fields:
     service: 56eb6d04b37b3379b531b101
     member: 56eb6d04b37b3379b531e011
-    type: 'SMS'
     text: "'qskdhqklsdql qlscg lqsgclkq hsckmlqshc kqslhcl hclqskhclkqsh
             clkqhsclkqshc lkqshcklqhscqlkschlqkshc lsqchlkqshc kshqclkqsh
             ck qshlclkqs chlq"
@@ -28,4 +25,4 @@
     subject: 'Batch restart testing'
     slug: 'Batch-restart-testing'
     total: 5
-    progress: 0
+    updated_on: 2018-12-24 19:05:27.000Z

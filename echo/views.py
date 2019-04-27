@@ -176,10 +176,9 @@ def set_bundle_checkout(request, *args, **kwargs):
         return HttpResponseRedirect(next_url)
     service = get_service_instance(using=UMBRELLA)
     bundle_id = request.POST['product_id']
-    type = request.POST['type']
     bundle = Bundle.objects.using(UMBRELLA).get(pk=bundle_id)
     amount = bundle.cost
-    refill = Refill.objects.using(UMBRELLA).create(service=service, type=type, amount=amount, credit=bundle.credit)
+    refill = Refill.objects.using(UMBRELLA).create(service=service, type=bundle.type, amount=amount, credit=bundle.credit)
     request.session['amount'] = amount
     request.session['model_name'] = 'echo.Refill'
     request.session['object_id'] = refill.id
@@ -197,7 +196,10 @@ def confirm_bundle_payment(request, *args, **kwargs):
     It serves as ikwen setting "MOMO_AFTER_CHECKOUT"
     """
     service = get_service_instance()
-    ikwen_service = Service.objects.get(service_id=ikwen_settings.IKWEN_SERVICE_ID)
+    if getattr(settings, 'UNIT_TESTING', False):
+        ikwen_service = Service.objects.get(pk=getattr(settings, 'IKWEN_SERVICE_ID'))
+    else:
+        ikwen_service = Service.objects.get(pk=ikwen_settings.IKWEN_SERVICE_ID)
     refill_id = request.session['object_id']
     
     with transaction.atomic(using='wallets'):
@@ -207,8 +209,10 @@ def confirm_bundle_payment(request, *args, **kwargs):
         balance = Balance.objects.using('wallets').get(service_id=service.id)
         if refill.type == SMS:
             balance.sms_count += refill.credit
+            balance_count = balance.sms_count
         else:
             balance.mail_count += refill.credit
+            balance_count = balance.mail_count
         balance.save()
 
     member = request.user
@@ -220,7 +224,8 @@ def confirm_bundle_payment(request, *args, **kwargs):
         try:
             subject = _("Successful refill of %d %s" % (refill.credit, refill.type))
             html_content = get_mail_content(subject, template_name='echo/mails/successful_refill.html',
-                                            extra_context={'member_name': member.first_name, 'refill': refill})
+                                            extra_context={'member_name': member.first_name, 'refill': refill,
+                                                           'balance_count': balance_count})
             sender = 'ikwen <no-reply@ikwen.com>'
             msg = EmailMessage(subject, html_content, sender, [member.email])
             msg.content_subtype = "html"
@@ -352,7 +357,7 @@ class SMSCampaignView(CampaignBaseView):
         try:
             balance = Balance.objects.using('wallets').get(service_id=get_service_instance().id)
             if balance.sms_count < sms_count:
-                response = {"insufficient_balance": _("Insufficient SMS balance.")}
+                response = {"error": _("Insufficient SMS balance.")}
                 return HttpResponse(
                     json.dumps(response),
                     'content-type: text/json'
