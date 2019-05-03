@@ -110,7 +110,7 @@ def batch_send_mail(campaign):
     service = campaign.service
     config = service.config
     balance = Balance.objects.using('wallets').get(service_id=service.id)
-    campaign.is_running = True
+    campaign.keep_running = True
     campaign.save()
 
     connection = mail.get_connection()
@@ -144,17 +144,20 @@ def batch_send_mail(campaign):
                                                        'campaign': campaign, 'currency': currency})
         msg = EmailMessage(subject, html_content, sender, [email])
         msg.content_subtype = "html"
-        try:
-            with transaction.atomic(using='wallets'):
-                if not msg.send():
-                    balance.mail_count += 1
-                    balance.save()
-        except:
-            pass
+        if getattr(settings, 'ECHO_TEST_EMAIL'):
+            requests.get('http://google.com')
+        else:
+            try:
+                with transaction.atomic(using='wallets'):
+                    if not msg.send():
+                        balance.mail_count += 1
+                        balance.save()
+            except:
+                pass
         campaign.progress += 1
         campaign.save()
         campaign = MailCampaign.objects.using(UMBRELLA).get(pk=campaign.id)
-        if not campaign.is_running:
+        if not campaign.keep_running:
             break
 
     try:
@@ -499,7 +502,7 @@ class ChangeMailCampaign(CampaignBaseView, ChangeObjectBase):
         campaign = MailCampaign.objects.using(UMBRELLA).get(pk=campaign_id)
         balance = Balance.objects.using('wallets').get(service_id=get_service_instance().id)
         if not getattr(settings, 'UNIT_TESTING', False) and campaign.progress > 0:
-            campaign.is_running = True
+            campaign.keep_running = True
             campaign.save()
             response = {"success": True, "balance": balance.mail_count, "campaign": campaign.to_dict()}
             return HttpResponse(
@@ -534,7 +537,7 @@ class ChangeMailCampaign(CampaignBaseView, ChangeObjectBase):
     def pause_campaign(self,  request, *args, **kwargs):
         campaign_id = kwargs['object_id']
         campaign = MailCampaign.objects.using(UMBRELLA).get(pk=campaign_id)
-        campaign.is_running = False
+        campaign.keep_running = False
         campaign.save()
         response = {"success": True}
         return HttpResponse(

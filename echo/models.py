@@ -64,7 +64,7 @@ class MailCampaign(Campaign):
     items_fk_list = ListField()
     cta = models.CharField(max_length=15, blank=True, null=True)
     cta_url = models.URLField(max_length=250, blank=True, null=True)
-    is_running = models.BooleanField(default=False)
+    keep_running = models.BooleanField(default=False)
 
     def get_sample(self):
         """
