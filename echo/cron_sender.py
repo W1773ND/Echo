@@ -36,7 +36,7 @@ def restart_mail_batch():
     campaign_list = MailCampaign.objects.raw_query(raw_query).select_related('service').filter(updated_on__lt=timeout)
     for campaign in campaign_list:
         if getattr(settings, 'UNIT_TESTING', False):
-            batch_send(campaign)
+            batch_send_mail(campaign)
         else:
             Thread(target=batch_send_mail, args=(campaign,)).start()
 
