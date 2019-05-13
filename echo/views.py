@@ -92,7 +92,7 @@ def batch_send(campaign):
         if len(recipient) == 9:
             recipient = '237' + recipient
         try:
-            if getattr(settings, 'UNIT_TESTING', False):
+            if getattr(settings, 'UNIT_TESTING', False) or getattr(settings, 'ECHO_TEST', False):
                 requests.get('http://google.com')
             else:
                 send_sms(recipient=recipient, text=text, fail_silently=False)
@@ -144,7 +144,7 @@ def batch_send_mail(campaign):
                                                        'campaign': campaign, 'currency': currency})
         msg = EmailMessage(subject, html_content, sender, [email])
         msg.content_subtype = "html"
-        if getattr(settings, 'ECHO_TEST_EMAIL'):
+        if getattr(settings, 'ECHO_TEST', False):
             requests.get('http://google.com')
         else:
             try:
