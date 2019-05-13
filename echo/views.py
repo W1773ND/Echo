@@ -344,6 +344,7 @@ class SMSCampaignView(CampaignBaseView):
     def get_context_data(self, **kwargs):
         context = super(SMSCampaignView, self).get_context_data(**kwargs)
         context['verbose_name_plural'] = "echo-sms"
+        context['csv_model'] = "ikwen_SMS_campaign_csv_model"
         return context
 
     def start_campaign(self, request, *args, **kwargs):
@@ -407,6 +408,7 @@ class ChangeMailCampaign(CampaignBaseView, ChangeObjectBase):
     def get_context_data(self, **kwargs):
         context = super(ChangeMailCampaign, self).get_context_data(**kwargs)
         obj = context['obj']
+        context['csv_model'] = "ikwen_MAIL_campaign_csv_model"
         items_fk_list = []
         if self.request.GET.get('items_fk_list'):
             items_fk_list = self.request.GET.get('items_fk_list').split(',')
@@ -447,8 +449,10 @@ class ChangeMailCampaign(CampaignBaseView, ChangeObjectBase):
         form = model_form(request.POST, instance=obj)
         if form.is_valid():
             subject = form.cleaned_data['subject']
-            content = form.cleaned_data['content']
             pre_header = form.cleaned_data['pre_header']
+            content = form.cleaned_data['content']
+            cta = form.cleaned_data['cta']
+            cta_url = form.cleaned_data['cta_url']
             recipient_label, recipient_list = self.get_recipient_list(request)
             slug = slugify(subject)
             if not object_id:
@@ -458,6 +462,8 @@ class ChangeMailCampaign(CampaignBaseView, ChangeObjectBase):
             obj.slug = slug
             obj.pre_header = pre_header
             obj.content = content
+            obj.cta = cta
+            obj.cta_url = cta_url
             obj.recipient_label = recipient_label
             obj.recipient_list = recipient_list
             obj.total = len(recipient_list)

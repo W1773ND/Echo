@@ -1,4 +1,4 @@
-{% load i18n humanize staticfiles auth_tokens %}
+{% load i18n humanize static auth_tokens %}
 <div id="modal-start-campaign" class="modal fade modal-start-campaign" tabindex="-1" role="dialog" aria-labelledby="modal-start-campaign">
     <div class="modal-dialog" role="document">
         <div class="modal-content modal-lg" style="text-align: center">
@@ -17,7 +17,8 @@
                             </div>
                             <div id="importCSV" class="panel-collapse collapse">
                                 <div class="panel-body hidden-xs" style="padding-top: 1.5vh;">
-                                    <a href="{% static "echo/ikwen_SMS_campaign_csv_model.csv" %}" style="text-decoration: none;">{% trans "Download CSV file model..." %}</a>
+{#                                    <a href="{% static "echo/ikwen_SMS_campaign_csv_model.csv" %}" style="text-decoration: none;">{% trans "Download CSV file model..." %}</a>#}
+                                    <a href="{% get_static_prefix %}echo/{{ csv_model }}.csv" style="text-decoration: none;">{% trans "Download CSV file model..." %}</a>
                                 </div>
                                 <form>
                                   <div class="form-group">

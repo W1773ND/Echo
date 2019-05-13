@@ -1,0 +1,15 @@
+- model: echo.bundle
+  pk: 56eb6d04b37b3379b531e200
+  fields:
+    type: 'Mail'
+    name: 'PERSSONAL'
+    cost: 5000
+    credit: 10000
+
+- model: echo.bundle
+  pk: 56eb6d04b37b3379b531e201
+  fields:
+    type: 'SMS'
+    name: 'PERSSONAL'
+    cost: 5000
+    credit: 25000
