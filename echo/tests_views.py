@@ -11,7 +11,7 @@ from django.utils import unittest
 
 from conf.settings import WALLETS_DB_ALIAS
 from echo.models import SMSCampaign, Balance
-from echo.views import count_pages
+from echo.utils import count_pages
 from echo.cron_sender import restart_sms_batch
 
 

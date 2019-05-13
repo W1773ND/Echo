@@ -2,6 +2,7 @@
 import logging
 from copy import copy
 from datetime import datetime
+from math import ceil
 from threading import Thread
 
 from django.conf import settings
@@ -18,6 +19,39 @@ EMAIL_AND_SMS = "Email and SMS"
 
 LOW_SMS_LIMIT = 100
 LOW_MAIL_LIMIT = 500
+
+sms_normal_count = [' ', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h',
+                    'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+                    'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
+                    'T', 'U', 'V', 'W', 'X', 'Y', 'Z', u'Ä', u'ä', u'à', u'Å', u'å', u'Æ', u'æ', u'ß', u'Ç', u'è', u'é',
+                    u'É', u'ì', u'Ö', u'ö', u'ò', u'Ø', u'ø', u'Ñ', u'ñ', u'Ü', u'ü', u'ù', u'#', u'¤', u'%', u'&',
+                    u'(', u')', u'*', u'+', u',', u'–', u'.', u'/', u':', u';', u'<', u'>', u'=', u'§', u'$', u'!',
+                    u'?', u'£', u'¿', u'¡', u'@', u'¥', u'Δ', u'Φ', u'Γ', u'Λ', u'Ω', u'Π', u'Ψ', u'Σ', u'Θ', u'Ξ',
+                    u'»', u'‘', "'", '"', '-']
+sms_double_count = [u'^', u'|', u'€', u'}', u'{', u'[', u'~', u']', u'\\']
+
+
+def count_pages(text):
+    max_length = 160
+    count = 0
+    for char in text:
+        if max_length >= 153:
+            if char in sms_double_count:
+                count += 2
+            else:
+                count += 1
+        else:
+            count += 1
+    for char in text:
+        if char not in sms_double_count and char not in sms_normal_count:
+            max_length = 70
+    if count > max_length:
+        if max_length >= 153:
+            max_length -= 7
+        else:
+            max_length -= 4
+    page_count = ceil(float(count) / max_length)
+    return page_count
 
 
 def notify_for_low_messaging_credit(service, balance):

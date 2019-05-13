@@ -55,6 +55,7 @@
 
 {% block js %}
     {{ block.super }}
+    {% include 'echo/snippets/batch_progress.html' %}
     {% include 'core/snippets/sort_and_actions.html' %}
     <script type="text/javascript">
         (function() {
