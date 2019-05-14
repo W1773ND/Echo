@@ -82,6 +82,9 @@
             <div class="form col-lg-4 col-sm-6 col-lg-offset-4 col-sm-offset-3 all-content">
                 <h3><label class="title"> {% trans "Email campaign" %}</label></h3>
                 <form style="" class="campaign" method="post">{% csrf_token %}
+                    <input type="hidden" name="keep_editing" value="yes">
+                    <input class="filename" type="hidden" name="filename">
+                    <input class="profile-checked" type="hidden" name="profiles">
 
                     {% if campaign %}
                         <div class="form-group">
@@ -103,8 +106,13 @@
                     {% endif %}
                     <div class="form-group">
                         <div class="col-xs-10" style="padding-left: 0" >
-                            <input type="text" class="form-control recipient-list input-sm" id="recipient-list" name="recipients" placeholder="{% trans 'To' %}">
-                            <div class="reset-recipient-list tpl">&times;</div>
+                            {% if campaign.recipient_label %}
+                                <input type="text" class="form-control recipient-list input-sm text-center" id="recipient-list" name="recipients" placeholder="{% trans 'To' %}" value="{{ campaign.recipient_label|truncatechars:33 }}" readonly>
+                                <div class="reset-recipient-list">&times;</div>
+                                {% else %}
+                                    <input type="text" class="form-control recipient-list input-sm " id="recipient-list" name="recipients" placeholder="{% trans 'To' %}">
+                                    <div class="reset-recipient-list tpl">&times;</div>
+                            {% endif %}
                         </div>
                         <div class="col-xs-2 btn-start-campaign">
                             <i class="fa fa-bullhorn" data-toggle="modal" data-target="#modal-start-campaign"

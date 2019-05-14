@@ -457,7 +457,7 @@ class ChangeMailCampaign(CampaignBaseView, ChangeObjectBase):
                             raise e
                         return {'error': 'File failed to upload. May be invalid or corrupted image file'}
             if request.POST.get('keep_editing'):
-                next_url = self.get_change_object_url(request, obj, *args, **kwargs)
+                next_url = reverse('echo:change_mailcampaign', args=(obj.id, ))
             else:
                 next_url = self.get_object_list_url(request, obj, *args, **kwargs)
             if object_id:

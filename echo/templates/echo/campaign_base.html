@@ -52,7 +52,8 @@
                         csv_name = ikwen.filename.split('.').shift();
                         {#$('.upload-csv-label').text(csv_name);#}
                         $('.recipient-list').addClass('text-center').removeClass('warning').attr("readonly", "readonly").val(csv_name);
-                        $('.reset-recipient-list').show()
+                        $('.reset-recipient-list').show();
+                        $('.filename').val(ikwen.filename)
                     } else {
                         alert("{% trans 'upload failed!' %}");
                     }
@@ -72,6 +73,7 @@
                     ikwen.checkedProfiles.push($(this).val());
                 });
                 if (ikwen.checkedProfiles.length !== 0) {
+                    $('.profile-checked').val(ikwen.checkedProfiles.join(','));
                     $('.recipient-list').addClass('text-center').removeClass('warning').attr("readonly", "readonly").val('[Selected profiles]');
                     $('.reset-recipient-list').show()
                 }
