@@ -25,6 +25,7 @@ class Campaign(Model):
     slug = models.SlugField(max_length=240)
     total = models.IntegerField(default=0)
     progress = models.IntegerField(default=0)
+    is_started = models.BooleanField(default=False)
 
     objects = MongoDBManager()
 

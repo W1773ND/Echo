@@ -476,9 +476,15 @@ class ChangeMailCampaign(CampaignBaseView, ChangeObjectBase):
     def start_campaign(self, request, *args, **kwargs):
         campaign_id = kwargs['object_id']
         campaign = MailCampaign.objects.using(UMBRELLA).get(pk=campaign_id)
+        if campaign.is_started:
+            response = {"error": "Campaign already started"}
+            return HttpResponse(
+                json.dumps(response),
+                'content-type: text/json')
         balance = Balance.objects.using('wallets').get(service_id=get_service_instance().id)
         if not getattr(settings, 'UNIT_TESTING', False) and campaign.progress > 0:
             campaign.keep_running = True
+            campaign.is_started = True
             campaign.save()
             response = {"success": True, "balance": balance.mail_count, "campaign": campaign.to_dict()}
             return HttpResponse(
@@ -515,7 +521,7 @@ class ChangeMailCampaign(CampaignBaseView, ChangeObjectBase):
         campaign = MailCampaign.objects.using(UMBRELLA).get(pk=campaign_id)
         campaign.keep_running = False
         campaign.save()
-        response = {"success": True}
+        response = {"success": True, "campaign": campaign.to_dict()}
         return HttpResponse(
             json.dumps(response),
             'content-type: text/json'

@@ -90,10 +90,17 @@
                         <div class="form-group">
                             <div class="row">
                                 <div class="col-xs-6">
-                                    <div class="btn btn-sm btn-default btn-block toggle-send {% if campaign.keep_runnning %}running {% else %} paused{% endif %}" data-campaign-id="{{ campaign.id }}">
-                                        <i class="fa fa-play"></i>
-                                        <span>{% trans "Start" %}</span>
-                                    </div>
+                                     {% if campaign.keep_runnning %}
+                                        <div class="btn btn-sm btn-default btn-block toggle-send running" data-campaign-id="{{ campaign.id }}">
+                                            <i class="fa fa-pause"></i>
+                                            <span>{% trans "Pause" %}</span>
+                                        </div>
+                                     {% else %}
+                                        <div class="btn btn-sm btn-default btn-block toggle-send paused" data-campaign-id="{{ campaign.id }}">
+                                            <i class="fa fa-play"></i>
+                                            <span>{% trans "Start" %}</span>
+                                        </div>
+                                     {% endif %}
                                 </div>
                                 <div class="col-xs-6">
                                     <div class="btn btn-sm btn-default btn-block show-modal-test" data-toggle="modal" data-target="#modal-test">
@@ -106,12 +113,14 @@
                     {% endif %}
                     <div class="form-group">
                         <div class="col-xs-10" style="padding-left: 0" >
-                            {% if campaign.recipient_label %}
+                            {% if campaign.recipient_label or campaign.is_started %}
                                 <input type="text" class="form-control recipient-list input-sm text-center" id="recipient-list" name="recipients" placeholder="{% trans 'To' %}" value="{{ campaign.recipient_label|truncatechars:33 }}" readonly>
-                                <div class="reset-recipient-list">&times;</div>
-                                {% else %}
-                                    <input type="text" class="form-control recipient-list input-sm " id="recipient-list" name="recipients" placeholder="{% trans 'To' %}">
-                                    <div class="reset-recipient-list tpl">&times;</div>
+                                {% if not campaign.is_started %}
+                                    <div class="reset-recipient-list">&times;</div>
+                                {% endif %}
+                            {% else %}
+                                <input type="text" class="form-control recipient-list input-sm " id="recipient-list" name="recipients" placeholder="{% trans 'To' %}">
+                                <div class="reset-recipient-list tpl">&times;</div>
                             {% endif %}
                         </div>
                         <div class="col-xs-2 btn-start-campaign">
@@ -257,6 +266,7 @@
                     $(this).removeClass('running').addClass('paused');
                     $(this).children('i').removeClass('fa-pause').addClass('fa-play');
                     $(this).children('span').text('Start');
+                    $('.recipient-list').attr("readonly", "readonly");
                     var params = {action: 'pause_campaign'};
                 }
                 else {
