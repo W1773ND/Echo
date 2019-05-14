@@ -90,7 +90,7 @@
                         <div class="form-group">
                             <div class="row">
                                 <div class="col-xs-6">
-                                    <div class="btn btn-sm btn-default btn-block toggle-send" data-campaign-id="{{ campaign.id }}">
+                                    <div class="btn btn-sm btn-default btn-block toggle-send {% if campaign.keep_runnning %}running{% endif %}" data-campaign-id="{{ campaign.id }}">
                                         <i class="fa fa-play"></i>
                                         <span>{% trans "Start" %}</span>
                                     </div>
@@ -255,10 +255,14 @@
             $('.toggle-send').click(function () {
                 if ($(this).hasClass('running')) {
                     $(this).removeClass('running').addClass('paused');
+                    $(this).children('i').removeClass('fa-pause').addClass('fa-play');
+                    $(this).children('span').text('Start');
                     var params = {action: 'pause_campaign'};
                 }
                 else {
                     $(this).removeClass('paused').addClass('running');
+                    $(this).children('i').removeClass('fa-play').addClass('fa-pause');
+                    $(this).children('span').text('Pause');
                     var params = {action: 'start_campaign'};
                 }
                 $.getJSON('', params, function (data) {
