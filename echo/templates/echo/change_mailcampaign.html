@@ -90,7 +90,7 @@
                         <div class="form-group">
                             <div class="row">
                                 <div class="col-xs-6">
-                                    <div class="btn btn-sm btn-default btn-block toggle-send {% if campaign.keep_runnning %}running{% endif %}" data-campaign-id="{{ campaign.id }}">
+                                    <div class="btn btn-sm btn-default btn-block toggle-send {% if campaign.keep_runnning %}running {% else %} paused{% endif %}" data-campaign-id="{{ campaign.id }}">
                                         <i class="fa fa-play"></i>
                                         <span>{% trans "Start" %}</span>
                                     </div>
