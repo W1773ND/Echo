@@ -214,8 +214,9 @@ class CampaignBaseView(TemplateView):
         context = super(CampaignBaseView, self).get_context_data(**kwargs)
         campaign_list = self.model._default_manager.using(UMBRELLA).order_by("-id")[:5]
         for campaign in campaign_list:
-            campaign.progress_rate = (campaign.progress / campaign.total) * 100
-            campaign.sample = campaign.get_sample()
+            if campaign.total > 0:
+                campaign.progress_rate = (campaign.progress / campaign.total) * 100
+                campaign.sample = campaign.get_sample()
         balance, update = Balance.objects.using('wallets').get_or_create(service_id=get_service_instance().id)
         context['balance'] = balance
         context['campaign_list'] = campaign_list
@@ -288,6 +289,8 @@ class CampaignBaseView(TemplateView):
                             recipient_list.append(member.phone)
                         elif campaign_type == MAIL and member.email:
                             recipient_list.append(member.email)
+        elif recipient_list == '':
+            recipient_label = recipient_list
 
         else:
             recipient_list = recipient_list.strip().split(',')
