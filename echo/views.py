@@ -464,9 +464,9 @@ class ChangeMailCampaign(CampaignBaseView, ChangeObjectBase):
             else:
                 next_url = self.get_object_list_url(request, obj, *args, **kwargs)
             if object_id:
-                messages.success(request, obj._meta.verbose_name.capitalize() + ' <strong>' + str(obj).decode('utf8') + '</strong> ' + _('successfully updated'))
+                messages.success(request, obj._meta.verbose_name.capitalize() + ' <strong>' + str(obj).decode('utf8') + '</strong> ' + _('successfully updated').decode('utf8'))
             else:
-                messages.success(request, obj._meta.verbose_name.capitalize() + ' <strong>' + str(obj).decode('utf8') + '</strong> ' + _('successfully created'))
+                messages.success(request, obj._meta.verbose_name.capitalize() + ' <strong>' + str(obj).decode('utf8') + '</strong> ' + _('successfully created').decode('utf8'))
             return HttpResponseRedirect(next_url)
         else:
             context = self.get_context_data(**kwargs)
