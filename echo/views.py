@@ -383,6 +383,7 @@ class MailCampaignList(HybridListView):
             'content-type: text/json'
         )
 
+
 class ChangeMailCampaign(CampaignBaseView, ChangeObjectBase):
     template_name = "echo/change_mailcampaign.html"
     model = MailCampaign
