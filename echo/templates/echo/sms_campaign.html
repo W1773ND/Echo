@@ -212,7 +212,6 @@
                 var title = $(this).parents('.event').find('.event-title').text();
                 var total_recipient = $(this).parents('.event').data('total-recipient');
                 var page_count = $(this).parents('.event').data('page-count');
-                console.log(page_count, total_recipient);
                 var total_sms = total_recipient * page_count;
                 $('#sms-detail-modal').find('.title-message').text(title);
                 $('#sms-detail-modal').find('.total-sms').text('( '+ total_sms + ' SMS )');

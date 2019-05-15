@@ -361,7 +361,7 @@ class SMSCampaignView(CampaignBaseView):
         )
 
 
-class MailCampaignList(HybridListView):
+class MailCampaignList(HybridListView, CampaignBaseView):
     template_name = 'echo/mailcampaign_list.html'
     html_results_template_name = 'echo/snippets/mailcampaign_list_results.html'
     model = MailCampaign
