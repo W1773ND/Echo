@@ -361,13 +361,27 @@ class SMSCampaignView(CampaignBaseView):
         )
 
 
-class MailCampaignList(HybridListView, CampaignBaseView):
+class MailCampaignList(HybridListView):
     template_name = 'echo/mailcampaign_list.html'
     html_results_template_name = 'echo/snippets/mailcampaign_list_results.html'
     model = MailCampaign
     queryset = MailCampaign.objects.using(UMBRELLA).all()
     search_field = 'subject'
 
+    def get(self, request, *args, **kwargs):
+        action = request.GET.get('action')
+        if action == 'get_campaign_progress':
+            return self.get_campaign_progress(request)
+        return super(MailCampaignList, self).get(request, *args, **kwargs)
+
+    def get_campaign_progress(self, request):
+        campaign_id = request.GET['campaign_id']
+        campaign = self.model._default_manager.using(UMBRELLA).get(pk=campaign_id)
+        response = {"progress": campaign.progress, "total": campaign.total}
+        return HttpResponse(
+            json.dumps(response),
+            'content-type: text/json'
+        )
 
 class ChangeMailCampaign(CampaignBaseView, ChangeObjectBase):
     template_name = "echo/change_mailcampaign.html"
