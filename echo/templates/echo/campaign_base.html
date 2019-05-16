@@ -53,7 +53,7 @@
                         {#$('.upload-csv-label').text(csv_name);#}
                         $('.recipient-list').addClass('text-center').removeClass('warning').attr("readonly", "readonly").val(csv_name);
                         $('.reset-recipient-list').show();
-                        $('.filename').val(ikwen.filename)
+                        $('.filename').val(csv_name)
                     } else {
                         alert("{% trans 'upload failed!' %}");
                     }
@@ -75,6 +75,7 @@
                 if (ikwen.checkedProfiles.length !== 0) {
                     $('.profile-checked').val(ikwen.checkedProfiles.join(','));
                     $('.recipient-list').addClass('text-center').removeClass('warning').attr("readonly", "readonly").val('[Selected profiles]');
+                    $('.filename').removeAttr('value');
                     $('.reset-recipient-list').show()
                 }
             });
@@ -87,6 +88,7 @@
                 csv_name = '';
                 $('.upload-csv-label').text(csv_name);
                 $('.recipient-list').addClass('text-center').removeClass('warning').attr("readonly", "readonly").val('[All Community]');
+                $('.filename').removeAttr('value');
                 $('.reset-recipient-list').show()
             });
 
@@ -96,6 +98,7 @@
                 $('input:checkbox.profiles').removeAttr('checked');
                 $('.collapse').removeClass('in');
                 $('.recipient-list').removeClass('text-center').removeAttr("readonly").focus().val("");
+                $('.filename').removeAttr('value');
                 $(this).hide();
             });
 

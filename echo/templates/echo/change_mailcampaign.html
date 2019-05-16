@@ -81,26 +81,31 @@
             </div>
             <div class="form col-lg-4 col-sm-6 col-lg-offset-4 col-sm-offset-3 all-content">
                 <h3><label class="title"> {% trans "Email campaign" %}</label></h3>
-                <form style="" class="campaign" method="post">{% csrf_token %}
+                <form style="" class="campaign {% if campaign and campaign.terminated %} terminated {% endif %}" method="post">{% csrf_token %}
                     <input type="hidden" name="keep_editing" value="yes">
-                    <input class="filename" type="hidden" name="filename">
-                    <input class="profile-checked" type="hidden" name="profiles">
+                    <input class="filename" type="hidden" name="filename" {% if campaign.recipient_src == "File" %} value="{{ campaign.recipient_label }}" {% endif %}>
+                    <input class="profile-checked" type="hidden" name="profiles"{% if campaign.recipient_src == "Profiles" %} value="{{ campaign.recipient_profile }}" {% endif %}>
 
-                    {% if campaign %}
+                    {% if campaign and not campaign.terminated %}
                         <div class="form-group">
                             <div class="row">
                                 <div class="col-xs-6">
-                                     {% if campaign.keep_running %}
+                                    {% if not campaign.is_started %}
+                                        <div class="btn btn-sm btn-default btn-block start-campaign" data-campaign-id="{{ campaign.id }}">
+                                            <i class="fa fa-play"></i>
+                                            <span>{% trans "Start" %}</span>
+                                        </div>
+                                    {% elif campaign.keep_running %}
                                         <div class="btn btn-sm btn-default btn-block toggle-send running" data-campaign-id="{{ campaign.id }}">
                                             <i class="fa fa-pause"></i>
                                             <span>{% trans "Pause" %}</span>
                                         </div>
-                                     {% else %}
+                                    {% else %}
                                         <div class="btn btn-sm btn-default btn-block toggle-send paused" data-campaign-id="{{ campaign.id }}">
                                             <i class="fa fa-play"></i>
                                             <span>{% trans "Start" %}</span>
                                         </div>
-                                     {% endif %}
+                                    {% endif %}
                                 </div>
                                 <div class="col-xs-6">
                                     <div class="btn btn-sm btn-default btn-block show-modal-test" data-toggle="modal" data-target="#modal-test">
@@ -123,95 +128,106 @@
                                 <div class="reset-recipient-list tpl">&times;</div>
                             {% endif %}
                         </div>
-                        <div class="col-xs-2 btn-start-campaign">
-                            <i class="fa fa-bullhorn" data-toggle="modal" data-target="#modal-start-campaign"
-                               title="Start a campaign" style="color: #888; font-size: 24px; height: 33px; width: 33px; line-height: 33px"></i>
+                        <div class="col-xs-2 btn-choose-recipient">
+                            <i class="fa fa-bullhorn" data-toggle="modal" data-target="#modal-choose-recipient"
+                               title="Configure audience" style="color: #888; font-size: 24px; height: 33px; width: 33px; line-height: 33px"></i>
                         </div>
                         <div class="clearfix"></div>
                     </div>
-                    <div class="form-group">
-                        <div class="">
-                            <input type="text" class="form-control input-sm" id="subject"
-                               name="subject" value="{{ campaign.subject }}" placeholder="{% trans 'Subject' %}" />
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <div class="">
-                            <input type="text" class="form-control input-sm" id="pre-header"
-                               name="pre_header" value="{{ campaign.pre_header }}" placeholder="{% trans 'Pre-Header' %}" />
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <div class="col-xs-12 col-md-offset-1">
-                            {% with image=campaign.image img_help_text='Add an image to your mail: 800x500px' %}
-                                <input type="hidden" name="image_url" id="image_url" value="{% if image.name %}{{ image.url }}{% endif %}" />
-                                {% include 'core/snippets/uploader_single.html' %}
-                            {% endwith %}
-                        </div>
-                        <div class="clearfix"></div>
-
-                    </div>
-
-                    <div class="form-group">
-                        <div class="">
-                            <h5><label class="text-center" for="mail-content">{% trans "Message" %}</label></h5>
-                            <div class="mail-content">
-                                <textarea class="form-control input-sm"
-                                          id="mail-content" name="content">{{ campaign.content|safe }}</textarea>
+                    <div class="mail-campaign-content" {% if not campaign %} style="display: none" {% endif %}>
+                        <div class="form-group">
+                            <div class="">
+                                <input type="text" class="form-control input-sm" id="subject"
+                                   name="subject" value="{{ campaign.subject }}" placeholder="{% trans 'Subject' %}" />
                             </div>
                         </div>
+                        <div class="form-group">
+                            <div class="">
+                                <input type="text" class="form-control input-sm" id="pre-header"
+                                   name="pre_header" value="{{ campaign.pre_header }}" placeholder="{% trans 'Pre-Header' %}" />
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="col-xs-12 col-md-offset-1">
+                                {% with image=campaign.image img_help_text='Add an image to your mail: 800x500px' %}
+                                    <input type="hidden" name="image_url" id="image_url" value="{% if image.name %}{{ image.url }}{% endif %}" />
+                                    {% include 'core/snippets/uploader_single.html' %}
+                                {% endwith %}
+                            </div>
+                            <div class="clearfix"></div>
 
-                    </div>
-                    <input type="hidden" name="items_fk_list" value="{{ items_fk_list }}" />
-                    <section class="content" style="width: 100%">
-                        <ul id="content-items" style="padding-left: 0">
-                            {% for item in item_list %}
-                                <li class="ik-li" id="{{ item.id }}" data-id="{{ item.id }}">
-                                    <div class="subtle-shade select">
-                                        <i class="glyphicon glyphicon-ok"></i>
-                                    </div>
-                                    {% url 'kako:change_product' item.id as change_item_url %}
-                                    {% if item.image and item.image.name %}
-                                        <a href="{{ change_item_url }}" class="image" style="background-image: url({{ item.image.small_url }})"></a>
-                                    {% else %}
-                                        <a href="{{ change_item_url }}" class="image" style="background-image: url({% static 'ikwen/img/login-avatar.jpg' %})"></a>
-                                    {% endif %}
-                                    <div class="info">
-                                        <a href="{{ change_item_url }}" class="full_name">{{ item.name }}</a>
-                                    </div>
-                                    <div class="actions">
-                                        <i class="action glyphicon glyphicon-trash trash" title="{% trans "Delete item" %}"></i>
-                                    </div>
+                        </div>
+
+                        <div class="form-group">
+                            <div class="">
+                                <h5><label class="text-center" for="mail-content">{% trans "Message" %}</label></h5>
+                                <div class="mail-content">
+                                    <textarea class="form-control input-sm"
+                                              id="mail-content" name="content">{{ campaign.content|safe }}</textarea>
+                                </div>
+                            </div>
+
+                        </div>
+                        <input type="hidden" name="items_fk_list" value="{{ items_fk_list }}" />
+                        <section class="content" style="width: 100%">
+                            <ul id="content-items" style="padding-left: 0">
+                                {% for item in item_list %}
+                                    <li class="ik-li" id="{{ item.id }}" data-id="{{ item.id }}">
+                                        <div class="subtle-shade select">
+                                            <i class="glyphicon glyphicon-ok"></i>
+                                        </div>
+                                        {% url 'kako:change_product' item.id as change_item_url %}
+                                        {% if item.image and item.image.name %}
+                                            <a href="{{ change_item_url }}" class="image" style="background-image: url({{ item.image.small_url }})"></a>
+                                        {% else %}
+                                            <a href="{{ change_item_url }}" class="image" style="background-image: url({% static 'ikwen/img/login-avatar.jpg' %})"></a>
+                                        {% endif %}
+                                        <div class="info">
+                                            <a href="{{ change_item_url }}" class="full_name">{{ item.name }}</a>
+                                        </div>
+                                        {% if campaign.total != campaign.progress %}
+                                        <div class="actions">
+                                            <i class="action glyphicon glyphicon-trash trash" title="{% trans "Delete item" %}"></i>
+                                        </div>
+                                        {% endif %}
+                                    </li>
+                                {% endfor %}
+                                {% if not campaign or campaign.total != campaign.progress %}
+                                <li class="ik-li">
+                                    <a href="{% url 'kako:product_list' %}?smart_link=yes&campaign=yes&smart_object_id={{ obj.id }}">
+                                        <i class="icon link"></i>
+                                        {% trans "Add products" %}
+                                    </a>
                                 </li>
-                            {% endfor %}
-                            <li class="ik-li">
-                                <a href="{% url 'kako:product_list' %}?smart_link=yes&campaign=yes&smart_object_id={{ obj.id }}">
-                                    <i class="icon link"></i>
-                                    {% trans "Add products" %}
-                                </a>
-                            </li>
-                        </ul>
-                    </section>
-                    <section class="call-to-action" style="border-bottom: 1px solid #eee ; padding-top: 8vh">
-                        <div class="form-group">
-                            <div class="">
-                                <label for="cta-label">{% trans "Call-to-action button title" %}</label>
-                                <input type="text" class="form-control input-sm" id="cta-label"
-                                   name="cta" value="{{ campaign.cta }}" placeholder="{% trans 'Ex: Buy now' %}" />
+                                {% endif %}
+                            </ul>
+                        </section>
+                        <section class="call-to-action" style="border-bottom: 1px solid #eee ; padding-top: 8vh">
+                            <div class="form-group">
+                                <div class="">
+                                    <label for="cta-label">{% trans "Call-to-action button title" %}</label>
+                                    <input type="text" class="form-control input-sm" id="cta-label"
+                                       name="cta" value="{{ campaign.cta }}" placeholder="{% trans 'Ex: Buy now' %}" />
+                                </div>
                             </div>
-                        </div>
-                        <div class="form-group">
-                            <div class="">
-                                <label for="cta-url">{% trans "Call-to-action url link" %}</label>
-                                <input type="text" class="form-control input-sm" id="cta-url"
-                                   name="cta_url" value="{{ campaign.cta_url }}" placeholder="{% trans 'Ex: http://www.mysite.com/product' %}" />
+                            <div class="form-group">
+                                <div class="">
+                                    <label for="cta-url">{% trans "Call-to-action url link" %}</label>
+                                    <input type="text" class="form-control input-sm" id="cta-url"
+                                       name="cta_url" value="{{ campaign.cta_url }}" placeholder="{% trans 'Ex: http://www.mysite.com/product' %}" />
+                                </div>
                             </div>
-                        </div>
-                    </section>
-
+                        </section>
+                    </div>
+                    {% if not campaign %}
+                    <div class="form-group col-xs-12 col-sm-6 col-sm-offset-3" style="clear: both; padding-top: 15px">
+                        <button class="btn btn-sm btn-success btn-block">{% trans "Continue" %}</button>
+                    </div>
+                    {% elif not campaign.terminated  %}
                     <div class="form-group col-xs-12 col-sm-6 col-sm-offset-3" style="clear: both; padding-top: 15px">
                         <button class="btn btn-sm btn-success btn-block">{% trans "Save" %}</button>
                     </div>
+                    {% endif %}
                 </form>
             </div>
         </div>
@@ -261,20 +277,11 @@
 
             });
 
-            $('.toggle-send').click(function () {
-                if ($(this).hasClass('running')) {
-                    $(this).removeClass('running').addClass('paused');
-                    $(this).children('i').removeClass('fa-pause').addClass('fa-play');
-                    $(this).children('span').text('Start');
-                    $('.recipient-list').attr("readonly", "readonly");
-                    var params = {action: 'pause_campaign'};
-                }
-                else {
-                    $(this).removeClass('paused').addClass('running');
+            $('.start-campaign').click(function () {
+                    $(this).removeClass('running start-campaign').addClass('toggle-send paused');
                     $(this).children('i').removeClass('fa-play').addClass('fa-pause');
                     $(this).children('span').text('Pause');
                     var params = {action: 'start_campaign'};
-                }
                 $.getJSON('', params, function (data) {
                     if (data.insufficient_balance) {
                         $('#insufficient-balance-modal').modal('show')
@@ -282,6 +289,20 @@
                         ikwen.showFloatingNotice(data.error, '', 6)
                     }
                 })
+            });
+
+            $('.toggle-send').click(function () {
+                if ($(this).hasClass('running')) {
+                    $(this).removeClass('running').addClass('paused');
+                    $(this).children('i').removeClass('fa-pause').addClass('fa-play');
+                    $(this).children('span').text('Start');
+                    $('.recipient-list').prop("readonly", true);
+                } else {
+                    $(this).removeClass('paused').addClass('running');
+                    $(this).children('i').removeClass('fa-play').addClass('fa-pause');
+                    $(this).children('span').text('Pause');
+                }
+                $.getJSON('', {action: 'toggle_campaign'})
             });
 
             $('.run-test').click(function() {
@@ -301,7 +322,11 @@
                         $('.test-warning').html(warning).show();
                     }
                 });
-            })
+            });
+            $('form.campaign.terminated input').prop('readonly', true);
+            $('form.campaign.terminated .btn-choose-recipient').addClass('disabled');
+            $('form.campaign.terminated .mail-content').addClass('disabled');
+
         })();
     </script>
 {% endblock %}
