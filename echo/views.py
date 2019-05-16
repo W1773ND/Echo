@@ -46,6 +46,9 @@ logger = logging.getLogger('ikwen')
 ALL_COMMUNITY = "[All Community]"
 MESSAGING_CREDIT_REFILL = "MessagingCreditRefill"
 SELECTED_PROFILES = "[Selected profiles]"
+FILE = "File"
+INPUT = "Input"
+PROFILES = "Profiles"
 
 
 def batch_send(campaign):
@@ -78,7 +81,7 @@ def batch_send_mail(campaign):
     config = service.config
     balance = Balance.objects.using('wallets').get(service_id=service.id)
     campaign.keep_running = True
-    campaign.save()
+    campaign.save(using=UMBRELLA)
 
     connection = mail.get_connection()
     try:
@@ -112,7 +115,7 @@ def batch_send_mail(campaign):
         msg = EmailMessage(subject, html_content, sender, [email])
         msg.content_subtype = "html"
         if getattr(settings, 'ECHO_TEST', False):
-            requests.get('http://google.com')
+            requests.get('http://www.google.com')
         else:
             try:
                 with transaction.atomic(using='wallets'):
@@ -122,7 +125,7 @@ def batch_send_mail(campaign):
             except:
                 pass
         campaign.progress += 1
-        campaign.save()
+        campaign.save(using=UMBRELLA)
         campaign = MailCampaign.objects.using(UMBRELLA).get(pk=campaign.id)
         if not campaign.keep_running:
             break
@@ -239,9 +242,11 @@ class CampaignBaseView(TemplateView):
         campaign_type = SMS if self.model == SMSCampaign else MAIL
         if filename:
             # Should add somme security check about file existence and type here before attempting to read it
-            path = getattr(settings, 'MEDIA_ROOT') + '/' + DefaultUploadBackend.UPLOAD_DIR + '/' + filename
+            path = getattr(settings, 'MEDIA_ROOT') + '/' + DefaultUploadBackend.UPLOAD_DIR + '/' + filename + '.csv'
             recipient_list = []
             recipient_label = filename
+            recipient_src = FILE
+            recipient_profile = ""
 
             with open(path, 'r') as fh:
                 for recipient in fh.readlines():
@@ -250,6 +255,8 @@ class CampaignBaseView(TemplateView):
         elif recipient_list == ALL_COMMUNITY:
             recipient_list = []
             recipient_label = ALL_COMMUNITY
+            recipient_src = INPUT
+            recipient_profile = ""
             member_queryset = Member.objects.all()
             total = member_queryset.count()
             chunks = total / 500 + 1
@@ -263,15 +270,21 @@ class CampaignBaseView(TemplateView):
                         recipient_list.append(member.email)
         elif recipient_list == SELECTED_PROFILES:
             recipient_list = []
+            recipient_src = PROFILES
+            recipient_profile = profiles_checked
             checked_profile_tag_id_list = profiles_checked.split(',')
-            recipient_label = []
-            for profile_id in checked_profile_tag_id_list:
-                try:
-                    profile_tag = ProfileTag.objects.get(pk=profile_id)
-                    recipient_label.append(profile_tag.name)
-                except ProfileTag.DoesNotExist:
-                    continue
-            recipient_label = ', '.join(recipient_label)
+            if campaign_type == SMS:
+                recipient_label = []
+                for profile_id in checked_profile_tag_id_list:
+                    try:
+                        profile_tag = ProfileTag.objects.get(pk=profile_id)
+                        recipient_label.append(profile_tag.name)
+                    except ProfileTag.DoesNotExist:
+                        continue
+                recipient_label = ', '.join(recipient_label)
+            elif campaign_type == MAIL:
+                recipient_label = SELECTED_PROFILES
+
             member_queryset = Member.objects.all()
             total = member_queryset.count()
             chunks = total / 500 + 1
@@ -291,11 +304,15 @@ class CampaignBaseView(TemplateView):
                             recipient_list.append(member.email)
         elif recipient_list == '':
             recipient_label = recipient_list
+            recipient_src = INPUT
+            recipient_profile = ""
 
         else:
             recipient_list = recipient_list.strip().split(',')
             recipient_label = recipient_list
-        return recipient_label, list(set(recipient_list))
+            recipient_src = INPUT
+            recipient_profile = ""
+        return recipient_label, list(set(recipient_list)), recipient_src, recipient_profile
 
     def get_campaign_progress(self, request):
         campaign_id = request.GET['campaign_id']
@@ -321,7 +338,7 @@ class SMSCampaignView(CampaignBaseView):
         member = request.user
         subject = request.GET.get('subject')
         txt = request.GET.get('txt')
-        recipient_label, recipient_list = self.get_recipient_list(request)
+        recipient_label, recipient_list, recipient_src, recipient_profile = self.get_recipient_list(request)
         recipient_count = len(recipient_list)
         slug = slugify(subject)
         page_count = count_pages(txt)
@@ -377,7 +394,7 @@ class MailCampaignList(HybridListView):
     def get_campaign_progress(self, request):
         campaign_id = request.GET['campaign_id']
         campaign = self.model._default_manager.using(UMBRELLA).get(pk=campaign_id)
-        response = {"progress": campaign.progress, "total": campaign.total}
+        response = {"campaign subject": campaign.subject, "progress": campaign.progress, "total": campaign.total, "campaign": campaign.to_dict()}
         return HttpResponse(
             json.dumps(response),
             'content-type: text/json'
@@ -394,6 +411,7 @@ class ChangeMailCampaign(CampaignBaseView, ChangeObjectBase):
         context = super(ChangeMailCampaign, self).get_context_data(**kwargs)
         obj = context['obj']
         context['csv_model'] = "ikwen_MAIL_campaign_csv_model"
+        obj.terminated = obj.progress > 0 and obj.progress == obj.total
         items_fk_list = []
         if self.request.GET.get('items_fk_list'):
             items_fk_list = self.request.GET.get('items_fk_list').split(',')
@@ -414,8 +432,8 @@ class ChangeMailCampaign(CampaignBaseView, ChangeObjectBase):
 
     def get(self, request, *args, **kwargs):
         action = request.GET.get('action')
-        if action == 'pause_campaign':
-            return self.pause_campaign(request, *args, **kwargs)
+        if action == 'toggle_campaign':
+            return self.toggle_campaign(request, *args, **kwargs)
         if action == 'run_test':
             return self.run_test(request, *args, **kwargs)
         return super(ChangeMailCampaign, self).get(request, *args, **kwargs)
@@ -438,7 +456,7 @@ class ChangeMailCampaign(CampaignBaseView, ChangeObjectBase):
             content = form.cleaned_data['content']
             cta = form.cleaned_data['cta']
             cta_url = form.cleaned_data['cta_url']
-            recipient_label, recipient_list = self.get_recipient_list(request)
+            recipient_label, recipient_list, recipient_src, recipient_profile = self.get_recipient_list(request)
             slug = slugify(subject)
             if not object_id:
                 obj = MailCampaign(service=service, member=mbr)
@@ -450,6 +468,8 @@ class ChangeMailCampaign(CampaignBaseView, ChangeObjectBase):
             obj.cta = cta
             obj.cta_url = cta_url
             obj.recipient_label = recipient_label
+            obj.recipient_src = recipient_src
+            obj.recipient_profile = recipient_profile
             obj.recipient_list = recipient_list
             obj.total = len(recipient_list)
             obj.save(using=UMBRELLA)
@@ -491,21 +511,15 @@ class ChangeMailCampaign(CampaignBaseView, ChangeObjectBase):
     def start_campaign(self, request, *args, **kwargs):
         campaign_id = kwargs['object_id']
         campaign = MailCampaign.objects.using(UMBRELLA).get(pk=campaign_id)
-        if campaign.is_started:
+        if campaign.is_started and not campaign.keep_running:
             response = {"error": "Campaign already started"}
             return HttpResponse(
                 json.dumps(response),
                 'content-type: text/json')
         balance = Balance.objects.using('wallets').get(service_id=get_service_instance().id)
-        if not getattr(settings, 'UNIT_TESTING', False) and campaign.progress > 0:
-            campaign.keep_running = True
-            campaign.is_started = True
-            campaign.save()
-            response = {"success": True, "balance": balance.mail_count, "campaign": campaign.to_dict()}
-            return HttpResponse(
-                json.dumps(response),
-                'content-type: text/json'
-            )
+        campaign.keep_running = True
+        campaign.is_started = True
+        campaign.save()
         # "transaction.atomic" instruction locks database during all operations inside "with" block
         try:
             if balance.mail_count < campaign.total:
@@ -523,7 +537,7 @@ class ChangeMailCampaign(CampaignBaseView, ChangeObjectBase):
                     # for small campaign ie minor than 50, send sms directly from application server
                     Thread(target=batch_send_mail, args=(campaign, )).start()
                 response = {"success": True, "balance": balance.mail_count, "campaign": campaign.to_dict()}
-        except:
+        except Exception as e:
             response = {"error": "Error while submitting your campaign. Please try again later."}
 
         return HttpResponse(
@@ -531,10 +545,10 @@ class ChangeMailCampaign(CampaignBaseView, ChangeObjectBase):
             'content-type: text/json'
         )
 
-    def pause_campaign(self,  request, *args, **kwargs):
+    def toggle_campaign(self,  request, *args, **kwargs):
         campaign_id = kwargs['object_id']
         campaign = MailCampaign.objects.using(UMBRELLA).get(pk=campaign_id)
-        campaign.keep_running = False
+        campaign.keep_running = not campaign.keep_running
         campaign.save()
         response = {"success": True, "campaign": campaign.to_dict()}
         return HttpResponse(
@@ -546,9 +560,10 @@ class ChangeMailCampaign(CampaignBaseView, ChangeObjectBase):
         campaign_id = kwargs['object_id']
         campaign = MailCampaign.objects.using(UMBRELLA).get(pk=campaign_id)
         test_email_list = request.GET['test_email_list'].split(',')
+        test_email_count = len(test_email_list)
         service = get_service_instance()
         balance = Balance.objects.using(WALLETS_DB_ALIAS).get(service_id=service.id)
-        if balance.mail_count == 0:
+        if balance.mail_count < test_email_count:
             response = {'error': 'Insufficient Email and SMS credit'}
             return HttpResponse(json.dumps(response))
 

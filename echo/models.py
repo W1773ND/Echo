@@ -19,10 +19,12 @@ TYPE_CHOICES = (
 class Campaign(Model):
     service = models.ForeignKey(Service, related_name='+')
     member = models.ForeignKey(Member, related_name='+')
+    recipient_src = models.CharField(max_length=200)
+    recipient_profile = models.CharField(max_length=240, blank=True, null=True)
     recipient_list = ListField()
-    recipient_label = models.CharField(max_length=200, blank=True, null=True)
+    recipient_label = models.CharField(max_length=200)
     subject = models.CharField(max_length=200, blank=True, null=True)
-    slug = models.SlugField(max_length=240)
+    slug = models.SlugField(max_length=240, blank=True, null=True)
     total = models.IntegerField(default=0)
     progress = models.IntegerField(default=0)
     is_started = models.BooleanField(default=False)
@@ -59,9 +61,9 @@ class SMSCampaign(Campaign):
 class MailCampaign(Campaign):
     UPLOAD_TO = 'mail_campaigns'
 
-    pre_header = models.TextField()
-    image = models.ImageField(upload_to=UPLOAD_TO)
-    content = models.TextField()
+    pre_header = models.TextField(blank=True, null=True)
+    image = models.ImageField(upload_to=UPLOAD_TO, blank=True, null=True)
+    content = models.TextField(blank=True, null=True)
     items_fk_list = ListField()
     cta = models.CharField(max_length=15, blank=True, null=True)
     cta_url = models.URLField(max_length=250, blank=True, null=True)
