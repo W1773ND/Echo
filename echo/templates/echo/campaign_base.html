@@ -40,6 +40,7 @@
                 allowedExtensions: ['csv'],
                 action: "{% url 'echo:csv_uploader' %}",
                 element: $('div#csv-upload-container .uploader')[0],
+                buttonText: "{% trans "Upload cover" %}",
                 multiple: false,
                 onProgress: function(id, fileName, loaded, total) {
                     $('body').css('cursor', 'wait')

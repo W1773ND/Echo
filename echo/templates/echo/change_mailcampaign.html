@@ -81,16 +81,21 @@
             </div>
             <div class="form col-lg-4 col-sm-6 col-lg-offset-4 col-sm-offset-3 all-content">
                 <h3><label class="title"> {% trans "Email campaign" %}</label></h3>
-                <form style="" class="campaign" method="post">{% csrf_token %}
+                <form style="" class="campaign {% if campaign and campaign.terminated %} terminated {% endif %}" method="post">{% csrf_token %}
                     <input type="hidden" name="keep_editing" value="yes">
-                    <input class="filename" type="hidden" name="filename">
-                    <input class="profile-checked" type="hidden" name="profiles">
+                    <input class="filename" type="hidden" name="filename" {% if campaign.recipient_src == "File" %} value="{{ campaign.recipient_label }}" {% endif %}>
+                    <input class="profile-checked" type="hidden" name="profiles"{% if campaign.recipient_src == "Profiles" %} value="{{ campaign.recipient_profile }}" {% endif %}>
 
-                    {% if campaign %}
+                    {% if campaign and not campaign.terminated %}
                         <div class="form-group">
                             <div class="row">
                                 <div class="col-xs-6">
-                                     {% if campaign.keep_running %}
+                                    {% if not campaign.is_started %}
+                                        <div class="btn btn-sm btn-default btn-block start-campaign" data-campaign-id="{{ campaign.id }}">
+                                            <i class="fa fa-play"></i>
+                                            <span>{% trans "Start" %}</span>
+                                        </div>
+                                    {% elif campaign.keep_running %}
                                         <div class="btn btn-sm btn-default btn-block toggle-send running" data-campaign-id="{{ campaign.id }}">
                                             <i class="fa fa-pause"></i>
                                             <span>{% trans "Pause" %}</span>
@@ -100,7 +105,7 @@
                                             <i class="fa fa-play"></i>
                                             <span>{% trans "Start" %}</span>
                                         </div>
-                                     {% endif %}
+                                    {% endif %}
                                 </div>
                                 <div class="col-xs-6">
                                     <div class="btn btn-sm btn-default btn-block show-modal-test" data-toggle="modal" data-target="#modal-test">
@@ -123,43 +128,44 @@
                                 <div class="reset-recipient-list tpl">&times;</div>
                             {% endif %}
                         </div>
-                        <div class="col-xs-2 btn-start-campaign">
-                            <i class="fa fa-bullhorn" data-toggle="modal" data-target="#modal-start-campaign"
+                        <div class="col-xs-2 btn-choose-recipient">
+                            <i class="fa fa-bullhorn" data-toggle="modal" data-target="#modal-choose-recipient"
                                title="Start a campaign" style="color: #888; font-size: 24px; height: 33px; width: 33px; line-height: 33px"></i>
                         </div>
                         <div class="clearfix"></div>
                     </div>
-                    <div class="form-group">
-                        <div class="">
-                            <input type="text" class="form-control input-sm" id="subject"
-                               name="subject" value="{{ campaign.subject }}" placeholder="{% trans 'Subject' %}" />
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <div class="">
-                            <input type="text" class="form-control input-sm" id="pre-header"
-                               name="pre_header" value="{{ campaign.pre_header }}" placeholder="{% trans 'Pre-Header' %}" />
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <div class="col-xs-12 col-md-offset-1">
-                            {% with image=campaign.image img_help_text='Add an image to your mail: 800x500px' %}
-                                <input type="hidden" name="image_url" id="image_url" value="{% if image.name %}{{ image.url }}{% endif %}" />
-                                {% include 'core/snippets/uploader_single.html' %}
-                            {% endwith %}
-                        </div>
-                        <div class="clearfix"></div>
-
-                    </div>
-
-                    <div class="form-group">
-                        <div class="">
-                            <h5><label class="text-center" for="mail-content">{% trans "Message" %}</label></h5>
-                            <div class="mail-content">
-                                <textarea class="form-control input-sm"
-                                          id="mail-content" name="content">{{ campaign.content|safe }}</textarea>
+                    <div class="mail-campaign-content" {% if not campaign %} style="display: none" {% endif %}>
+                        <div class="form-group">
+                            <div class="">
+                                <input type="text" class="form-control input-sm" id="subject"
+                                   name="subject" value="{{ campaign.subject }}" placeholder="{% trans 'Subject' %}" />
                             </div>
                         </div>
+                        <div class="form-group">
+                            <div class="">
+                                <input type="text" class="form-control input-sm" id="pre-header"
+                                   name="pre_header" value="{{ campaign.pre_header }}" placeholder="{% trans 'Pre-Header' %}" />
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="col-xs-12 col-md-offset-1">
+                                {% with image=campaign.image img_help_text='Add an image to your mail: 800x500px' %}
+                                    <input type="hidden" name="image_url" id="image_url" value="{% if image.name %}{{ image.url }}{% endif %}" />
+                                    {% include 'core/snippets/uploader_single.html' %}
+                                {% endwith %}
+                            </div>
+                            <div class="clearfix"></div>
+
+                        </div>
+
+                        <div class="form-group">
+                            <div class="">
+                                <h5><label class="text-center" for="mail-content">{% trans "Message" %}</label></h5>
+                                <div class="mail-content">
+                                    <textarea class="form-control input-sm"
+                                              id="mail-content" name="content">{{ campaign.content|safe }}</textarea>
+                                </div>
+                            </div>
 
                         </div>
                         <input type="hidden" name="items_fk_list" value="{{ items_fk_list }}" />
