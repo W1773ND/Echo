@@ -2,6 +2,7 @@
 import json
 import logging
 import os
+import re
 from threading import Thread
 
 import requests
@@ -124,11 +125,12 @@ def batch_send_mail(campaign):
                         balance.save()
             except:
                 pass
-        campaign.progress += 1
-        campaign.save(using=UMBRELLA)
         campaign = MailCampaign.objects.using(UMBRELLA).get(pk=campaign.id)
+        campaign.progress += 1
         if not campaign.keep_running:
+            campaign.save(using=UMBRELLA)
             break
+        campaign.save(using=UMBRELLA)
 
     try:
         connection.close()
@@ -242,9 +244,11 @@ class CampaignBaseView(TemplateView):
         campaign_type = SMS if self.model == SMSCampaign else MAIL
         if filename:
             # Should add somme security check about file existence and type here before attempting to read it
-            path = getattr(settings, 'MEDIA_ROOT') + '/' + DefaultUploadBackend.UPLOAD_DIR + '/' + filename + '.csv'
+            path = getattr(settings, 'MEDIA_ROOT') + '/' + DefaultUploadBackend.UPLOAD_DIR + '/' + filename
             recipient_list = []
             recipient_label = filename
+            # recipient_label_raw = recipient_label.split('.')[0]
+            recipient_label_raw = recipient_label
             recipient_src = FILE
             recipient_profile = ""
 
@@ -255,6 +259,7 @@ class CampaignBaseView(TemplateView):
         elif recipient_list == ALL_COMMUNITY:
             recipient_list = []
             recipient_label = ALL_COMMUNITY
+            recipient_label_raw = recipient_label
             recipient_src = INPUT
             recipient_profile = ""
             member_queryset = Member.objects.all()
@@ -284,6 +289,14 @@ class CampaignBaseView(TemplateView):
                 recipient_label = ', '.join(recipient_label)
             elif campaign_type == MAIL:
                 recipient_label = SELECTED_PROFILES
+                recipient_label_raw = []
+                for profile_id in checked_profile_tag_id_list:
+                    try:
+                        profile_tag = ProfileTag.objects.get(pk=profile_id)
+                        recipient_label_raw.append(profile_tag.name)
+                    except ProfileTag.DoesNotExist:
+                        continue
+                recipient_label_raw = ', '.join(recipient_label_raw)
 
             member_queryset = Member.objects.all()
             total = member_queryset.count()
@@ -304,15 +317,18 @@ class CampaignBaseView(TemplateView):
                             recipient_list.append(member.email)
         elif recipient_list == '':
             recipient_label = recipient_list
+            recipient_label_raw = recipient_label
             recipient_src = INPUT
             recipient_profile = ""
 
         else:
-            recipient_list = recipient_list.strip().split(',')
-            recipient_label = recipient_list
+            # recipient_list = recipient_list.strip().split(',')
+            recipient_list = re.split(';|,', recipient_list.strip())
+            recipient_label = ';'.join(recipient_list)
+            recipient_label_raw = recipient_label
             recipient_src = INPUT
             recipient_profile = ""
-        return recipient_label, list(set(recipient_list)), recipient_src, recipient_profile
+        return recipient_label, recipient_label_raw, recipient_src, list(set(recipient_list)), recipient_profile
 
     def get_campaign_progress(self, request):
         campaign_id = request.GET['campaign_id']
@@ -338,7 +354,7 @@ class SMSCampaignView(CampaignBaseView):
         member = request.user
         subject = request.GET.get('subject')
         txt = request.GET.get('txt')
-        recipient_label, recipient_list, recipient_src, recipient_profile = self.get_recipient_list(request)
+        recipient_label, recipient_label_raw, recipient_src, recipient_list, recipient_profile = self.get_recipient_list(request)
         recipient_count = len(recipient_list)
         slug = slugify(subject)
         page_count = count_pages(txt)
@@ -411,7 +427,8 @@ class ChangeMailCampaign(CampaignBaseView, ChangeObjectBase):
         context = super(ChangeMailCampaign, self).get_context_data(**kwargs)
         obj = context['obj']
         context['csv_model'] = "ikwen_MAIL_campaign_csv_model"
-        obj.terminated = obj.progress > 0 and obj.progress == obj.total
+        if obj:
+            obj.terminated = obj.progress > 0 and obj.progress == obj.total
         items_fk_list = []
         if self.request.GET.get('items_fk_list'):
             items_fk_list = self.request.GET.get('items_fk_list').split(',')
@@ -456,7 +473,7 @@ class ChangeMailCampaign(CampaignBaseView, ChangeObjectBase):
             content = form.cleaned_data['content']
             cta = form.cleaned_data['cta']
             cta_url = form.cleaned_data['cta_url']
-            recipient_label, recipient_list, recipient_src, recipient_profile = self.get_recipient_list(request)
+            recipient_label, recipient_label_raw, recipient_src, recipient_list, recipient_profile = self.get_recipient_list(request)
             slug = slugify(subject)
             if not object_id:
                 obj = MailCampaign(service=service, member=mbr)
@@ -468,6 +485,7 @@ class ChangeMailCampaign(CampaignBaseView, ChangeObjectBase):
             obj.cta = cta
             obj.cta_url = cta_url
             obj.recipient_label = recipient_label
+            obj.recipient_label_raw = recipient_label_raw
             obj.recipient_src = recipient_src
             obj.recipient_profile = recipient_profile
             obj.recipient_list = recipient_list

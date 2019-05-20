@@ -9,6 +9,9 @@
 
 a:hover, a:focus { color: #319dd5 !important; text-decoration: none !important; }
 
+div.not-allowed { opacity: 0.6; pointer-events: none; }
+form.campaign.terminated .qq-uploader { display: none; }
+
 .badge {
 
 }
@@ -22,7 +25,7 @@ a:hover, a:focus { color: #319dd5 !important; text-decoration: none !important; 
     }
 
 .btn.send-to-all {font-size: 20px;height: 125px;}
-.btn-start-campaign {border: 1.5px solid #dce4ec;border-radius: 3px;cursor: pointer; text-align: center}
+.btn-choose-recipient {border: 1.5px solid #dce4ec;border-radius: 3px;cursor: pointer; text-align: center}
 .btn-warning:hover {color: #ffffff !important;background-color: #ef6900;border-color: #e06302;}
 
 
@@ -70,10 +73,10 @@ label.checkbox-label { padding-left: 0 !important; }
 .modal-icon:hover {outline: 1px dotted #000 !important; outline: -webkit-focus-ring-color auto 5px !important;}
 .upload-csv-label {color: inherit;font-family: inherit;font-weight: bold;line-height: 1.1;}
 
-div.modal-campaign-uploader > .qq-uploader { background: rgba(0, 0, 0, 0) !important; height: auto; padding-top: 8px; }
+div.modal-campaign-uploader > .qq-uploader {background: rgba(0, 0, 0, 0) !important; height: auto; padding: 1vh 0 3vh 0;}
 
 
-.warning { border-color: #FF0000;}
+.warning {border-color: #FF0000 !important;}
 
 @media only screen and (max-width: 800px) and (orientation: portrait) {
     .btn {min-width: 100px;}

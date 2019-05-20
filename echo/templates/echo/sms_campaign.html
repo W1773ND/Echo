@@ -202,7 +202,8 @@
                         else $historyTpl.find('.event-message').text(txt);
                         $historyTpl.prependTo('.campaign-list').addClass('running').attr('id', data.campaign.id);
                         $('.messaging-balance').text(data.balance);
-                        ikwen.intervalId = setInterval(ikwen.updateProgressBar, 5000)
+                        ikwen.intervalId = setInterval(ikwen.updateProgressBar, 5000);
+                        location.reload();
                     }
                 })
             });
