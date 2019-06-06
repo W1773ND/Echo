@@ -23,6 +23,7 @@ class Campaign(Model):
     recipient_profile = models.CharField(max_length=240, blank=True, null=True)
     recipient_list = ListField()
     recipient_label = models.CharField(max_length=200)
+    recipient_label_raw = models.CharField(max_length=200)
     subject = models.CharField(max_length=200, blank=True, null=True)
     slug = models.SlugField(max_length=240, blank=True, null=True)
     total = models.IntegerField(default=0)

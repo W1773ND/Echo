@@ -35,7 +35,21 @@
                 content_css: [
                     '//fonts.googleapis.com/css?family=Lato:300,300i,400,400i',
                     '//www.tinymce.com/css/codepen.min.css'
-                ]
+                ],
+                init_instance_callback: function (editor) {
+                    editor.on('keyup', function (e) {
+                        var mailContent = tinyMCE.get('mail-content').getContent();
+                        $('div.mce-tinymce').removeClass('warning');
+                        if($('input[name=subject]').val() != "" && $('input[name=pre_header]').val() != "" && mailContent !="") {
+                            $('.start-campaign').removeClass('disabled');
+                            $('.show-modal-test').removeClass('not-allowed')
+                        }
+                        else {
+                            $('.start-campaign').addClass('disabled');
+                            $('.show-modal-test').addClass('not-allowed')
+                        }
+                    });
+                }
             };
             {% comment %}if ($(window).width() >= 768) {
                 properties['width'] = 435;
@@ -43,32 +57,6 @@
             tinymce.init(properties);
         })()
     </script>
-
-{#    <script src='https://cloud.tinymce.com/5/tinymce.min.js?apiKey=vaq5s47grhmo48gjkb0q1i0foiieunppuposvba5fqxef9fu'></script>#}
-{#    <script>#}
-{#        (function () {#}
-{#            var properties = {#}
-{#                paste_data_images: true,#}
-{#                selector: '#mail-content',#}
-{#                height: 500,#}
-{#                menubar: false,#}
-{#                plugins: [#}
-{#                'advlist autolink lists link image charmap print preview anchor textcolor',#}
-{#                'searchreplace visualblocks code fullscreen',#}
-{#                'insertdatetime media table paste code help wordcount'#}
-{#                ],#}
-{#                toolbar: 'undo redo | formatselect | bold italic backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | help',#}
-{#                content_css: [#}
-{#                '//fonts.googleapis.com/css?family=Lato:300,300i,400,400i',#}
-{#                '//www.tiny.cloud/css/codepen.min.css'#}
-{#                ]#}
-{#            };#}
-{#            if ($(window).width() >= 768) {#}
-{#                properties['width'] = 550;#}
-{#            }#}
-{#            tinymce.init(properties);#}
-{#        })()#}
-{#    </script>#}
 
 {% endblock %}
 
@@ -91,7 +79,7 @@
                             <div class="row">
                                 <div class="col-xs-6">
                                     {% if not campaign.is_started %}
-                                        <div class="btn btn-sm btn-default btn-block start-campaign" data-campaign-id="{{ campaign.id }}">
+                                        <div class="btn btn-sm btn-default btn-block start-campaign {% if not campaign.subject or not campaign.pre_header %} disabled {% endif %}" data-campaign-id="{{ campaign.id }}">
                                             <i class="fa fa-play"></i>
                                             <span>{% trans "Start" %}</span>
                                         </div>
@@ -108,7 +96,7 @@
                                     {% endif %}
                                 </div>
                                 <div class="col-xs-6">
-                                    <div class="btn btn-sm btn-default btn-block show-modal-test" data-toggle="modal" data-target="#modal-test">
+                                    <div class="btn btn-sm btn-default btn-block show-modal-test {% if not campaign.subject or not campaign.pre_header %} not-allowed {% endif %}"  data-toggle="modal" data-target="#modal-test">
                                         <i class="fa fa-vial"></i>
                                         {% trans "Test" %}
                                     </div>
@@ -119,7 +107,7 @@
                     <div class="form-group">
                         <div class="col-xs-10" style="padding-left: 0" >
                             {% if campaign.recipient_label or campaign.is_started %}
-                                <input type="text" class="form-control recipient-list input-sm text-center" id="recipient-list" name="recipients" placeholder="{% trans 'To' %}" value="{{ campaign.recipient_label|truncatechars:33 }}" readonly>
+                                <input type="text" class="form-control recipient-list input-sm text-center" id="recipient-list" name="recipients" placeholder="{% trans 'To' %}" value="{{ campaign.recipient_label }}" readonly>
                                 {% if not campaign.is_started %}
                                     <div class="reset-recipient-list">&times;</div>
                                 {% endif %}
@@ -128,10 +116,17 @@
                                 <div class="reset-recipient-list tpl">&times;</div>
                             {% endif %}
                         </div>
-                        <div class="col-xs-2 btn-choose-recipient">
-                            <i class="fa fa-bullhorn" data-toggle="modal" data-target="#modal-choose-recipient"
-                               title="Start a campaign" style="color: #888; font-size: 24px; height: 33px; width: 33px; line-height: 33px"></i>
-                        </div>
+                        {% if campaign.is_started %}
+                                <div class="col-xs-2 btn-choose-recipient not-allowed">
+                                    <i class="fa fa-bullhorn" data-toggle="modal" data-target="#modal-choose-recipient"
+                                       title="Start a campaign" style="color: #888; font-size: 24px; height: 33px; width: 33px; line-height: 33px"></i>
+                                </div>
+                        {% else %}
+                            <div class="col-xs-2 btn-choose-recipient">
+                                <i class="fa fa-bullhorn" data-toggle="modal" data-target="#modal-choose-recipient"
+                                   title="Start a campaign" style="color: #888; font-size: 24px; height: 33px; width: 33px; line-height: 33px"></i>
+                            </div>
+                        {% endif %}
                         <div class="clearfix"></div>
                     </div>
                     <div class="mail-campaign-content" {% if not campaign %} style="display: none" {% endif %}>
@@ -220,7 +215,7 @@
                         </section>
                     </div>
                     {% if not campaign %}
-                    <div class="form-group col-xs-12 col-sm-6 col-sm-offset-3" style="clear: both; padding-top: 15px">
+                    <div class="form-group col-xs-12 col-sm-6 col-sm-offset-3 btn-continue not-allowed" style="clear: both; padding-top: 15px">
                         <button class="btn btn-sm btn-success btn-block">{% trans "Continue" %}</button>
                     </div>
                     {% elif not campaign.terminated  %}
@@ -273,39 +268,75 @@
     {{ block.super }}
     <script>
         (function () {
-            $('.admin-form.campaign').submit(function() {
-
+            $('input[name=subject]').keyup(function () {
+                var mailContent = tinyMCE.get('mail-content').getContent();
+                $(this).removeClass('warning');
+                if($('input[name=subject]').val() != "" && $('input[name=pre_header]').val() != "" && mailContent !="") {
+                    $('.start-campaign').removeClass('disabled');
+                    $('.show-modal-test').removeClass('not-allowed')
+                }
+                else {
+                    $('.start-campaign').addClass('disabled');
+                    $('.show-modal-test').addClass('not-allowed')
+                }
+            });
+            $('input[name=pre_header]').keyup(function () {
+                var mailContent = tinyMCE.get('mail-content').getContent();
+                $(this).removeClass('warning');
+                if($('input[name=subject]').val() != "" && $('input[name=pre_header]').val() != "" && mailContent !="") {
+                    $('.start-campaign').removeClass('disabled');
+                    $('.show-modal-test').removeClass('not-allowed')
+                }
+                else {
+                    $('.start-campaign').addClass('disabled');
+                    $('.show-modal-test').addClass('not-allowed')
+                }
             });
 
-            $('.start-campaign').click(function () {
-                    $(this).removeClass('running start-campaign').addClass('toggle-send paused');
-                    $(this).children('i').removeClass('fa-play').addClass('fa-pause');
-                    $(this).children('span').text('Pause');
-                    var params = {action: 'start_campaign'};
-                $.getJSON('', params, function (data) {
-                    if (data.insufficient_balance) {
-                        $('#insufficient-balance-modal').modal('show')
-                    } else if (data.error) {
-                        ikwen.showFloatingNotice(data.error, '', 6)
+            $('.start-campaign:not(.toggle-send)').click(function () {
+                if($(this).hasClass('disabled')) {
+                    if($('input[name=subject]').val() === "") {
+                        $('input[name=subject]').addClass('warning');
                     }
-                })
+                    if($('input[name=pre_header]').val() === "") {
+                        $('input[name=pre_header]').addClass('warning');
+                    }
+                    var mailContent = tinyMCE.get('mail-content').getContent();
+                    if (mailContent === "") {
+                        $('div.mce-tinymce').addClass('warning')
+                    }
+
+                } else {
+                    var params = {action: 'start_campaign'};
+                    $.getJSON('', params, function (data) {
+                        if (data.insufficient_balance) {
+                            $('#insufficient-balance-modal').modal('show')
+                        } else if (data.error) {
+                            ikwen.showFloatingNotice(data.error, '', 6)
+                        } else {
+                            $('.start-campaign:not(.toggle-send)').removeClass('start-campaign').addClass('toggle-send paused');
+                            $('.start-campaign:not(.toggle-send) i').removeClass('fa-play').addClass('fa-pause');
+                            $('.start-campaign:not(.toggle-send) span').text('Pause');
+
+                        }
+                    });
+                }
+
             });
 
-            $('.toggle-send').click(function () {
+            $('body').on('click', '.toggle-send', function () {
                 if ($(this).hasClass('running')) {
                     $(this).removeClass('running').addClass('paused');
                     $(this).children('i').removeClass('fa-pause').addClass('fa-play');
                     $(this).children('span').text('Start');
                     $('.recipient-list').prop("readonly", true);
-                } else {
+                } else if ($(this).hasClass('paused')) {
                     $(this).removeClass('paused').addClass('running');
                     $(this).children('i').removeClass('fa-play').addClass('fa-pause');
                     $(this).children('span').text('Pause');
                 }
                 $.getJSON('', {action: 'toggle_campaign'})
-            });
-
-            $('.run-test').click(function() {
+            }).on('click', '.run-test', function() {
                 var emailList = $('#test-emails').val(),
                     params = {action: 'run_test', test_email_list: emailList};
                 $('#modal-test .spinner').show();
@@ -324,8 +355,8 @@
                 });
             });
             $('form.campaign.terminated input').prop('readonly', true);
-            $('form.campaign.terminated .btn-choose-recipient').addClass('disabled');
-            $('form.campaign.terminated .mail-content').addClass('disabled');
+            $('form.campaign.terminated .btn-choose-recipient').addClass('not-allowed');
+            $('form.campaign.terminated .mail-content').addClass('not-allowed');
 
         })();
     </script>

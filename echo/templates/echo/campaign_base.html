@@ -50,10 +50,12 @@
                     if(responseJSON.success) {
                         ikwen.filename = responseJSON.filename;
                         csv_name = ikwen.filename.split('.').shift();
-                        {#$('.upload-csv-label').text(csv_name);#}
+                        $('.upload-csv-label').text(csv_name);
                         $('.recipient-list').addClass('text-center').removeClass('warning').attr("readonly", "readonly").val(csv_name);
                         $('.reset-recipient-list').show();
-                        $('.filename').val(csv_name)
+                        $('.filename').val(ikwen.filename);
+                        $('.btn-continue').removeClass('not-allowed');
+                        $('.profile-checked').removeAttr('value');
                     } else {
                         alert("{% trans 'upload failed!' %}");
                     }
@@ -75,6 +77,7 @@
                 if (ikwen.checkedProfiles.length !== 0) {
                     $('.profile-checked').val(ikwen.checkedProfiles.join(','));
                     $('.recipient-list').addClass('text-center').removeClass('warning').attr("readonly", "readonly").val('[Selected profiles]');
+                    $('.btn-continue').removeClass('not-allowed');
                     $('.filename').removeAttr('value');
                     $('.reset-recipient-list').show()
                 }
@@ -89,6 +92,8 @@
                 $('.upload-csv-label').text(csv_name);
                 $('.recipient-list').addClass('text-center').removeClass('warning').attr("readonly", "readonly").val('[All Community]');
                 $('.filename').removeAttr('value');
+                $('.profile-checked').removeAttr('value');
+                $('.btn-continue').removeClass('not-allowed');
                 $('.reset-recipient-list').show()
             });
 
@@ -98,12 +103,24 @@
                 $('input:checkbox.profiles').removeAttr('checked');
                 $('.collapse').removeClass('in');
                 $('.recipient-list').removeClass('text-center').removeAttr("readonly").focus().val("");
+                 $('.btn-continue').addClass('not-allowed')
                 $('.filename').removeAttr('value');
+                $('.profile-checked').removeAttr('value');
                 $(this).hide();
             });
 
             $('.recipient-list').keyup(function () {
-                if ($(this).val() !== '') $(this).removeClass('warning');
+                if ($(this).val() !== '') {
+                    $(this).removeClass('warning');
+                    $('.btn-continue').removeClass('not-allowed');
+                }
+                else {
+                    $(this).addClass('warning');
+                    $('.btn-continue').addClass('not-allowed')
+                }
+
+                $('.filename').removeAttr('value');
+                $('.profile-checked').removeAttr('value');
             });
 
             $('#subject').keyup(function () {
