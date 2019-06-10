@@ -25,7 +25,7 @@ form.campaign.terminated .qq-uploader { display: none; }
     }
 
 .btn.send-to-all {font-size: 20px;height: 125px;}
-.btn-choose-recipient {border: 1.5px solid #dce4ec;border-radius: 3px;cursor: pointer; text-align: center}
+.btn-choose-recipient {border: 1.5px solid #dce4ec;border-radius: 3px;cursor: pointer;/* text-align: center */}
 .btn-warning:hover {color: #ffffff !important;background-color: #ef6900;border-color: #e06302;}
 
 
@@ -33,10 +33,10 @@ form.campaign.terminated .qq-uploader { display: none; }
 
 .event {list-style-type: none; margin-bottom: 30px; padding: 0 !important;}
 .event .btn {width: 120px;}
-.event-content {padding-left: 105px;}
+.event-content {padding-left: 1vw;}
 .event-content p {margin-top: 10px;}
 .event-detail {border: 1px solid #ddd; margin-top: 10px; padding: 15px;}
-.event-icon {border-right: 1px solid #eee;height: 92%;line-height: 140px;margin: -15px 0 0 -15px;position: absolute;text-align: center;width: 90px;}
+.event-icon {line-height: 140px;margin: -15px 0 0 -15px;position: absolute;text-align: center;width: 90px;}
 .event-icon img {width: 60px;}
 
 .fa-bullhorn:hover {color: #319dd5 !important;}
