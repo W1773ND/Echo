@@ -217,7 +217,8 @@ class CampaignBaseView(TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super(CampaignBaseView, self).get_context_data(**kwargs)
-        campaign_list = self.model._default_manager.using(UMBRELLA).order_by("-id")[:5]
+        service = get_service_instance(UMBRELLA)
+        campaign_list = self.model._default_manager.using(UMBRELLA).filter(service=service).order_by("-id")[:5]
         for campaign in campaign_list:
             if campaign.total > 0:
                 campaign.progress_rate = (campaign.progress / campaign.total) * 100
@@ -398,7 +399,8 @@ class MailCampaignList(HybridListView):
     template_name = 'echo/mailcampaign_list.html'
     html_results_template_name = 'echo/snippets/mailcampaign_list_results.html'
     model = MailCampaign
-    queryset = MailCampaign.objects.using(UMBRELLA).all()
+    service = get_service_instance(using=UMBRELLA)
+    queryset = MailCampaign.objects.using(UMBRELLA).filter(service=service)
     search_field = 'subject'
 
     def get(self, request, *args, **kwargs):
