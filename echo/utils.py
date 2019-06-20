@@ -10,7 +10,7 @@ from django.core.mail import EmailMessage
 from django.core.urlresolvers import reverse
 from django.utils.translation import activate, gettext as _
 from ikwen.core.models import Service
-from ikwen.core.utils import get_mail_content
+from ikwen.core.utils import get_mail_content, get_service_instance
 from ikwen.conf.settings import IKWEN_SERVICE_ID
 
 EMAIL = "Email"
@@ -86,8 +86,10 @@ def notify_for_low_messaging_credit(service, balance):
         diff = now - last_notice
         if diff.days < 2:
             return
-
-    ikwen_service = Service.objects.get(pk=IKWEN_SERVICE_ID)
+    if getattr(settings, 'UNIT_TESTING', False):
+        ikwen_service = get_service_instance()
+    else:
+        ikwen_service = Service.objects.get(pk=IKWEN_SERVICE_ID)
     html_content = get_mail_content(subject, service=ikwen_service, template_name='echo/mails/low_messaging_credit.html',
                                     extra_context={'account': account, 'credit_left': credit_left,
                                                    'website': service, 'refill_url': refill_url})
@@ -133,7 +135,10 @@ def notify_for_empty_messaging_credit(service, balance):
         if diff.days < 2:
             return
 
-    ikwen_service = Service.objects.get(pk=IKWEN_SERVICE_ID)
+    if getattr(settings, 'UNIT_TESTING', False):
+        ikwen_service = get_service_instance()
+    else:
+        ikwen_service = Service.objects.get(pk=IKWEN_SERVICE_ID)
     html_content = get_mail_content(subject, service=ikwen_service, template_name='echo/mails/empty_messaging_credit.html',
                                     extra_context={'account': account, 'website': service, 'refill_url': refill_url})
     sender = 'ikwen <no-reply@ikwen.com>'
