@@ -4,6 +4,7 @@ from copy import copy
 from datetime import datetime
 from math import ceil
 from threading import Thread
+from time import strptime
 
 from django.conf import settings
 from django.core.mail import EmailMessage
@@ -132,6 +133,9 @@ def notify_for_empty_messaging_credit(service, balance):
     balance.save()
 
     if last_notice:
+        if type(last_notice) != datetime:
+            st = strptime(last_notice[:19], '%Y-%m-%d %H:%M:%S')
+            last_notice = datetime(st.tm_year, st.tm_mon, st.tm_mday, st.tm_hour, st.tm_min, st.tm_sec)
         diff = now - last_notice
         if diff.days < 2:
             return
