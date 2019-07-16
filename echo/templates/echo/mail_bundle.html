@@ -18,7 +18,7 @@
     <div id="admin-content">
         <div class="container-fluid">
             <div class="sold" style="text-align: right">
-                <strong>{% trans "Remainig Email : " %}<span class="balance">{{ balance.mail_count }}</span></strong>
+                <strong>{% trans "Remainig Email : " %}<span class="balance">{{ balance.mail_count|intcomma }}</span></strong>
             </div>
             <div id="stage" style="float: none; margin: auto">
                 <div class="panel bundle-pricing-table">

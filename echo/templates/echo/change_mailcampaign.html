@@ -64,7 +64,7 @@
     <div id="admin-content">
         <div class="container-fluid">
             <div class="sold" style="text-align: right">
-                <strong><p>{% trans "Remaining mail : " %}<span class="messaging-balance text-muted">{{ balance.mail_count }}</span></p></strong>
+                <strong><p>{% trans "Remaining mail : " %}<span class="messaging-balance text-muted">{{ balance.mail_count|intcomma }}</span></p></strong>
                 <a style="text-decoration: none;" href="{% url 'echo:mail_bundle' %}"><strong><p>{% trans "Refill ? " %}</p></strong></a>
             </div>
             <div class="form col-lg-4 col-sm-6 col-lg-offset-4 col-sm-offset-3 all-content">

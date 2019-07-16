@@ -66,7 +66,7 @@ class MailCampaign(Campaign):
     image = models.ImageField(upload_to=UPLOAD_TO, blank=True, null=True)
     content = models.TextField(blank=True, null=True)
     items_fk_list = ListField()
-    cta = models.CharField(max_length=15, blank=True, null=True)
+    cta = models.CharField(max_length=40, blank=True, null=True)
     cta_url = models.URLField(max_length=250, blank=True, null=True)
     keep_running = models.BooleanField(default=False)
 
