@@ -436,9 +436,15 @@ class ChangeMailCampaign(CampaignBaseView, ChangeObjectBase):
             items_fk_list = self.request.GET.get('items_fk_list').split(',')
             obj.items_fk_list = items_fk_list
             obj.save(using=UMBRELLA)
-            context['set_cyclic'] = True
         context['items_fk_list'] = ','.join(items_fk_list)
-        context['item_list'] = get_item_list('kako.Product', items_fk_list)
+        try:
+            context['item_list'] = get_item_list('kako.Product', items_fk_list)
+        except:
+            pass
+        try:
+            context['add_products_url'] = reverse('kako:product_list') + '?smart_link=yes&campaign=yes&smart_object_id=' + obj.id
+        except:
+            pass
         return context
 
     def get_object(self, **kwargs):

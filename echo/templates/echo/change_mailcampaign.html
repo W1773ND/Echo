@@ -188,12 +188,14 @@
                                     </li>
                                 {% endfor %}
                                 {% if not campaign or campaign.total != campaign.progress %}
-                                <li class="ik-li">
-                                    <a href="{% url 'kako:product_list' %}?smart_link=yes&campaign=yes&smart_object_id={{ obj.id }}">
-                                        <i class="icon link"></i>
-                                        {% trans "Add products" %}
-                                    </a>
-                                </li>
+                                    {% if add_products_url %}
+                                    <li class="ik-li">
+                                        <a href="{{ add_products_url }}">
+                                            <i class="icon link"></i>
+                                            {% trans "Add products" %}
+                                        </a>
+                                    </li>
+                                    {% endif %}
                                 {% endif %}
                             </ul>
                         </section>
