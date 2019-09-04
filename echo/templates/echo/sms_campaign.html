@@ -46,7 +46,7 @@
                             </div>
                         </div>
                         <div class="form-group pb-15">
-                            <button class="form-control input-sm btn btn-success disabled btn-send" id="btn-send" name="btnSend" type="button" style="height:40px"> Send</button>
+                            <button class="form-control input-sm btn btn-success disabled btn-send" id="btn-send" name="btnSend" type="button" style="height:40px">{% trans "Send" %}</button>
                         </div>
                     </div>
                 </form>
@@ -175,7 +175,7 @@
                     return;
                 }
                 $(this).addClass('disabled');
-                var recipient = $('.recipient-list').val(),
+                let recipient = $('.recipient-list').val(),
                     subject = $('#sms-subject').val(),
                     txt = $('#sms-text').val();
                 if (!(recipient && txt)) {
@@ -183,7 +183,7 @@
                     if (!txt) $('#sms-text').addClass('warning');
                     return
                 }
-                var params = {action: 'start_campaign', filename: ikwen.filename, recipients: recipient,
+                let params = {action: 'start_campaign', filename: ikwen.filename, recipients: recipient,
                     profiles: ikwen.checkedProfiles.join(','), subject: subject, txt: txt};
 
                 $.getJSON('', params, function (data) {
@@ -192,7 +192,7 @@
                     } else if (data.error) {
                         ikwen.showFloatingNotice(data.error, '', 6)
                     } else {
-                        var $historyTpl = $('.event.tpl').clone().removeClass('tpl');
+                        let $historyTpl = $('.event.tpl').clone().removeClass('tpl');
                         $historyTpl.find('.event-recipient-list').text(data.campaign.recipient_label.substr(0,30));
                         if (subject)
                             $historyTpl.find('span.event-title').text(subject).show();
@@ -203,17 +203,17 @@
                         $historyTpl.prependTo('.campaign-list').addClass('running').attr('id', data.campaign.id);
                         $('.messaging-balance').text(data.balance);
                         ikwen.intervalId = setInterval(ikwen.updateProgressBar, 5000);
-                        location.reload();
                     }
-                })
+                });
+                setTimeout(function() {location.reload()}, 1000)
             });
 
             $('body').on('click', '.btn-detail', function () {
-                var full_text = $(this).parents('.event').find('.event-message-full').text();
-                var title = $(this).parents('.event').find('.event-title').text();
-                var total_recipient = $(this).parents('.event').data('total-recipient');
-                var page_count = $(this).parents('.event').data('page-count');
-                var total_sms = total_recipient * page_count;
+                let full_text = $(this).parents('.event').find('.event-message-full').text();
+                let title = $(this).parents('.event').find('.event-title').text();
+                let total_recipient = $(this).parents('.event').data('total-recipient');
+                let page_count = $(this).parents('.event').data('page-count');
+                let total_sms = total_recipient * page_count;
                 $('#sms-detail-modal').find('.title-message').text(title);
                 $('#sms-detail-modal').find('.total-sms').text('( '+ total_sms + ' SMS )');
                 $('#sms-detail-modal').find('.detail-message').text(full_text);

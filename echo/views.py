@@ -245,7 +245,7 @@ class CampaignBaseView(TemplateView):
         campaign_type = SMS if self.model == SMSCampaign else MAIL
         if filename:
             # Should add somme security check about file existence and type here before attempting to read it
-            path = getattr(settings, 'MEDIA_ROOT') + '/' + DefaultUploadBackend.UPLOAD_DIR + '/' + filename
+            path = getattr(settings, 'MEDIA_ROOT') + DefaultUploadBackend.UPLOAD_DIR + '/' + filename
             recipient_list = []
             recipient_label = filename
             # recipient_label_raw = recipient_label.split('.')[0]

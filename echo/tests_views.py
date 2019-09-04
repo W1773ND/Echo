@@ -129,7 +129,7 @@ class CampaignTestCase(unittest.TestCase):
     def test_SMSCampaign_start_campaign__with_csv_file_reading_and__insufficient_balance(self):
         self.client.login(username='arch', password='admin')
         recipient_list = []
-        filename = "ikwen_sms_campaign_test.csv"
+        filename = "ikwen_SMS_campaign_test.csv"
         txt = 'CAMP1 UniTest'
         subject = 'Unitest campaign 1'
         response = self.client.get(reverse('echo:sms_campaign'),
@@ -162,7 +162,7 @@ class CampaignTestCase(unittest.TestCase):
     def test_SMSCampaign_start_campaign_with_csv_file_reading_and_sufficient_balance(self):
         self.client.login(username='arch', password='admin')
         recipient_list = []
-        filename = "ikwen_sms_campaign_test.csv"
+        filename = "ikwen_SMS_campaign_test.csv"
         txt = 'CAMP3 UniTest'
         subject = 'Unitest campaign 3'
         response = self.client.get(reverse('echo:sms_campaign'),
