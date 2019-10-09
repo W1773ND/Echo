@@ -11,7 +11,7 @@ sys.path.append("/home/libran/virtualenv/lib/python2.7/site-packages")
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "ikwen.conf.settings")
 
 from django.conf import settings
-from echo.models import SMSCampaign, MailCampaign, SMS, MAIL
+from echo.models import SMSCampaign, MailCampaign
 from echo.views import batch_send, batch_send_mail
 
 from ikwen.core.log import CRONS_LOGGING

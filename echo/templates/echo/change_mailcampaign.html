@@ -107,12 +107,12 @@
                     <div class="form-group">
                         <div class="col-xs-10" style="padding-left: 0" >
                             {% if campaign.recipient_label or campaign.is_started %}
-                                <input type="text" class="form-control recipient-list input-sm text-center" id="recipient-list" name="recipients" placeholder="{% trans 'To' %}" value="{{ campaign.recipient_label }}" readonly>
+                                <input type="text" class="form-control recipient-list input-sm text-center" id="recipient-list" name="recipients" placeholder="{% trans 'To' %}" value="{{ campaign.recipient_label }}" autocomplete="off" readonly>
                                 {% if not campaign.is_started %}
                                     <div class="reset-recipient-list">&times;</div>
                                 {% endif %}
                             {% else %}
-                                <input type="text" class="form-control recipient-list input-sm " id="recipient-list" name="recipients" placeholder="{% trans 'To' %}">
+                                <input type="text" class="form-control recipient-list input-sm " id="recipient-list" name="recipients" placeholder="{% trans 'To' %}" autocomplete="off">
                                 <div class="reset-recipient-list tpl">&times;</div>
                             {% endif %}
                         </div>

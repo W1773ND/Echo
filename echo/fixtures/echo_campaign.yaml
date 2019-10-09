@@ -4,10 +4,13 @@
     service: 56eb6d04b37b3379b531b102
     member: 56eb6d04b37b3379b531e011
     recipient_list: ['693799544']
+    recipient_label: 'Wil'
+    recipient_label_raw: 'Wil.csv'
     text: 'Test restart batch'
     page_count: 5
     subject: 'Batch restart testing'
     slug: 'Batch-restart-testing'
+    progress: 2
     total: 5
     updated_on: 2018-10-24 19:05:27.000Z
 
@@ -21,8 +24,11 @@
             clkqhsclkqshc lkqshcklqhscqlkschlqkshc lsqchlkqshc kshqclkqsh
             ck qshlclkqs chlq"
     recipient_list: ['693799544']
+    recipient_label: 'Wil'
+    recipient_label_raw: 'Wil.csv'
     page_count: 5
     subject: 'Batch restart testing'
     slug: 'Batch-restart-testing'
+    progress: 3
     total: 5
     updated_on: 2018-12-24 19:05:27.000Z

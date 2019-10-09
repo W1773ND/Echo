@@ -35,12 +35,13 @@ from ikwen.core.utils import send_sms, get_service_instance, DefaultUploadBacken
     get_mail_content, get_model_admin_instance, get_item_list
 from ikwen.accesscontrol.models import Member, SUDO
 from ikwen.accesscontrol.backends import UMBRELLA
+from ikwen.billing.models import Invoice
 from ikwen.billing.mtnmomo.views import MTN_MOMO
 from ikwen.revival.models import ProfileTag, MemberProfile
 
 from echo.admin import MailCampaignAdmin
 from echo.models import SMSCampaign, MailCampaign, SMSObject, Balance, Bundle, Refill, SMS, MAIL
-from echo.utils import count_pages
+from echo.utils import count_pages, notify_for_low_messaging_credit
 
 logger = logging.getLogger('ikwen')
 
@@ -59,6 +60,38 @@ def batch_send(campaign):
     config = service.config
     label = get_sms_label(config)
     balance = Balance.objects.using('wallets').get(service_id=service.id)
+    if campaign.progress == 0:
+        if campaign.recipient_label == ALL_COMMUNITY:
+            recipient_list = []
+            member_queryset = Member.objects.all()
+            total = member_queryset.count()
+            chunks = total / 500 + 1
+            for i in range(chunks):
+                start = i * 500
+                finish = (i + 1) * 500
+                for member in member_queryset[start:finish]:
+                    recipient_list.append(member.phone)
+            campaign.recipient_list = recipient_list
+        elif campaign.recipient_label == SELECTED_PROFILES:
+            recipient_list = []
+            checked_profile_tag_id_list = campaign.profile_tag_list
+            member_queryset = Member.objects.all()
+            total = member_queryset.count()
+            chunks = total / 500 + 1
+            for i in range(chunks):
+                start = i * 500
+                finish = (i + 1) * 500
+                for member in member_queryset[start:finish]:
+                    try:
+                        profile = MemberProfile.objects.get(member=member)
+                    except MemberProfile.DoesNotExist:
+                        continue
+                    match = set(profile.tag_fk_list) & set(checked_profile_tag_id_list)
+                    if len(match) > 0:
+                        recipient_list.append(member.phone)
+            campaign.recipient_list = recipient_list
+        campaign.total = len(campaign.recipient_list)
+        campaign.save(using=UMBRELLA)
     for recipient in campaign.recipient_list[campaign.progress:]:
         if len(recipient) == 9:
             recipient = '237' + recipient
@@ -74,16 +107,55 @@ def batch_send(campaign):
             balance.sms_count += page_count
             balance.save()
         campaign.progress += 1
-        campaign.save()
+        campaign.save(using=UMBRELLA)
 
 
 def batch_send_mail(campaign):
     service = campaign.service
     config = service.config
-    balance = Balance.objects.using('wallets').get(service_id=service.id)
     campaign.keep_running = True
-    campaign.save(using=UMBRELLA)
+    if campaign.progress == 0:
+        if campaign.recipient_label == ALL_COMMUNITY:
+            recipient_list = []
+            member_queryset = Member.objects.all()
+            total = member_queryset.count()
+            chunks = total / 500 + 1
+            for i in range(chunks):
+                start = i * 500
+                finish = (i + 1) * 500
+                for member in member_queryset[start:finish]:
+                    recipient_list.append(member.email)
+        elif campaign.recipient_label == SELECTED_PROFILES:
+            recipient_list = []
+            checked_profile_tag_id_list = campaign.profile_tag_list
+            member_queryset = Member.objects.all()
+            total = member_queryset.count()
+            chunks = total / 500 + 1
+            for i in range(chunks):
+                start = i * 500
+                finish = (i + 1) * 500
+                for member in member_queryset[start:finish]:
+                    try:
+                        profile = MemberProfile.objects.get(member=member)
+                    except MemberProfile.DoesNotExist:
+                        continue
+                    match = set(profile.tag_fk_list) & set(checked_profile_tag_id_list)
+                    if len(match) > 0:
+                        recipient_list.append(member.email)
+        campaign.recipient_list = recipient_list
+        campaign.total = len(recipient_list)
+        campaign.save(using=UMBRELLA)
 
+    balance = Balance.objects.using('wallets').get(service_id=get_service_instance().id)
+    if balance.mail_count < campaign.total:
+        try:
+            notify_for_low_messaging_credit(service, balance)
+        except:
+            logger.error("Failed to notify %s for low messaging credit." % service, exc_info=True)
+        return
+    with transaction.atomic(using='wallets'):
+        balance.mail_count -= campaign.total
+        balance.save()
     connection = mail.get_connection()
     try:
         connection.open()
@@ -153,7 +225,8 @@ def set_bundle_checkout(request, *args, **kwargs):
     bundle_id = request.POST['product_id']
     bundle = Bundle.objects.using(UMBRELLA).get(pk=bundle_id)
     amount = bundle.cost
-    refill = Refill.objects.using(UMBRELLA).create(service=service, type=bundle.type, amount=amount, credit=bundle.credit)
+    refill = Refill.objects.using(UMBRELLA).create(service=service, type=bundle.type, amount=amount,
+                                                   credit=bundle.credit)
     request.session['amount'] = amount
     request.session['model_name'] = 'echo.Refill'
     request.session['object_id'] = refill.id
@@ -176,7 +249,7 @@ def confirm_bundle_payment(request, *args, **kwargs):
     else:
         ikwen_service = Service.objects.get(pk=ikwen_settings.IKWEN_SERVICE_ID)
     refill_id = request.session['object_id']
-    
+
     with transaction.atomic(using='wallets'):
         refill = Refill.objects.using(UMBRELLA).get(pk=refill_id)
         refill.status = CONFIRMED
@@ -194,7 +267,8 @@ def confirm_bundle_payment(request, *args, **kwargs):
     sudo_group = Group.objects.get(name=SUDO)
     ikwen_sudo_group = Group.objects.using(UMBRELLA).get(name=SUDO)
     add_event(ikwen_service, MESSAGING_CREDIT_REFILL, group_id=sudo_group.id, model='echo.Refill', object_id=refill.id)
-    add_event(ikwen_service, MESSAGING_CREDIT_REFILL, group_id=ikwen_sudo_group.id, model='echo.Refill', object_id=refill.id)
+    add_event(ikwen_service, MESSAGING_CREDIT_REFILL, group_id=ikwen_sudo_group.id, model='echo.Refill',
+              object_id=refill.id)
     if member.email:
         try:
             subject = _("Successful refill of %d %s" % (refill.credit, refill.type))
@@ -242,6 +316,9 @@ class CampaignBaseView(TemplateView):
         filename = request.GET.get('filename', request.POST.get('filename'))
         recipient_list = request.GET.get('recipients', request.POST.get('recipients'))
         profiles_checked = request.GET.get('profiles', request.POST.get('profiles'))
+        recipient_label = ''
+        recipient_label_raw = ''
+        checked_profile_tag_id_list = []
         campaign_type = SMS if self.model == SMSCampaign else MAIL
         if filename:
             # Should add somme security check about file existence and type here before attempting to read it
@@ -252,31 +329,18 @@ class CampaignBaseView(TemplateView):
             recipient_label_raw = recipient_label
             recipient_src = FILE
             recipient_profile = ""
-
             with open(path, 'r') as fh:
                 for recipient in fh.readlines():
                     recipient_list.append(recipient)
             fh.close()
         elif recipient_list == ALL_COMMUNITY:
-            recipient_list = []
             recipient_label = ALL_COMMUNITY
             recipient_label_raw = recipient_label
             recipient_src = INPUT
             recipient_profile = ""
-            member_queryset = Member.objects.all()
-            total = member_queryset.count()
-            chunks = total / 500 + 1
-            for i in range(chunks):
-                start = i * 500
-                finish = (i + 1) * 500
-                for member in member_queryset[start:finish]:
-                    if campaign_type == SMS and member.phone:
-                        recipient_list.append(member.phone)
-                    elif campaign_type == MAIL and member.email:
-                        recipient_list.append(member.email)
         elif recipient_list == SELECTED_PROFILES:
-            recipient_list = []
             recipient_src = PROFILES
+            recipient_list = []
             recipient_profile = profiles_checked
             checked_profile_tag_id_list = profiles_checked.split(',')
             if campaign_type == SMS:
@@ -298,24 +362,6 @@ class CampaignBaseView(TemplateView):
                     except ProfileTag.DoesNotExist:
                         continue
                 recipient_label_raw = ', '.join(recipient_label_raw)
-
-            member_queryset = Member.objects.all()
-            total = member_queryset.count()
-            chunks = total / 500 + 1
-            for i in range(chunks):
-                start = i * 500
-                finish = (i + 1) * 500
-                for member in member_queryset[start:finish]:
-                    try:
-                        profile = MemberProfile.objects.get(member=member)
-                    except MemberProfile.DoesNotExist:
-                        continue
-                    match = set(profile.tag_fk_list) & set(checked_profile_tag_id_list)
-                    if len(match) > 0:
-                        if campaign_type == SMS and member.phone:
-                            recipient_list.append(member.phone)
-                        elif campaign_type == MAIL and member.email:
-                            recipient_list.append(member.email)
         elif recipient_list == '':
             recipient_label = recipient_list
             recipient_label_raw = recipient_label
@@ -329,7 +375,8 @@ class CampaignBaseView(TemplateView):
             recipient_label_raw = recipient_label
             recipient_src = INPUT
             recipient_profile = ""
-        return recipient_label, recipient_label_raw, recipient_src, list(set(recipient_list)), recipient_profile
+        return recipient_label, recipient_label_raw, recipient_src, list(set(recipient_list)), \
+               list(set(checked_profile_tag_id_list)), recipient_profile
 
     def get_campaign_progress(self, request):
         campaign_id = request.GET['campaign_id']
@@ -355,7 +402,7 @@ class SMSCampaignView(CampaignBaseView):
         member = request.user
         subject = request.GET.get('subject')
         txt = request.GET.get('txt')
-        recipient_label, recipient_label_raw, recipient_src, recipient_list, recipient_profile = self.get_recipient_list(request)
+        recipient_label, recipient_label_raw, recipient_src, recipient_list, checked_profile_tag_id_list, recipient_profile = self.get_recipient_list(request)
         recipient_count = len(recipient_list)
         slug = slugify(subject)
         page_count = count_pages(txt)
@@ -377,14 +424,15 @@ class SMSCampaignView(CampaignBaseView):
                 mbr = Member.objects.using(UMBRELLA).get(pk=member.id)
                 campaign = SMSCampaign.objects.using(UMBRELLA).create(service=service, member=mbr, subject=subject,
                                                                       slug=slug, text=txt, total=recipient_count,
-                                                                      recipient_list=recipient_list, recipient_label=recipient_label,
+                                                                      recipient_list=recipient_list,
+                                                                      recipient_label=recipient_label,
                                                                       page_count=page_count)
 
                 if getattr(settings, 'UNIT_TESTING', False):
                     batch_send(campaign)
                 elif recipient_count < 50:
                     # for small campaign ie minor than 50, send sms directly from application server
-                    Thread(target=batch_send, args=(campaign, )).start()
+                    Thread(target=batch_send, args=(campaign,)).start()
                 response = {"success": True, "balance": balance.sms_count, "campaign": campaign.to_dict()}
         except:
             response = {"error": "Error while submiting SMS. Please try again later."}
@@ -412,7 +460,8 @@ class MailCampaignList(HybridListView):
     def get_campaign_progress(self, request):
         campaign_id = request.GET['campaign_id']
         campaign = self.model._default_manager.using(UMBRELLA).get(pk=campaign_id)
-        response = {"campaign subject": campaign.subject, "progress": campaign.progress, "total": campaign.total, "campaign": campaign.to_dict()}
+        response = {"campaign subject": campaign.subject, "progress": campaign.progress, "total": campaign.total,
+                    "campaign": campaign.to_dict()}
         return HttpResponse(
             json.dumps(response),
             'content-type: text/json'
@@ -424,6 +473,7 @@ class ChangeMailCampaign(CampaignBaseView, ChangeObjectBase):
     model = MailCampaign
     model_admin = MailCampaignAdmin
     context_object_name = 'campaign'
+    label_field = 'recipient_label'
 
     def get_context_data(self, **kwargs):
         context = super(ChangeMailCampaign, self).get_context_data(**kwargs)
@@ -442,7 +492,8 @@ class ChangeMailCampaign(CampaignBaseView, ChangeObjectBase):
         except:
             pass
         try:
-            context['add_products_url'] = reverse('kako:product_list') + '?smart_link=yes&campaign=yes&smart_object_id=' + obj.id
+            context['add_products_url'] = reverse(
+                'kako:product_list') + '?smart_link=yes&campaign=yes&smart_object_id=' + obj.id
         except:
             pass
         return context
@@ -481,7 +532,7 @@ class ChangeMailCampaign(CampaignBaseView, ChangeObjectBase):
             content = form.cleaned_data['content']
             cta = form.cleaned_data['cta']
             cta_url = form.cleaned_data['cta_url']
-            recipient_label, recipient_label_raw, recipient_src, recipient_list, recipient_profile = self.get_recipient_list(request)
+            recipient_label, recipient_label_raw, recipient_src, recipient_list, checked_profile_tag_id_list, recipient_profile = self.get_recipient_list(request)
             slug = slugify(subject)
             if not object_id:
                 obj = MailCampaign(service=service, member=mbr)
@@ -495,6 +546,7 @@ class ChangeMailCampaign(CampaignBaseView, ChangeObjectBase):
             obj.recipient_label = recipient_label
             obj.recipient_label_raw = recipient_label_raw
             obj.recipient_src = recipient_src
+            obj.profile_tag_list = checked_profile_tag_id_list
             obj.recipient_profile = recipient_profile
             obj.recipient_list = recipient_list
             obj.total = len(recipient_list)
@@ -521,13 +573,15 @@ class ChangeMailCampaign(CampaignBaseView, ChangeObjectBase):
                             raise e
                         return {'error': 'File failed to upload. May be invalid or corrupted image file'}
             if request.POST.get('keep_editing'):
-                next_url = reverse('echo:change_mailcampaign', args=(obj.id, ))
+                next_url = reverse('echo:change_mailcampaign', args=(obj.id,))
             else:
                 next_url = self.get_object_list_url(request, obj, *args, **kwargs)
             if object_id:
-                messages.success(request, obj._meta.verbose_name.capitalize() + ' <strong>' + str(obj).decode('utf8') + '</strong> ' + _('successfully updated').decode('utf8'))
+                messages.success(request, obj._meta.verbose_name.capitalize() + ' <strong>' + str(obj).decode(
+                    'utf8') + '</strong> ' + _('successfully updated').decode('utf8'))
             else:
-                messages.success(request, obj._meta.verbose_name.capitalize() + ' <strong>' + str(obj).decode('utf8') + '</strong> ' + _('successfully created').decode('utf8'))
+                messages.success(request, obj._meta.verbose_name.capitalize() + ' <strong>' + str(obj).decode(
+                    'utf8') + '</strong> ' + _('successfully created').decode('utf8'))
             return HttpResponseRedirect(next_url)
         else:
             context = self.get_context_data(**kwargs)
@@ -548,30 +602,16 @@ class ChangeMailCampaign(CampaignBaseView, ChangeObjectBase):
         campaign.save()
         # "transaction.atomic" instruction locks database during all operations inside "with" block
         try:
-            if balance.mail_count < campaign.total:
-                response = {"insufficient_balance": _("Insufficient Email balance.")}
-                return HttpResponse(
-                    json.dumps(response),
-                    'content-type: text/json'
-                )
-            with transaction.atomic(using='wallets'):
-                balance.mail_count -= campaign.total
-                balance.save()
-                if getattr(settings, 'UNIT_TESTING', False):
-                    batch_send_mail(campaign)
-                elif campaign.total < 50:
-                    # for small campaign ie minor than 50, send sms directly from application server
-                    Thread(target=batch_send_mail, args=(campaign, )).start()
-                response = {"success": True, "balance": balance.mail_count, "campaign": campaign.to_dict()}
+            Thread(target=batch_send_mail, args=(campaign,)).start()
+            response = {"success": True, "balance": balance.mail_count, "campaign": campaign.to_dict()}
         except Exception as e:
             response = {"error": "Error while submitting your campaign. Please try again later."}
-
         return HttpResponse(
             json.dumps(response),
             'content-type: text/json'
         )
 
-    def toggle_campaign(self,  request, *args, **kwargs):
+    def toggle_campaign(self, request, *args, **kwargs):
         campaign_id = kwargs['object_id']
         campaign = MailCampaign.objects.using(UMBRELLA).get(pk=campaign_id)
         campaign.keep_running = not campaign.keep_running
