@@ -9,5 +9,5 @@
   pk: 2
   fields:
     service_id: '56eb6d04b37b3379b531b102'
-    sms_count: 10
-    mail_count: 0
+    sms_count: 100
+    mail_count: 50

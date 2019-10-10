@@ -60,9 +60,9 @@ def batch_send(campaign):
     config = service.config
     label = get_sms_label(config)
     balance = Balance.objects.using('wallets').get(service_id=service.id)
-    if campaign.progress == 0:
-        if campaign.recipient_label == ALL_COMMUNITY:
-            recipient_list = []
+    if len(campaign.recipient_list) == 0:
+        recipient_list = []
+        if campaign.recipient_src == ALL_COMMUNITY:
             member_queryset = Member.objects.all()
             total = member_queryset.count()
             chunks = total / 500 + 1
@@ -71,9 +71,9 @@ def batch_send(campaign):
                 finish = (i + 1) * 500
                 for member in member_queryset[start:finish]:
                     recipient_list.append(member.phone)
-            campaign.recipient_list = recipient_list
-        elif campaign.recipient_label == SELECTED_PROFILES:
-            recipient_list = []
+                    if len(recipient_list) == 1:
+                        campaign.save(using=UMBRELLA)
+        elif campaign.recipient_src == PROFILES:
             checked_profile_tag_id_list = campaign.profile_tag_list
             member_queryset = Member.objects.all()
             total = member_queryset.count()
@@ -89,7 +89,9 @@ def batch_send(campaign):
                     match = set(profile.tag_fk_list) & set(checked_profile_tag_id_list)
                     if len(match) > 0:
                         recipient_list.append(member.phone)
-            campaign.recipient_list = recipient_list
+                        if len(recipient_list) == 1:
+                            campaign.save(using=UMBRELLA)
+        campaign.recipient_list = recipient_list
         campaign.total = len(campaign.recipient_list)
         campaign.save(using=UMBRELLA)
     for recipient in campaign.recipient_list[campaign.progress:]:
@@ -114,9 +116,9 @@ def batch_send_mail(campaign):
     service = campaign.service
     config = service.config
     campaign.keep_running = True
-    if campaign.progress == 0:
-        if campaign.recipient_label == ALL_COMMUNITY:
-            recipient_list = []
+    if len(campaign.recipient_list) == 0:
+        recipient_list = []
+        if campaign.recipient_src == ALL_COMMUNITY:
             member_queryset = Member.objects.all()
             total = member_queryset.count()
             chunks = total / 500 + 1
@@ -125,8 +127,9 @@ def batch_send_mail(campaign):
                 finish = (i + 1) * 500
                 for member in member_queryset[start:finish]:
                     recipient_list.append(member.email)
-        elif campaign.recipient_label == SELECTED_PROFILES:
-            recipient_list = []
+                    if len(recipient_list) == 1:
+                        campaign.save(using=UMBRELLA)
+        elif campaign.recipient_src == PROFILES:
             checked_profile_tag_id_list = campaign.profile_tag_list
             member_queryset = Member.objects.all()
             total = member_queryset.count()
@@ -142,6 +145,8 @@ def batch_send_mail(campaign):
                     match = set(profile.tag_fk_list) & set(checked_profile_tag_id_list)
                     if len(match) > 0:
                         recipient_list.append(member.email)
+                        if len(recipient_list) == 1:
+                            campaign.save(using=UMBRELLA)
         campaign.recipient_list = recipient_list
         campaign.total = len(recipient_list)
         campaign.save(using=UMBRELLA)
@@ -162,7 +167,6 @@ def batch_send_mail(campaign):
     except:
         response = {'error': 'Failed to connect to mail server. Please check your internet'}
         return HttpResponse(json.dumps(response))
-
     for email in campaign.recipient_list[campaign.progress:]:
         email = email.strip()
         subject = campaign.subject
@@ -334,9 +338,10 @@ class CampaignBaseView(TemplateView):
                     recipient_list.append(recipient)
             fh.close()
         elif recipient_list == ALL_COMMUNITY:
+            recipient_list = []
             recipient_label = ALL_COMMUNITY
             recipient_label_raw = recipient_label
-            recipient_src = INPUT
+            recipient_src = ALL_COMMUNITY
             recipient_profile = ""
         elif recipient_list == SELECTED_PROFILES:
             recipient_src = PROFILES

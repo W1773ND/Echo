@@ -1,3 +1,4 @@
+
 - model: echo.SMSCampaign
   pk: 56eb6d04b37b3379b531e200
   fields:
@@ -10,8 +11,8 @@
     page_count: 5
     subject: 'Batch restart testing'
     slug: 'Batch-restart-testing'
-    progress: 2
-    total: 5
+    progress: 0
+    total: 10
     updated_on: 2018-10-24 19:05:27.000Z
 
 
@@ -27,8 +28,42 @@
     recipient_label: 'Wil'
     recipient_label_raw: 'Wil.csv'
     page_count: 5
-    subject: 'Batch restart testing'
-    slug: 'Batch-restart-testing'
-    progress: 3
+    subject: 'Batch restart SMS testing'
+    slug: 'Batch-restart-sms-testing'
+    progress: 0
+    total: 7
+    updated_on: 2018-12-24 19:05:27.000Z
+
+
+- model: echo.MailCampaign
+  pk: 56eb6d04b37b3379b531e200
+  fields:
+    service: 56eb6d04b37b3379b531b102
+    member: 56eb6d04b37b3379b531e011
+    recipient_list: ['wilfried_willend@gmail.com,Fried@greo.fr;tryumo@pouit.xs']
+    recipient_label: 'Wil'
+    recipient_label_raw: 'Wil.csv'
+    content: 'Test restart Mail batch'
+    subject: 'Batch restart Mail testing'
+    slug: 'Batch-restart-mail-testing'
+    progress: 0
     total: 5
+    updated_on: 2018-10-24 19:05:27.000Z
+
+
+- model: echo.MailCampaign
+  pk: 56eb6d04b37b3379b531e201
+  fields:
+    service: 56eb6d04b37b3379b531b101
+    member: 56eb6d04b37b3379b531e011
+    content: "'qskdhqklsdql qlscg lqsgclkq hsckmlqshc kqslhcl hclqskhclkqsh
+            clkqhsclkqshc lkqshcklqhscqlkschlqkshc lsqchlkqshc kshqclkqsh
+            ck qshlclkqs chlq"
+    recipient_list: ['wilfried_willend@gmail.com,Fried@greo.fr;tryumo@pouit.xs']
+    recipient_label: 'Wil'
+    recipient_label_raw: 'Wil.csv'
+    subject: 'Batch restart mail testing'
+    slug: 'Batch-restart-mail-testing'
+    progress: 0
+    total: 10
     updated_on: 2018-12-24 19:05:27.000Z

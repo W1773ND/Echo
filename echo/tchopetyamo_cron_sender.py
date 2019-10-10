@@ -7,8 +7,9 @@ from datetime import datetime, timedelta
 from threading import Thread
 
 sys.path.append("/home/libran/virtualenv/lib/python2.7/site-packages")
+sys.path.append("/home/libran/Misc/tchopetyamo")
 
-# os.environ.setdefault("DJANGO_SETTINGS_MODULE", "ikwen.conf.settings")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "settings")
 
 from django.conf import settings
 from echo.models import SMSCampaign, MailCampaign
