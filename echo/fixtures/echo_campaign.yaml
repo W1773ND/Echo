@@ -48,6 +48,7 @@
     slug: 'Batch-restart-mail-testing'
     progress: 0
     total: 5
+    keep_running: True
     updated_on: 2018-10-24 19:05:27.000Z
 
 

@@ -30,6 +30,7 @@ form.campaign.terminated .qq-uploader { display: none; }
 
 
 .campaign-title{padding-bottom: 20px;}
+.clone-campaign { cursor: pointer }
 
 .event {list-style-type: none; margin-bottom: 30px; padding: 0 !important;}
 .event .btn {width: 120px;}

@@ -37,12 +37,13 @@ def restart_mail_batch():
     raw_query = {"$where": "function() {return this.progress < this.total}"}
     campaign_qs = MailCampaign.objects.raw_query(raw_query).select_related('service')
     for campaign in campaign_qs:
-        if campaign.updated_on >= timeout:
-            continue
-        if getattr(settings, 'UNIT_TESTING', False):
-            batch_send_mail(campaign)
-        else:
-            Thread(target=batch_send_mail, args=(campaign,)).start()
+        if campaign.keep_running:
+            if campaign.updated_on >= timeout:
+                continue
+            if getattr(settings, 'UNIT_TESTING', False):
+                batch_send_mail(campaign)
+            else:
+                Thread(target=batch_send_mail, args=(campaign,)).start()
 
 
 if __name__ == '__main__':

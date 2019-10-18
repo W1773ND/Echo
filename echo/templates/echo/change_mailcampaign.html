@@ -25,14 +25,13 @@
                 plugins: [
                     'advlist autolink lists link image charmap print preview anchor',
                     'searchreplace visualblocks code fullscreen',
-                    'insertdatetime media table contextmenu paste code',
-                    'textcolor',
+                    'insertdatetime media table contextmenu paste code', 'textcolor', 'table',
                 ],
                 paste_data_images: true,
                 selector: '#mail-content',
                 width : 200,
                 height: 150,
-                toolbar: 'undo redo | fontsizeselect | forecolor | bold italic underline | bullist numlist | alignleft aligncenter alignright | link code',
+                toolbar: 'undo redo | fontsizeselect | forecolor | bold italic underline | bullist numlist | table | alignleft aligncenter alignright | link code',
                 fontsize_formats: '11px 12px 14px 16px 18px 24px 36px 48px',
                 textcolor_map: [
                                 "000000", "Black",
@@ -110,7 +109,15 @@
                 <a style="text-decoration: none;" href="{% url 'echo:mail_bundle' %}"><strong><p>{% trans "Refill ? " %}</p></strong></a>
             </div>
             <div class="form col-lg-4 col-sm-6 col-lg-offset-4 col-sm-offset-3 all-content">
-                <h3><label class="title"> {% trans "Email campaign" %}</label></h3>
+                <h3><label class="title"> {% trans "Email campaign " %}</label>
+                    {% if campaign.terminated %}
+                        <form action="{% url 'echo:change_mailcampaign' %}" id="clone-campaign" style="display: inline">
+                            <input id="action" name="action" type="hidden" value="clone_campaign" required>
+                            <input id="campaign-id" name="campaign_id" type="hidden" value="{{ campaign.id }}">
+                        </form>
+                    &nbsp;&nbsp;<i class="fas fa-clone clone-campaign" title="{% trans 'Clone this campaign' %}"></i>
+                    {% endif %}
+                </h3>
                 <form style="" class="campaign {% if campaign and campaign.terminated %} terminated {% endif %}" method="post">{% csrf_token %}
                     <input type="hidden" name="keep_editing" value="yes">
                     <input class="filename" type="hidden" name="filename" {% if campaign.recipient_src == "File" %} value="{{ campaign.recipient_label }}" {% endif %}>
@@ -313,7 +320,7 @@
     <script>
         (function () {
             $('input[name=subject]').keyup(function () {
-                var mailContent = tinyMCE.get('mail-content').getContent();
+                let mailContent = tinyMCE.get('mail-content').getContent();
                 $(this).removeClass('warning');
                 if($('input[name=subject]').val() != "" && $('input[name=pre_header]').val() != "" && mailContent !="") {
                     $('.start-campaign').removeClass('disabled');
@@ -325,7 +332,7 @@
                 }
             });
             $('input[name=pre_header]').keyup(function () {
-                var mailContent = tinyMCE.get('mail-content').getContent();
+                let mailContent = tinyMCE.get('mail-content').getContent();
                 $(this).removeClass('warning');
                 if($('input[name=subject]').val() != "" && $('input[name=pre_header]').val() != "" && mailContent !="") {
                     $('.start-campaign').removeClass('disabled');
@@ -345,13 +352,13 @@
                     if($('input[name=pre_header]').val() === "") {
                         $('input[name=pre_header]').addClass('warning');
                     }
-                    var mailContent = tinyMCE.get('mail-content').getContent();
+                    let mailContent = tinyMCE.get('mail-content').getContent();
                     if (mailContent === "") {
                         $('div.mce-tinymce').addClass('warning')
                     }
 
                 } else {
-                    var params = {action: 'start_campaign'};
+                    let params = {action: 'start_campaign'};
                     $.getJSON('', params, function (data) {
                         if (data.insufficient_balance) {
                             $('#insufficient-balance-modal').modal('show')
@@ -361,7 +368,6 @@
                             $('.start-campaign:not(.toggle-send)').removeClass('start-campaign').addClass('toggle-send paused');
                             $('.start-campaign:not(.toggle-send) i').removeClass('fa-play').addClass('fa-pause');
                             $('.start-campaign:not(.toggle-send) span').text('Pause');
-
                         }
                     });
                 }
@@ -381,7 +387,7 @@
                 }
                 $.getJSON('', {action: 'toggle_campaign'})
             }).on('click', '.run-test', function() {
-                var emailList = $('#test-emails').val(),
+                let emailList = $('#test-emails').val(),
                     params = {action: 'run_test', test_email_list: emailList};
                 $('#modal-test .spinner').show();
                 $('.test-error, .test-warning, .test-success').hide();
@@ -393,10 +399,14 @@
                     }
                     $('.test-success').text("{% trans "Your tests were sent" %}").show();
                     if (data.warning) {
-                        var warning = data.warning.join('<br>');
+                        let warning = data.warning.join('<br>');
                         $('.test-warning').html(warning).show();
                     }
-                });
+                })
+            }).on('click', '.clone-campaign', function () {
+                $('#clone-campaign').submit();
+
+
             });
             $('form.campaign.terminated input').prop('readonly', true);
             $('form.campaign.terminated .btn-choose-recipient').addClass('not-allowed');

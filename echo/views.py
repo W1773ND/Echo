@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import re
+import time
 from threading import Thread
 
 import requests
@@ -517,6 +518,8 @@ class ChangeMailCampaign(CampaignBaseView, ChangeObjectBase):
             return self.toggle_campaign(request, *args, **kwargs)
         if action == 'run_test':
             return self.run_test(request, *args, **kwargs)
+        if action == 'clone_campaign':
+            return self.clone_campaign(request, *args, **kwargs)
         return super(ChangeMailCampaign, self).get(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
@@ -690,6 +693,17 @@ class ChangeMailCampaign(CampaignBaseView, ChangeObjectBase):
 
         response = {'success': True, 'warning': warning}
         return HttpResponse(json.dumps(response))
+
+    def clone_campaign(self, request):
+        campaign_id = request.GET.get('campaign_id')
+        campaign = MailCampaign.objects.using(UMBRELLA).get(pk=campaign_id)
+        campaign.pk = None
+        campaign.progress = 0
+        campaign.is_started = False
+        campaign.keep_running = False
+        campaign.save()
+        next_url = reverse('echo:change_mailcampaign', args=(campaign.id,))
+        return HttpResponseRedirect(next_url)
 
 
 class SMSHistory(TemplateView):
