@@ -29,53 +29,52 @@
                 ],
                 paste_data_images: true,
                 selector: '#mail-content',
-                width : 200,
-                height: 150,
+                height: 450,
                 toolbar: 'undo redo | fontsizeselect | forecolor | bold italic underline | bullist numlist | table | alignleft aligncenter alignright | link code',
                 fontsize_formats: '11px 12px 14px 16px 18px 24px 36px 48px',
                 textcolor_map: [
-                                "000000", "Black",
-                                "AB182B", "Burnt orange",
-                                "333300", "Dark olive",
-                                "003300", "Dark green",
-                                "003366", "Dark azure",
-                                "000080", "Navy Blue",
-                                "333399", "Indigo",
-                                "333333", "Very dark gray",
-                                "800000", "Maroon",
-                                "FF6600", "Orange",
-                                "808000", "Olive",
-                                "008000", "Green",
-                                "008080", "Teal",
-                                "0000FF", "Blue",
-                                "666699", "Grayish blue",
-                                "808080", "Gray",
-                                "FF0000", "Red",
-                                "FF9900", "Amber",
-                                "99CC00", "Yellow green",
-                                "339966", "Sea green",
-                                "33CCCC", "Turquoise",
-                                "3366FF", "Royal blue",
-                                "800080", "Purple",
-                                "999999", "Medium gray",
-                                "FF00FF", "Magenta",
-                                "FFCC00", "Gold",
-                                "FFFF00", "Yellow",
-                                "00FF00", "Lime",
-                                "00FFFF", "Aqua",
-                                "00CCFF", "Sky blue",
-                                "993366", "Red violet",
-                                "FFFFFF", "White",
-                                "FF99CC", "Pink",
-                                "FFCC99", "Peach",
-                                "FFFF99", "Light yellow",
-                                "CCFFCC", "Pale green",
-                                "CCFFFF", "Pale cyan",
-                                "99CCFF", "Light sky blue",
+                    "000000", "Black",
+                    "AB182B", "Burnt orange",
+                    "333300", "Dark olive",
+                    "003300", "Dark green",
+                    "003366", "Dark azure",
+                    "000080", "Navy Blue",
+                    "333399", "Indigo",
+                    "333333", "Very dark gray",
+                    "800000", "Maroon",
+                    "FF6600", "Orange",
+                    "808000", "Olive",
+                    "008000", "Green",
+                    "008080", "Teal",
+                    "0000FF", "Blue",
+                    "666699", "Grayish blue",
+                    "808080", "Gray",
+                    "FF0000", "Red",
+                    "FF9900", "Amber",
+                    "99CC00", "Yellow green",
+                    "339966", "Sea green",
+                    "33CCCC", "Turquoise",
+                    "3366FF", "Royal blue",
+                    "800080", "Purple",
+                    "999999", "Medium gray",
+                    "FF00FF", "Magenta",
+                    "FFCC00", "Gold",
+                    "FFFF00", "Yellow",
+                    "00FF00", "Lime",
+                    "00FFFF", "Aqua",
+                    "00CCFF", "Sky blue",
+                    "993366", "Red violet",
+                    "FFFFFF", "White",
+                    "FF99CC", "Pink",
+                    "FFCC99", "Peach",
+                    "FFFF99", "Light yellow",
+                    "CCFFCC", "Pale green",
+                    "CCFFFF", "Pale cyan",
+                    "99CCFF", "Light sky blue",
                 ],
                 content_css: [
-                                '//fonts.googleapis.com/css?family=Lato:300,300i,400,400i',
-                                '//www.tinymce.com/css/codepen.min.css'
+                    '//fonts.googleapis.com/css?family=Lato:300,300i,400,400i',
+                    '//www.tinymce.com/css/codepen.min.css'
                 ],
                 init_instance_callback: function (editor) {
                     editor.on('keyup', function (e) {
@@ -108,7 +107,7 @@
                 <strong><p>{% trans "Remaining mail : " %}<span class="messaging-balance text-muted">{{ balance.mail_count|intcomma }}</span></p></strong>
                 <a style="text-decoration: none;" href="{% url 'echo:mail_bundle' %}"><strong><p>{% trans "Refill ? " %}</p></strong></a>
             </div>
-            <div class="form col-lg-4 col-sm-6 col-lg-offset-4 col-sm-offset-3 all-content">
+            <div class="form all-content">
                 <h3><label class="title"> {% trans "Email campaign " %}</label>
                     {% if campaign.terminated %}
                         <form action="{% url 'echo:change_mailcampaign' %}" id="clone-campaign" style="display: inline">
@@ -118,90 +117,92 @@
                     &nbsp;&nbsp;<i class="fas fa-clone clone-campaign" title="{% trans 'Clone this campaign' %}"></i>
                     {% endif %}
                 </h3>
-                <form style="" class="campaign {% if campaign and campaign.terminated %} terminated {% endif %}" method="post">{% csrf_token %}
+                <form class="row campaign{% if campaign and campaign.terminated %} terminated{% endif %}" method="post">{% csrf_token %}
                     <input type="hidden" name="keep_editing" value="yes">
                     <input class="filename" type="hidden" name="filename" {% if campaign.recipient_src == "File" %} value="{{ campaign.recipient_label }}" {% endif %}>
                     <input class="profile-checked" type="hidden" name="profiles"{% if campaign.recipient_src == "Profiles" %} value="{{ campaign.recipient_profile }}" {% endif %}>
-
-                    {% if campaign and not campaign.terminated %}
-                        <div class="form-group">
-                            <div class="row">
-                                <div class="col-xs-6">
-                                    {% if not campaign.is_started %}
-                                        <div class="btn btn-sm btn-default btn-block start-campaign {% if not campaign.subject or not campaign.pre_header %} disabled {% endif %}" data-campaign-id="{{ campaign.id }}">
-                                            <i class="fa fa-play"></i>
-                                            <span>{% trans "Start" %}</span>
+                    <div class="col-lg-4 col-sm-6 col-lg-offset-4 col-sm-offset-3">
+                        {% if campaign and not campaign.terminated %}
+                            <div class="form-group">
+                                <div class="row">
+                                    <div class="col-xs-6">
+                                        {% if not campaign.is_started %}
+                                            <div class="btn btn-sm btn-default btn-block start-campaign {% if not campaign.subject or not campaign.pre_header %} disabled {% endif %}" data-campaign-id="{{ campaign.id }}">
+                                                <i class="fa fa-play"></i>
+                                                <span>{% trans "Start" %}</span>
+                                            </div>
+                                        {% elif campaign.keep_running %}
+                                            <div class="btn btn-sm btn-default btn-block toggle-send running" data-campaign-id="{{ campaign.id }}">
+                                                <i class="fa fa-pause"></i>
+                                                <span>{% trans "Pause" %}</span>
+                                            </div>
+                                        {% else %}
+                                            <div class="btn btn-sm btn-default btn-block toggle-send paused" data-campaign-id="{{ campaign.id }}">
+                                                <i class="fa fa-play"></i>
+                                                <span>{% trans "Start" %}</span>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-xs-6">
+                                        <div class="btn btn-sm btn-default btn-block show-modal-test {% if not campaign.subject or not campaign.pre_header %} not-allowed {% endif %}"  data-toggle="modal" data-target="#modal-test">
+                                            <i class="fa fa-vial"></i>
+                                            {% trans "Test" %}
                                         </div>
-                                    {% elif campaign.keep_running %}
-                                        <div class="btn btn-sm btn-default btn-block toggle-send running" data-campaign-id="{{ campaign.id }}">
-                                            <i class="fa fa-pause"></i>
-                                            <span>{% trans "Pause" %}</span>
-                                        </div>
-                                    {% else %}
-                                        <div class="btn btn-sm btn-default btn-block toggle-send paused" data-campaign-id="{{ campaign.id }}">
-                                            <i class="fa fa-play"></i>
-                                            <span>{% trans "Start" %}</span>
-                                        </div>
-                                    {% endif %}
-                                </div>
-                                <div class="col-xs-6">
-                                    <div class="btn btn-sm btn-default btn-block show-modal-test {% if not campaign.subject or not campaign.pre_header %} not-allowed {% endif %}"  data-toggle="modal" data-target="#modal-test">
-                                        <i class="fa fa-vial"></i>
-                                        {% trans "Test" %}
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    {% endif %}
-                    <div class="form-group">
-                        <div class="col-xs-10" style="padding-left: 0" >
-                            {% if campaign.recipient_label or campaign.is_started %}
-                                <input type="text" class="form-control recipient-list input-sm text-center" id="recipient-list" name="recipients" placeholder="{% trans 'To' %}" value="{{ campaign.recipient_label }}" autocomplete="off" readonly>
-                                {% if not campaign.is_started %}
-                                    <div class="reset-recipient-list">&times;</div>
+                        {% endif %}
+                        <div class="form-group">
+                            <div class="col-xs-10" style="padding-left: 0" >
+                                {% if campaign.recipient_label or campaign.is_started %}
+                                    <input type="text" class="form-control recipient-list input-sm text-center" id="recipient-list" name="recipients" placeholder="{% trans 'To' %}" value="{{ campaign.recipient_label }}" autocomplete="off" readonly>
+                                    {% if not campaign.is_started %}
+                                        <div class="reset-recipient-list">&times;</div>
+                                    {% endif %}
+                                {% else %}
+                                    <input type="text" class="form-control recipient-list input-sm " id="recipient-list" name="recipients" placeholder="{% trans 'To' %}" autocomplete="off">
+                                    <div class="reset-recipient-list tpl">&times;</div>
                                 {% endif %}
+                            </div>
+                            {% if campaign.is_started %}
+                                    <div class="col-xs-2 btn-choose-recipient not-allowed">
+                                        <i class="fa fa-bullhorn" data-toggle="modal" data-target="#modal-choose-recipient"
+                                           title="Start a campaign" style="color: #888; font-size: 24px; height: 33px; width: 33px; line-height: 33px"></i>
+                                    </div>
                             {% else %}
-                                <input type="text" class="form-control recipient-list input-sm " id="recipient-list" name="recipients" placeholder="{% trans 'To' %}" autocomplete="off">
-                                <div class="reset-recipient-list tpl">&times;</div>
-                            {% endif %}
-                        </div>
-                        {% if campaign.is_started %}
-                                <div class="col-xs-2 btn-choose-recipient not-allowed">
+                                <div class="col-xs-2 btn-choose-recipient">
                                     <i class="fa fa-bullhorn" data-toggle="modal" data-target="#modal-choose-recipient"
                                        title="Start a campaign" style="color: #888; font-size: 24px; height: 33px; width: 33px; line-height: 33px"></i>
                                 </div>
-                        {% else %}
-                            <div class="col-xs-2 btn-choose-recipient">
-                                <i class="fa fa-bullhorn" data-toggle="modal" data-target="#modal-choose-recipient"
-                                   title="Start a campaign" style="color: #888; font-size: 24px; height: 33px; width: 33px; line-height: 33px"></i>
-                            </div>
-                        {% endif %}
-                        <div class="clearfix"></div>
+                            {% endif %}
+                            <div class="clearfix"></div>
+                        </div>
                     </div>
                     <div class="mail-campaign-content" {% if not campaign %} style="display: none" {% endif %}>
-                        <div class="form-group">
-                            <div class="">
-                                <input type="text" class="form-control input-sm" id="subject"
-                                   name="subject" value="{{ campaign.subject }}" placeholder="{% trans 'Subject' %}" />
+                        <div class="col-lg-4 col-sm-6 col-lg-offset-4 col-sm-offset-3 col-xs-12">
+                            <div class="form-group">
+                                <div class="">
+                                    <input type="text" class="form-control input-sm" id="subject"
+                                       name="subject" value="{{ campaign.subject }}" placeholder="{% trans 'Subject' %}" />
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div class="">
+                                    <input type="text" class="form-control input-sm" id="pre-header"
+                                       name="pre_header" value="{{ campaign.pre_header }}" placeholder="{% trans 'Pre-Header' %}" />
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div class="col-xs-12 col-md-offset-1">
+                                    {% with image=campaign.image img_help_text='Add an image to your mail: 800x500px' %}
+                                        <input type="hidden" name="image_url" id="image_url" value="{% if image.name %}{{ image.url }}{% endif %}" />
+                                        {% include 'core/snippets/uploader_single.html' %}
+                                    {% endwith %}
+                                </div>
+                                <div class="clearfix"></div>
                             </div>
                         </div>
-                        <div class="form-group">
-                            <div class="">
-                                <input type="text" class="form-control input-sm" id="pre-header"
-                                   name="pre_header" value="{{ campaign.pre_header }}" placeholder="{% trans 'Pre-Header' %}" />
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <div class="col-xs-12 col-md-offset-1">
-                                {% with image=campaign.image img_help_text='Add an image to your mail: 800x500px' %}
-                                    <input type="hidden" name="image_url" id="image_url" value="{% if image.name %}{{ image.url }}{% endif %}" />
-                                    {% include 'core/snippets/uploader_single.html' %}
-                                {% endwith %}
-                            </div>
-                            <div class="clearfix"></div>
-
-                        </div>
-
+                        <div class=" col-lg-8 col-sm-6 col-lg-offset-2 col-sm-offset-3">
                         <div class="form-group">
                             <div class="">
                                 <h5><label class="text-center" for="mail-content">{% trans "Message" %}</label></h5>
@@ -210,7 +211,6 @@
                                               id="mail-content" name="content">{{ campaign.content|safe }}</textarea>
                                 </div>
                             </div>
-
                         </div>
                         <input type="hidden" name="items_fk_list" value="{{ items_fk_list }}" />
                         <section class="content" style="width: 100%">
@@ -266,12 +266,12 @@
                         </section>
                     </div>
                     {% if not campaign %}
-                    <div class="form-group col-xs-12 col-sm-6 col-sm-offset-3 btn-continue not-allowed" style="clear: both; padding-top: 15px">
-                        <button class="btn btn-sm btn-success btn-block">{% trans "Continue" %}</button>
+                    <div class="form-group col-xs-12 col-sm-4 col-sm-offset-4 btn-continue not-allowed" style="clear: both; padding-top: 15px">
+                        <button class="btn btn-md btn-success btn-block">{% trans "Continue" %}</button>
                     </div>
                     {% elif not campaign.terminated  %}
-                    <div class="form-group col-xs-12 col-sm-6 col-sm-offset-3" style="clear: both; padding-top: 15px">
-                        <button class="btn btn-sm btn-success btn-block">{% trans "Save" %}</button>
+                    <div class="form-group col-xs-12 col-sm-4 col-sm-offset-4" style="clear: both; padding-top: 15px">
+                        <button class="btn btn-md btn-success btn-block">{% trans "Save" %}</button>
                     </div>
                     {% endif %}
                 </form>
