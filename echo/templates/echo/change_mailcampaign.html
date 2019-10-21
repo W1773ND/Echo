@@ -33,48 +33,48 @@
                 toolbar: 'undo redo | fontsizeselect | forecolor | bold italic underline | bullist numlist | table | alignleft aligncenter alignright | link code',
                 fontsize_formats: '11px 12px 14px 16px 18px 24px 36px 48px',
                 textcolor_map: [
-                    "000000", "Black",
-                    "AB182B", "Burnt orange",
-                    "333300", "Dark olive",
-                    "003300", "Dark green",
-                    "003366", "Dark azure",
-                    "000080", "Navy Blue",
-                    "333399", "Indigo",
-                    "333333", "Very dark gray",
-                    "800000", "Maroon",
-                    "FF6600", "Orange",
-                    "808000", "Olive",
-                    "008000", "Green",
-                    "008080", "Teal",
-                    "0000FF", "Blue",
-                    "666699", "Grayish blue",
-                    "808080", "Gray",
-                    "FF0000", "Red",
-                    "FF9900", "Amber",
-                    "99CC00", "Yellow green",
-                    "339966", "Sea green",
-                    "33CCCC", "Turquoise",
-                    "3366FF", "Royal blue",
-                    "800080", "Purple",
-                    "999999", "Medium gray",
-                    "FF00FF", "Magenta",
-                    "FFCC00", "Gold",
-                    "FFFF00", "Yellow",
-                    "00FF00", "Lime",
-                    "00FFFF", "Aqua",
-                    "00CCFF", "Sky blue",
-                    "993366", "Red violet",
-                    "FFFFFF", "White",
-                    "FF99CC", "Pink",
-                    "FFCC99", "Peach",
-                    "FFFF99", "Light yellow",
-                    "CCFFCC", "Pale green",
-                    "CCFFFF", "Pale cyan",
-                    "99CCFF", "Light sky blue",
+                                "000000", "Black",
+                                "AB182B", "Burnt orange",
+                                "333300", "Dark olive",
+                                "003300", "Dark green",
+                                "003366", "Dark azure",
+                                "000080", "Navy Blue",
+                                "333399", "Indigo",
+                                "333333", "Very dark gray",
+                                "800000", "Maroon",
+                                "FF6600", "Orange",
+                                "808000", "Olive",
+                                "008000", "Green",
+                                "008080", "Teal",
+                                "0000FF", "Blue",
+                                "666699", "Grayish blue",
+                                "808080", "Gray",
+                                "FF0000", "Red",
+                                "FF9900", "Amber",
+                                "99CC00", "Yellow green",
+                                "339966", "Sea green",
+                                "33CCCC", "Turquoise",
+                                "3366FF", "Royal blue",
+                                "800080", "Purple",
+                                "999999", "Medium gray",
+                                "FF00FF", "Magenta",
+                                "FFCC00", "Gold",
+                                "FFFF00", "Yellow",
+                                "00FF00", "Lime",
+                                "00FFFF", "Aqua",
+                                "00CCFF", "Sky blue",
+                                "993366", "Red violet",
+                                "FFFFFF", "White",
+                                "FF99CC", "Pink",
+                                "FFCC99", "Peach",
+                                "FFFF99", "Light yellow",
+                                "CCFFCC", "Pale green",
+                                "CCFFFF", "Pale cyan",
+                                "99CCFF", "Light sky blue",
                 ],
                 content_css: [
-                    '//fonts.googleapis.com/css?family=Lato:300,300i,400,400i',
-                    '//www.tinymce.com/css/codepen.min.css'
+                                '//fonts.googleapis.com/css?family=Lato:300,300i,400,400i',
+                                '//www.tinymce.com/css/codepen.min.css'
                 ],
                 init_instance_callback: function (editor) {
                     editor.on('keyup', function (e) {
@@ -108,7 +108,7 @@
                 <a style="text-decoration: none;" href="{% url 'echo:mail_bundle' %}"><strong><p>{% trans "Refill ? " %}</p></strong></a>
             </div>
             <div class="form all-content">
-                <h3><label class="title"> {% trans "Email campaign " %}</label>
+                <h3 class="text-center"><label class="title"> {% trans "Email campaign " %}</label>
                     {% if campaign.terminated %}
                         <form action="{% url 'echo:change_mailcampaign' %}" id="clone-campaign" style="display: inline">
                             <input id="action" name="action" type="hidden" value="clone_campaign" required>
@@ -202,68 +202,72 @@
                                 <div class="clearfix"></div>
                             </div>
                         </div>
+                        <div class="clearfix"></div>
                         <div class=" col-lg-8 col-sm-6 col-lg-offset-2 col-sm-offset-3">
-                        <div class="form-group">
-                            <div class="">
-                                <h5><label class="text-center" for="mail-content">{% trans "Message" %}</label></h5>
-                                <div class="mail-content">
-                                    <textarea class="form-control input-sm"
-                                              id="mail-content" name="content">{{ campaign.content|safe }}</textarea>
+                            <div class="form-group">
+                                <div class="">
+                                    <h5><label class="text-center" for="mail-content">{% trans "Message" %}</label></h5>
+                                    <div class="mail-content">
+                                        <textarea class="form-control input-sm" id="mail-content" name="content">{{ campaign.content|safe }}</textarea>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                        <input type="hidden" name="items_fk_list" value="{{ items_fk_list }}" />
-                        <section class="content" style="width: 100%">
-                            <ul id="content-items" style="padding-left: 0">
-                                {% for item in item_list %}
-                                    <li class="ik-li" id="{{ item.id }}" data-id="{{ item.id }}">
-                                        <div class="subtle-shade select">
-                                            <i class="glyphicon glyphicon-ok"></i>
-                                        </div>
-                                        {% url 'kako:change_product' item.id as change_item_url %}
-                                        {% if item.image and item.image.name %}
-                                            <a href="{{ change_item_url }}" class="image" style="background-image: url({{ item.image.small_url }})"></a>
-                                        {% else %}
-                                            <a href="{{ change_item_url }}" class="image" style="background-image: url({% static 'ikwen/img/login-avatar.jpg' %})"></a>
+                            <input type="hidden" name="items_fk_list" value="{{ items_fk_list }}" />
+                            <section class="content" style="width: 100%">
+                                <ul id="content-items" style="padding-left: 0">
+                                    {% for item in item_list %}
+                                        <li class="ik-li" id="{{ item.id }}" data-id="{{ item.id }}">
+                                            <div class="subtle-shade select">
+                                                <i class="glyphicon glyphicon-ok"></i>
+                                            </div>
+                                            {% url 'kako:change_product' item.id as change_item_url %}
+                                            {% if item.image and item.image.name %}
+                                                <a href="{{ change_item_url }}" class="image" style="background-image: url({{ item.image.small_url }})"></a>
+                                            {% else %}
+                                                <a href="{{ change_item_url }}" class="image" style="background-image: url({% static 'ikwen/img/login-avatar.jpg' %})"></a>
+                                            {% endif %}
+                                            <div class="info">
+                                                <a href="{{ change_item_url }}" class="full_name">{{ item.name }}</a>
+                                            </div>
+                                            {% if campaign.total != campaign.progress %}
+                                            <div class="actions">
+                                                <i class="action glyphicon glyphicon-trash trash" title="{% trans "Delete item" %}"></i>
+                                            </div>
+                                            {% endif %}
+                                        </li>
+                                    {% endfor %}
+                                    {% if not campaign or campaign.total != campaign.progress %}
+                                        {% if add_products_url %}
+                                        <li class="ik-li">
+                                            <a href="{{ add_products_url }}">
+                                                <i class="icon link"></i>
+                                                {% trans "Add products" %}
+                                            </a>
+                                        </li>
                                         {% endif %}
-                                        <div class="info">
-                                            <a href="{{ change_item_url }}" class="full_name">{{ item.name }}</a>
-                                        </div>
-                                        {% if campaign.total != campaign.progress %}
-                                        <div class="actions">
-                                            <i class="action glyphicon glyphicon-trash trash" title="{% trans "Delete item" %}"></i>
-                                        </div>
-                                        {% endif %}
-                                    </li>
-                                {% endfor %}
-                                {% if not campaign or campaign.total != campaign.progress %}
-                                    {% if add_products_url %}
-                                    <li class="ik-li">
-                                        <a href="{{ add_products_url }}">
-                                            <i class="icon link"></i>
-                                            {% trans "Add products" %}
-                                        </a>
-                                    </li>
                                     {% endif %}
-                                {% endif %}
-                            </ul>
-                        </section>
-                        <section class="call-to-action" style="border-bottom: 1px solid #eee ; padding-top: 8vh">
-                            <div class="form-group">
-                                <div class="">
-                                    <label for="cta-label">{% trans "Call-to-action button title" %}</label>
-                                    <input type="text" class="form-control input-sm" id="cta-label"
-                                       name="cta" value="{{ campaign.cta }}" placeholder="{% trans 'Ex: Buy now' %}" />
+                                </ul>
+                            </section>
+                        </div>
+                        <div class="clearfix"></div>
+                        <div class="col-lg-4 col-sm-6 col-lg-offset-4 col-sm-offset-3">
+                            <section class="call-to-action" style="border-bottom: 1px solid #eee ; padding-top: 8vh">
+                                <div class="form-group">
+                                    <div class="">
+                                        <label for="cta-label">{% trans "Call-to-action button title" %}</label>
+                                        <input type="text" class="form-control input-sm" id="cta-label"
+                                           name="cta" value="{{ campaign.cta }}" placeholder="{% trans 'Ex: Buy now' %}" />
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="form-group">
-                                <div class="">
-                                    <label for="cta-url">{% trans "Call-to-action url link" %}</label>
-                                    <input type="text" class="form-control input-sm" id="cta-url"
-                                       name="cta_url" value="{{ campaign.cta_url }}" placeholder="{% trans 'Ex: http://www.mysite.com/product' %}" />
+                                <div class="form-group">
+                                    <div class="">
+                                        <label for="cta-url">{% trans "Call-to-action url link" %}</label>
+                                        <input type="text" class="form-control input-sm" id="cta-url"
+                                           name="cta_url" value="{{ campaign.cta_url }}" placeholder="{% trans 'Ex: http://www.mysite.com/product' %}" />
+                                    </div>
                                 </div>
-                            </div>
-                        </section>
+                            </section>
+                        </div>
                     </div>
                     {% if not campaign %}
                     <div class="form-group col-xs-12 col-sm-4 col-sm-offset-4 btn-continue not-allowed" style="clear: both; padding-top: 15px">
