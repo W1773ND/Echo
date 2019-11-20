@@ -127,17 +127,17 @@
                                 <div class="row">
                                     <div class="col-xs-6">
                                         {% if not campaign.is_started %}
-                                            <div class="btn btn-sm btn-default btn-block start-campaign {% if not campaign.subject or not campaign.pre_header %} disabled {% endif %}" data-campaign-id="{{ campaign.id }}">
+                                            <div class="btn btn-sm btn-default btn-block start-campaign toggle paused{% if not campaign.subject or not campaign.pre_header %} disabled {% endif %}" data-campaign-id="{{ campaign.id }}">
                                                 <i class="fa fa-play"></i>
                                                 <span>{% trans "Start" %}</span>
                                             </div>
                                         {% elif campaign.keep_running %}
-                                            <div class="btn btn-sm btn-default btn-block toggle-send running" data-campaign-id="{{ campaign.id }}">
+                                            <div class="btn btn-sm btn-default btn-block toggle toggle-send running" data-campaign-id="{{ campaign.id }}">
                                                 <i class="fa fa-pause"></i>
                                                 <span>{% trans "Pause" %}</span>
                                             </div>
                                         {% else %}
-                                            <div class="btn btn-sm btn-default btn-block toggle-send paused" data-campaign-id="{{ campaign.id }}">
+                                            <div class="btn btn-sm btn-default btn-block toggle toggle-send paused" data-campaign-id="{{ campaign.id }}">
                                                 <i class="fa fa-play"></i>
                                                 <span>{% trans "Start" %}</span>
                                             </div>
@@ -378,7 +378,7 @@
 
             });
 
-            $('body').on('click', '.toggle-send', function () {
+            $('body').on('click', '.toggle', function () {
                 if ($(this).hasClass('running')) {
                     $(this).removeClass('running').addClass('paused');
                     $(this).children('i').removeClass('fa-pause').addClass('fa-play');

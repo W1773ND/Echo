@@ -95,20 +95,30 @@ def batch_send(campaign):
         campaign.recipient_list = recipient_list
         campaign.total = len(campaign.recipient_list)
         campaign.save(using=UMBRELLA)
+    sms_count = page_count * (campaign.total - campaign.progress)
+    if balance.sms_count < sms_count:
+        try:
+            notify_for_low_messaging_credit(service, balance)
+        except:
+            logger.error("Failed to notify %s for low messaging credit." % service, exc_info=True)
+        return
     for recipient in campaign.recipient_list[campaign.progress:]:
         if len(recipient) == 9:
             recipient = '237' + recipient
         try:
             if getattr(settings, 'UNIT_TESTING', False) or getattr(settings, 'ECHO_TEST', False):
                 requests.get('http://google.com')
+                balance.sms_count -= page_count
+                balance.save()
             else:
                 send_sms(recipient=recipient, text=text, fail_silently=False)
+                balance.sms_count -= page_count
+                balance.save()
             SMSObject.objects.using(UMBRELLA).create(recipient=recipient, text=text, label=label, campaign=campaign)
         except:
             SMSObject.objects.using(UMBRELLA).create(recipient=recipient, text=text, label=label, campaign=campaign,
                                                      is_sent=False)
-            balance.sms_count += page_count
-            balance.save()
+
         campaign.progress += 1
         campaign.save(using=UMBRELLA)
 
@@ -153,19 +163,18 @@ def batch_send_mail(campaign):
         campaign.save(using=UMBRELLA)
 
     balance = Balance.objects.using('wallets').get(service_id=get_service_instance().id)
-    if balance.mail_count < campaign.total:
+    mail_count = campaign.total - campaign.progress
+    if balance.mail_count < mail_count:
         try:
             notify_for_low_messaging_credit(service, balance)
         except:
             logger.error("Failed to notify %s for low messaging credit." % service, exc_info=True)
         return
-    with transaction.atomic(using='wallets'):
-        balance.mail_count -= campaign.total
-        balance.save()
     connection = mail.get_connection()
     try:
         connection.open()
     except:
+        logger.error("Failed to connect to mail server. Please check your internet" % service, exc_info=True)
         response = {'error': 'Failed to connect to mail server. Please check your internet'}
         return HttpResponse(json.dumps(response))
     for email in campaign.recipient_list[campaign.progress:]:
@@ -194,11 +203,13 @@ def batch_send_mail(campaign):
         msg.content_subtype = "html"
         if getattr(settings, 'ECHO_TEST', False):
             requests.get('http://www.google.com')
+            balance.mail_count -= 1
+            balance.save()
         else:
             try:
                 with transaction.atomic(using='wallets'):
-                    if not msg.send():
-                        balance.mail_count += 1
+                    if msg.send():
+                        balance.mail_count -= 1
                         balance.save()
             except:
                 pass
@@ -423,23 +434,17 @@ class SMSCampaignView(CampaignBaseView):
                     json.dumps(response),
                     'content-type: text/json'
                 )
-            with transaction.atomic(using='wallets'):
-                balance.sms_count -= sms_count
-                balance.save()
-                service = get_service_instance(using=UMBRELLA)
-                mbr = Member.objects.using(UMBRELLA).get(pk=member.id)
-                campaign = SMSCampaign.objects.using(UMBRELLA).create(service=service, member=mbr, subject=subject,
-                                                                      slug=slug, text=txt, total=recipient_count,
-                                                                      recipient_list=recipient_list,
-                                                                      recipient_label=recipient_label,
-                                                                      page_count=page_count)
+            service = get_service_instance(using=UMBRELLA)
+            mbr = Member.objects.using(UMBRELLA).get(pk=member.id)
+            campaign = SMSCampaign.objects.using(UMBRELLA).create(service=service, member=mbr, subject=subject,
+                                                                  slug=slug, text=txt, total=recipient_count,
+                                                                  recipient_list=recipient_list,
+                                                                  recipient_label=recipient_label,
+                                                                  page_count=page_count)
 
-                if getattr(settings, 'UNIT_TESTING', False):
-                    batch_send(campaign)
-                elif recipient_count < 50:
-                    # for small campaign ie minor than 50, send sms directly from application server
-                    Thread(target=batch_send, args=(campaign,)).start()
-                response = {"success": True, "balance": balance.sms_count, "campaign": campaign.to_dict()}
+            if getattr(settings, 'UNIT_TESTING', False):
+                batch_send(campaign)
+            response = {"success": True, "balance": balance.sms_count, "campaign": campaign.to_dict()}
         except:
             response = {"error": "Error while submiting SMS. Please try again later."}
 
