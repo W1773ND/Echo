@@ -112,35 +112,6 @@ class CampaignTestCase(unittest.TestCase):
         response = self.client.get(reverse('echo:mailcampaign_list'))
         self.assertEqual(response.status_code, 200)
 
-    @override_settings(IKWEN_SERVICE_ID='56eb6d04b37b3379b531b101',
-                       UNIT_TESTING=True)
-    def test_SMSCampaign_start_campaign_with_insufficient_balance(self):
-        self.client.login(username='arch', password='admin')
-        recipient_list = "693655488,658458741,5689784125"
-        txt = 'CAMP UniTest'
-        subject = 'Unitest campaign'
-        response = self.client.get(reverse('echo:sms_campaign'),
-                                   {'action': 'start_campaign', 'recipients': recipient_list,
-                                    'subject': subject, 'txt': txt})
-        self.assertEqual(response.status_code, 200)
-        result = json.loads(response.content)
-        self.assertEqual(result['error'], 'Insufficient SMS balance.')
-
-    @override_settings(IKWEN_SERVICE_ID='56eb6d04b37b3379b531b101',
-                       UNIT_TESTING=True)
-    def test_SMSCampaign_start_campaign__with_csv_file_reading_and__insufficient_balance(self):
-        self.client.login(username='arch', password='admin')
-        recipient_list = []
-        filename = "ikwen_SMS_campaign_test.csv"
-        txt = 'CAMP1 UniTest'
-        subject = 'Unitest campaign 1'
-        response = self.client.get(reverse('echo:sms_campaign'),
-                                   {'action': 'start_campaign', 'filename': filename, 'recipients': recipient_list,
-                                    'subject': subject, 'txt': txt})
-        self.assertEqual(response.status_code, 200)
-        result = json.loads(response.content)
-        self.assertEqual(result['error'], 'Insufficient SMS balance.')
-
     @override_settings(IKWEN_SERVICE_ID='56eb6d04b37b3379b531b102',
                        UNIT_TESTING=True)
     def test_SMSCampaign_start_campaign_with_sufficient_balance(self):

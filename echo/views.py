@@ -93,8 +93,8 @@ def batch_send(campaign):
                         if len(recipient_list) == 1:
                             campaign.save(using=UMBRELLA)
         campaign.recipient_list = recipient_list
-        campaign.total = len(campaign.recipient_list)
-        campaign.save(using=UMBRELLA)
+    campaign.total = len(campaign.recipient_list)
+    campaign.save(using=UMBRELLA)
     sms_count = page_count * (campaign.total - campaign.progress)
     if balance.sms_count < sms_count:
         try:
@@ -118,7 +118,6 @@ def batch_send(campaign):
         except:
             SMSObject.objects.using(UMBRELLA).create(recipient=recipient, text=text, label=label, campaign=campaign,
                                                      is_sent=False)
-
         campaign.progress += 1
         campaign.save(using=UMBRELLA)
 
@@ -420,34 +419,26 @@ class SMSCampaignView(CampaignBaseView):
         subject = request.GET.get('subject')
         txt = request.GET.get('txt')
         recipient_label, recipient_label_raw, recipient_src, recipient_list, checked_profile_tag_id_list, recipient_profile = self.get_recipient_list(request)
-        recipient_count = len(recipient_list)
         slug = slugify(subject)
         page_count = count_pages(txt)
-        sms_count = int(page_count * recipient_count)
-
-        # "transaction.atomic" instruction locks database during all operations inside "with" block
-        try:
-            balance = Balance.objects.using('wallets').get(service_id=get_service_instance().id)
-            if balance.sms_count < sms_count:
-                response = {"error": _("Insufficient SMS balance.")}
-                return HttpResponse(
-                    json.dumps(response),
-                    'content-type: text/json'
-                )
-            service = get_service_instance(using=UMBRELLA)
-            mbr = Member.objects.using(UMBRELLA).get(pk=member.id)
-            campaign = SMSCampaign.objects.using(UMBRELLA).create(service=service, member=mbr, subject=subject,
-                                                                  slug=slug, text=txt, total=recipient_count,
-                                                                  recipient_list=recipient_list,
-                                                                  recipient_label=recipient_label,
-                                                                  page_count=page_count)
-
-            if getattr(settings, 'UNIT_TESTING', False):
-                batch_send(campaign)
+        service = get_service_instance(using=UMBRELLA)
+        mbr = Member.objects.using(UMBRELLA).get(pk=member.id)
+        balance = Balance.objects.using('wallets').get(service_id=get_service_instance().id)
+        campaign = SMSCampaign.objects.using(UMBRELLA).create(service=service, member=mbr, subject=subject,
+                                                              slug=slug, text=txt,
+                                                              recipient_list=recipient_list,
+                                                              recipient_src=recipient_src,
+                                                              recipient_label=recipient_label,
+                                                              page_count=page_count)
+        if getattr(settings, 'UNIT_TESTING', False):
+            batch_send(campaign)
             response = {"success": True, "balance": balance.sms_count, "campaign": campaign.to_dict()}
-        except:
-            response = {"error": "Error while submiting SMS. Please try again later."}
-
+        else:
+            try:
+                Thread(target=batch_send, args=(campaign,)).start()
+                response = {"success": True, "balance": balance.sms_count, "campaign": campaign.to_dict()}
+            except Exception as e:
+                response = {"error": "Error while submitting your campaign. Please try again later."}
         return HttpResponse(
             json.dumps(response),
             'content-type: text/json'

@@ -47,7 +47,7 @@ class Campaign(Model):
 
 
 class SMSCampaign(Campaign):
-    text = models.TextField()
+    text = models.TextField(blank=True, null=True)
     page_count = models.IntegerField(default=0)
 
     def get_sample(self):
