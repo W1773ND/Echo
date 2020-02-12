@@ -127,17 +127,17 @@
                                 <div class="row">
                                     <div class="col-xs-6">
                                         {% if not campaign.is_started %}
-                                            <div class="btn btn-sm btn-default btn-block start-campaign toggle paused{% if not campaign.subject or not campaign.pre_header %} disabled {% endif %}" data-campaign-id="{{ campaign.id }}">
+                                            <div class="btn btn-sm btn-default btn-block start-campaign{% if not campaign.subject or not campaign.pre_header %} disabled {% endif %}" data-campaign-id="{{ campaign.id }}">
                                                 <i class="fa fa-play"></i>
-                                                <span>{% trans "Start" %}</span>
+                                                <span class="status">{% trans "Start" %}</span>
                                             </div>
                                         {% elif campaign.keep_running %}
-                                            <div class="btn btn-sm btn-default btn-block toggle toggle-send running" data-campaign-id="{{ campaign.id }}">
+                                            <div class="btn btn-sm btn-default btn-block toggle-send running" data-campaign-id="{{ campaign.id }}">
                                                 <i class="fa fa-pause"></i>
                                                 <span>{% trans "Pause" %}</span>
                                             </div>
                                         {% else %}
-                                            <div class="btn btn-sm btn-default btn-block toggle toggle-send paused" data-campaign-id="{{ campaign.id }}">
+                                            <div class="btn btn-sm btn-default btn-block toggle-send paused" data-campaign-id="{{ campaign.id }}">
                                                 <i class="fa fa-play"></i>
                                                 <span>{% trans "Start" %}</span>
                                             </div>
@@ -369,24 +369,28 @@
                         } else if (data.error) {
                             ikwen.showFloatingNotice(data.error, '', 6)
                         } else {
-                            $('.start-campaign:not(.toggle-send)').removeClass('start-campaign').addClass('toggle-send paused');
-                            $('.start-campaign:not(.toggle-send) i').removeClass('fa-play').addClass('fa-pause');
-                            $('.start-campaign:not(.toggle-send) span').text('Pause');
+                            $('.start-campaign:not(.toggle-send)').toggleClass('start-campaign toggle-send running');
+                            if ($('.toggle-send').hasClass('running')) {
+                                $('.toggle-send i').removeClass('fa-play').addClass('fa-pause');
+                                $('.toggle-send span').text('Pause')
+                            }else {
+                                $('.toggle-send i').removeClass('fa-pause').addClass('fa-play');
+                                $('.toggle-send span').text('Start')
+                            }
                         }
                     });
                 }
-
             });
 
-            $('body').on('click', '.toggle', function () {
+            $('body').on('click', '.toggle-send', function () {
+                $('.recipient-list').prop("readonly", true);
                 if ($(this).hasClass('running')) {
-                    $(this).removeClass('running').addClass('paused');
-                    $(this).children('i').removeClass('fa-pause').addClass('fa-play');
+                    $(this).toggleClass('running paused');
+                    $(this).children('i').toggleClass('fa-play fa-pause');
                     $(this).children('span').text('Start');
-                    $('.recipient-list').prop("readonly", true);
                 } else if ($(this).hasClass('paused')) {
-                    $(this).removeClass('paused').addClass('running');
-                    $(this).children('i').removeClass('fa-play').addClass('fa-pause');
+                    $(this).toggleClass('paused running');
+                    $(this).children('i').toggleClass('fa-play fa-pause');
                     $(this).children('span').text('Pause');
                 }
                 $.getJSON('', {action: 'toggle_campaign'})
