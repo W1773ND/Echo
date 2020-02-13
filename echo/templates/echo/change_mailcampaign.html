@@ -348,7 +348,7 @@
                 }
             });
 
-            $('.start-campaign:not(.toggle-send)').click(function () {
+            $('.start-campaign:not(.toggle-send)').one( 'click', function () {
                 if($(this).hasClass('disabled')) {
                     if($('input[name=subject]').val() === "") {
                         $('input[name=subject]').addClass('warning');
