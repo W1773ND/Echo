@@ -40,14 +40,14 @@ from ikwen.billing.models import Invoice
 from ikwen.billing.mtnmomo.views import MTN_MOMO
 from ikwen.revival.models import ProfileTag, MemberProfile
 
-from echo.admin import MailCampaignAdmin
-from echo.models import SMSCampaign, MailCampaign, SMSObject, Balance, Bundle, Refill, SMS, MAIL
+from echo.admin import MailCampaignAdmin, PopUpAdmin
+from echo.models import SMSCampaign, MailCampaign, SMSObject, Balance, Bundle, Refill, SMS, MAIL, \
+    MESSAGING_CREDIT_REFILL, PopUp
 from echo.utils import count_pages, notify_for_low_messaging_credit
 
 logger = logging.getLogger('ikwen')
 
 ALL_COMMUNITY = "[All Community]"
-MESSAGING_CREDIT_REFILL = "MessagingCreditRefill"
 SELECTED_PROFILES = "[Selected profiles]"
 FILE = "File"
 INPUT = "Input"
@@ -225,82 +225,6 @@ def batch_send_mail(campaign):
         pass
 
 
-def set_bundle_checkout(request, *args, **kwargs):
-    """
-    This function has no URL associated with it.
-    It serves as ikwen setting "MOMO_BEFORE_CHECKOUT"
-    """
-    referrer = request.META.get('HTTP_REFERER')
-    if request.user.is_anonymous():
-        next_url = reverse('ikwen:sign_in')
-        if referrer:
-            next_url += '?next=' + urlquote(referrer)
-        return HttpResponseRedirect(next_url)
-    service = get_service_instance(using=UMBRELLA)
-    bundle_id = request.POST['product_id']
-    bundle = Bundle.objects.using(UMBRELLA).get(pk=bundle_id)
-    amount = bundle.cost
-    refill = Refill.objects.using(UMBRELLA).create(service=service, type=bundle.type, amount=amount,
-                                                   credit=bundle.credit)
-    request.session['amount'] = amount
-    request.session['model_name'] = 'echo.Refill'
-    request.session['object_id'] = refill.id
-
-    mean = request.GET.get('mean', MTN_MOMO)
-    request.session['mean'] = mean
-    request.session['notif_url'] = service.url  # Orange Money only
-    request.session['cancel_url'] = referrer  # Orange Money only
-    request.session['return_url'] = referrer
-
-
-def confirm_bundle_payment(request, *args, **kwargs):
-    """
-    This function has no URL associated with it.
-    It serves as ikwen setting "MOMO_AFTER_CHECKOUT"
-    """
-    service = get_service_instance()
-    if getattr(settings, 'UNIT_TESTING', False):
-        ikwen_service = Service.objects.get(pk=getattr(settings, 'IKWEN_SERVICE_ID'))
-    else:
-        ikwen_service = Service.objects.get(pk=ikwen_settings.IKWEN_SERVICE_ID)
-    refill_id = request.session['object_id']
-
-    with transaction.atomic(using='wallets'):
-        refill = Refill.objects.using(UMBRELLA).get(pk=refill_id)
-        refill.status = CONFIRMED
-        refill.save()
-        balance = Balance.objects.using('wallets').get(service_id=service.id)
-        if refill.type == SMS:
-            balance.sms_count += refill.credit
-            balance_count = balance.sms_count
-        else:
-            balance.mail_count += refill.credit
-            balance_count = balance.mail_count
-        balance.save()
-
-    member = request.user
-    sudo_group = Group.objects.get(name=SUDO)
-    ikwen_sudo_group = Group.objects.using(UMBRELLA).get(name=SUDO)
-    add_event(ikwen_service, MESSAGING_CREDIT_REFILL, group_id=sudo_group.id, model='echo.Refill', object_id=refill.id)
-    add_event(ikwen_service, MESSAGING_CREDIT_REFILL, group_id=ikwen_sudo_group.id, model='echo.Refill',
-              object_id=refill.id)
-    if member.email:
-        try:
-            subject = _("Successful refill of %d %s" % (refill.credit, refill.type))
-            html_content = get_mail_content(subject, template_name='echo/mails/successful_refill.html',
-                                            extra_context={'member_name': member.first_name, 'refill': refill,
-                                                           'balance_count': balance_count})
-            sender = 'ikwen <no-reply@ikwen.com>'
-            msg = EmailMessage(subject, html_content, sender, [member.email])
-            msg.content_subtype = "html"
-            if member != service.member:
-                msg.cc = [service.member.email]
-            Thread(target=lambda m: m.send(), args=(msg,)).start()
-        except:
-            pass
-    return HttpResponseRedirect(request.session['return_url'])
-
-
 class CampaignBaseView(TemplateView):
     model = None
 
@@ -418,7 +342,8 @@ class SMSCampaignView(CampaignBaseView):
         member = request.user
         subject = request.GET.get('subject')
         txt = request.GET.get('txt')
-        recipient_label, recipient_label_raw, recipient_src, recipient_list, checked_profile_tag_id_list, recipient_profile = self.get_recipient_list(request)
+        recipient_label, recipient_label_raw, recipient_src, recipient_list, checked_profile_tag_id_list, recipient_profile = self.get_recipient_list(
+            request)
         slug = slugify(subject)
         page_count = count_pages(txt)
         service = get_service_instance(using=UMBRELLA)
@@ -536,7 +461,8 @@ class ChangeMailCampaign(CampaignBaseView, ChangeObjectBase):
             content = form.cleaned_data['content']
             cta = form.cleaned_data['cta']
             cta_url = form.cleaned_data['cta_url']
-            recipient_label, recipient_label_raw, recipient_src, recipient_list, checked_profile_tag_id_list, recipient_profile = self.get_recipient_list(request)
+            recipient_label, recipient_label_raw, recipient_src, recipient_list, checked_profile_tag_id_list, recipient_profile = self.get_recipient_list(
+                request)
             slug = slugify(subject)
             if not object_id:
                 obj = MailCampaign(service=service, member=mbr)
@@ -732,6 +658,17 @@ class MailBundle(TemplateView):
         context['balance'] = balance
         context['bundle_list'] = bundle_list
         return context
+
+
+class PopupList(HybridListView):
+    model = PopUp
+    search_field = 'name'
+    ordering = ('order_of_appearance',)
+
+
+class ChangePopup(ChangeObjectBase):
+    model = PopUp
+    model_admin = PopUpAdmin
 
 
 csv_uploader = AjaxFileUploader(DefaultUploadBackend)

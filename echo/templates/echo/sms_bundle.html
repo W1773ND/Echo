@@ -8,6 +8,16 @@
 {% block head_style %}
     {{ block.super }}
     <link rel="stylesheet" type="text/css" href="{% static 'echo/css/echo.css' %}" />
+    <link rel="stylesheet" type="text/css" href="{% static 'echo/css/bootstrap-slider.min.css' %}">
+    <style>
+        .custom-bundle-cost {font-weight: bold !important;}
+        .slider.slider-horizontal { margin: auto; width: 100% !important;}
+        .slider-selection { background-image: -webkit-linear-gradient(left,#e1f1ff 0,#9dd1ff 100%); background-image: -o-linear-gradient(left,#e1f1ff 0,#9dd1ff 100%); background-image: linear-gradient(to left,#e1f1ff 0,#9dd1ff 100%); }
+        .slider-handle { background-color: #016FF9!important; background-image: -webkit-linear-gradient(top,#348EFE 0,#016FF9 100%); background-image: -o-linear-gradient(top,#348EFE 0,#016FF9 100%); background-image: linear-gradient(to bottom,#348EFE 0,#016FF9 100%);
+                        border-radius: 3px; }
+        .tooltip-inner { background-color: #016FF9!important; }
+        .tooltip-arrow { border-bottom-color: #016FF9!important; border-top-color: #016FF9!important; }
+    </style>
 {% endblock %}
 
 {% block breadcrumb_location %}
@@ -20,23 +30,55 @@
             <div class="sold" style="text-align: right">
                 <strong>{% trans "Remainig SMS : " %}<span class="balance">{{ balance.sms_count }}</span></strong>
             </div>
-            <div id="stage" style="float: none; margin: auto">
-                <div class="panel bundle-pricing-table">
-                    {% for bundle in bundle_list %}
-                        <div class="col-sm-4">
-                            <div class="bundle-pricing-plan">
-                                <img src="{{ settings.IKWEN_MEDIA_URL }}{{ bundle.image.name }}" alt="" class="pricing-img">
-                                <h2 class="bundle-header">{{ bundle.name }}</h2>
-                                <div class="bundle-features">
-                                    <span class="bundle-features-item">{{ bundle.credit }} SMS</span>
+            <section class="bundle">
+                <div id="stage" style="float: none; margin: auto">
+                    <div class="predefined-bundle">
+                        <h3 class="text-center">{% trans "Choose one pack below"%}</h3>
+                        <hr>
+                        <div class="panel bundle-pricing-table">
+                            {% for bundle in bundle_list %}
+                                <div class="col-sm-4">
+                                    <div class="bundle-pricing-plan">
+                                        <img src="{{ settings.IKWEN_MEDIA_URL }}{{ bundle.image.name }}" alt="" class="pricing-img">
+                                        <h3 class="bundle-header">{{ bundle.name }}</h3>
+                                        <div class="bundle-features">
+                                            <span class="bundle-features-item">{{ bundle.credit|intcomma }} SMS</span>
+                                        </div>
+                                        <p class="bundle-price"> <span class="currency">XAF</span> {{ bundle.cost | intcomma }}</p>
+                                        <button class=" btn btn-primary btn-buy-bundle payment-start" data-product-id="{{ bundle.id }}">{% trans "Buy" %}</button>
+                                    </div>
                                 </div>
-                                <p class="bundle-price"> <span class="currency">XAF</span> {{ bundle.cost | intcomma }}</p>
-                                <button class="btn btn-primary btn-buy-bundle payment-start animated infinite pulse" data-product-id="{{ bundle.id }}">{% trans "Buy" %}</button>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="custom-bundle">
+                        <h3 class="text-center" style="margin-top: 10vh">{% trans "Or customize your bundle"%}</h3>
+                        <hr class="separator">
+                        <div class="panel" style="margin-top: 5vh ">
+                            <div class="addon-item" style="padding-bottom: 3vh">
+                                <div class="col-lg-6 pull-left">
+                                    <h4><label  style="cursor: pointer"><input id="CustomBundleEnabled" type="checkbox"/> &nbsp;{% trans " Want customize my bundle" %}</label></h4>
+                                </div>
+                                <div class="col-lg-6" style="border-left: #3c3c3c 2px solid; text-align: right">
+                                    <h4><label id="CurrentSliderPriceValLabel">{% trans "How much SMS do you want?" %}</label>&nbsp;<label id="CurrentSliderPriceVal" class="price tpl"></label></h4>
+                                </div>
+                                <div class="clearfix"></div>
+                            </div>
+                            <div style="padding-bottom: 5.5vh; z-index: 10">
+                                <h4>{% trans "Choose quantity" %}</h4>
+                                <input id="optionalSMSNumber" type="range" data-slider-min="500" data-slider-max="20000" data-slider-step="100" data-slider-value="500" data-slider-enabled="false"/>
+                            </div>
+                            <div style="padding-bottom: 5.5vh; z-index: 10">
+                                <h4>{% trans "Choose validity" %}</h4>
+                                <input id="optionalBundleValidity" type="range" data-slider-min="0" data-slider-max="3" data-slider-step="1" data-slider-value="0" data-slider-enabled="false"/>
+                            </div>
+                            <div class="text-center">
+                                <button class=" btn btn-primary btn-buy-bundle custom-bundle-validation payment-start" disabled>{% trans "Buy" %}</button>
                             </div>
                         </div>
-                    {% endfor %}
+                    </div>
                 </div>
-            </div>
+            </section>
         </div>
     </div>
     {% with payment_conf='messaging_bundle' %}
@@ -46,9 +88,107 @@
 
 {% block js %}
     {{ block.super }}
+{#    <script src="{% static 'echo/js/jquery-1.12.4.min.js' %}"></script>#}
+    <script src="{% static 'echo/js/bootstrap-slider.min.js' %}"></script>
     <script>
-        (function () {
-            $('<input type="hidden" name="type" value="SMS" />').appendTo('#payment-start-flow');
-        })();
+        (() => {
+            $('<input type="hidden" name="custom_bundle_value">').appendTo('#payment-start-flow');
+            $('<input type="hidden" name="bundle_type">').appendTo('#payment-start-flow');
+            $("#CustomBundleEnabled").prop("checked", false);
+
+            let diamondValue = 20000;
+            let goldValue = 10000;
+
+            let diamondPrice = 12;
+            let goldPrice = 15;
+            let silverPrice = 18;
+
+            let customBundleCost = 0;
+            let bundleCost = silverPrice;
+            let bundleValue = $("#optionalSMSNumber").data('slider-min');
+            let bundleValidity = $('#optionalBundleValidity').data('slider-min');
+
+            let realValues = [30, 90, 180, 360];
+            let labelValues = ['30d', '90d', '180d', '360d'];
+
+            let validityRatio = [13, 14, 15, 18];
+
+            let optionalBundleValidity = new Slider('input#optionalBundleValidity',{
+                tooltip:'always',
+                tooltip_position: 'bottom',
+                ticks: [0, 1, 2, 3],
+                formatter: function(val) { return labelValues[val]; }
+            });
+
+            let optionalSMSNumberSlider = new Slider("input#optionalSMSNumber",{
+                tooltip: 'always',
+                handle: 'square',
+                tooltip_position: 'bottom',
+            });
+            $(".tooltip-main.in").css('display', 'none');
+
+
+            function calculateCustomBundlecost(value, validity) {
+                customBundleCost = value * validityRatio[validity];
+                $("#CurrentSliderPriceValLabel").text(" " + bundleValue.formatMoney(0, '{{ settings.THOUSAND_SEPARATOR }}', '{{ settings.DECIMAL_SEPARATOR }}') +
+                    " SMS / " + realValues[bundleValidity] + " days = ");
+                $("#CurrentSliderPriceVal").removeClass('tpl').text(customBundleCost.formatMoney(0, '{{ settings.THOUSAND_SEPARATOR }}', '{{ settings.DECIMAL_SEPARATOR }}') + " XAF");
+
+            }
+
+            $("#optionalBundleValidity").on("change", function (slidEvt) {
+                bundleValue= parseInt(optionalSMSNumberSlider.getValue());
+                bundleValidity = parseInt(slidEvt.value.newValue);
+                calculateCustomBundlecost(bundleValue, bundleValidity);
+                $('input[name=product_id]').val('');
+                $('input[name=custom_bundle_value]').val(bundleValue);
+                $('input[name=bundle_type]').val('SMS');
+            });
+
+
+            $("#CustomBundleEnabled").click(function() {
+                if(this.checked) {
+                    $(".predefined-bundle .btn-buy-bundle").prop("disabled", true);
+                    $(".custom-bundle .btn-buy-bundle").prop("disabled", false);
+                    optionalSMSNumberSlider.enable();
+                    optionalBundleValidity.enable();
+                    $(".tooltip-main.in").css('display', 'block');
+                    bundleValue= parseInt(optionalSMSNumberSlider.getValue());
+                    bundleValidity= parseInt(optionalBundleValidity.getValue());
+                    {#customBundleCost= bundleValue * bundleCost;#}
+                    calculateCustomBundlecost(bundleValue, bundleValidity);
+                    $('input[name=product_id]').val('');
+                    $('input[name=bundle_type]').val('SMS');
+                    $('input[name=custom_bundle_value]').val(bundleValue);
+                }
+                else {
+                    $(".predefined-bundle .btn-buy-bundle").prop("disabled", false);
+                    $(".custom-bundle .btn-buy-bundle").prop("disabled", true);
+                    optionalSMSNumberSlider.refresh();
+                    optionalBundleValidity.refresh();
+                    bundleCost= validityRatio[parseInt(optionalBundleValidity.getValue())];
+                    customBundleCost = silverPrice;
+                    $("#CurrentSliderPriceValLabel").text("How much SMS do you want?");
+                    $('#CurrentSliderPriceVal').addClass('tpl');
+                    optionalSMSNumberSlider.disable();
+                    $(".tooltip-main.in").css('display', 'none');
+                    $('input[name=bundle_type]').val('');
+                    $('input[name=custom_bundle_value]').val('')
+                }
+
+            });
+            $("#optionalSMSNumber").on("change", function(slideEvt) {
+                bundleValue = parseInt(slideEvt.value.newValue);
+                bundleValidity= parseInt(optionalBundleValidity.getValue());
+                calculateCustomBundlecost(bundleValue, bundleValidity);
+                $('input[name=product_id]').val('');
+                $('input[name=custom_bundle_value]').val(bundleValue);
+                $('input[name=bundle_type]').val('SMS');
+            });
+
+        })()
+
+
+
     </script>
 {% endblock %}

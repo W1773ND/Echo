@@ -8,6 +8,16 @@
 {% block head_style %}
     {{ block.super }}
     <link rel="stylesheet" type="text/css" href="{% static 'echo/css/echo.css' %}" />
+    <link rel="stylesheet" type="text/css" href="{% static 'echo/css/bootstrap-slider.min.css' %}">
+    <style>
+        .custom-bundle-cost {font-weight: bold !important;}
+        .slider.slider-horizontal { margin: auto; width: 100% !important;}
+        .slider-selection { background-image: -webkit-linear-gradient(left,#e1f1ff 0,#9dd1ff 100%); background-image: -o-linear-gradient(left,#e1f1ff 0,#9dd1ff 100%); background-image: linear-gradient(to left,#e1f1ff 0,#9dd1ff 100%); }
+        .slider-handle { background-color: #016FF9!important; background-image: -webkit-linear-gradient(top,#348EFE 0,#016FF9 100%); background-image: -o-linear-gradient(top,#348EFE 0,#016FF9 100%); background-image: linear-gradient(to bottom,#348EFE 0,#016FF9 100%);
+                        border-radius: 3px; }
+        .tooltip-inner { background-color: #016FF9!important; }
+        .tooltip-arrow { border-bottom-color: #016FF9!important; border-top-color: #016FF9!important; }
+    </style>
 {% endblock %}
 
 {% block breadcrumb_location %}
@@ -20,23 +30,49 @@
             <div class="sold" style="text-align: right">
                 <strong>{% trans "Remainig Email : " %}<span class="balance">{{ balance.mail_count|intcomma }}</span></strong>
             </div>
-            <div id="stage" style="float: none; margin: auto">
-                <div class="panel bundle-pricing-table">
-                    {% for bundle in bundle_list %}
-                        <div class="col-sm-4">
-                            <div class="bundle-pricing-plan">
-                                <img src="{{ settings.IKWEN_MEDIA_URL }}{{ bundle.image.name }}" alt="" class="pricing-img">
-                                <h2 class="bundle-header">{{ bundle.name }}</h2>
-                                <div class="bundle-features">
-                                    <span class="bundle-features-item">{{ bundle.credit|intcomma }} Mail</span>
+            <section class="bundle">
+                <div id="stage" style="float: none; margin: auto">
+                    <div class="predefined-bundle">
+                        <h3 class="text-center">{% trans "Choose one pack below"%}</h3>
+                        <hr>
+                        <div class="panel bundle-pricing-table">
+                            {% for bundle in bundle_list %}
+                                <div class="col-sm-4">
+                                    <div class="bundle-pricing-plan">
+                                        <img src="{{ settings.IKWEN_MEDIA_URL }}{{ bundle.image.name }}" alt="" class="pricing-img">
+                                        <h3 class="bundle-header">{{ bundle.name }}</h3>
+                                        <div class="bundle-features">
+                                            <span class="bundle-features-item">{{ bundle.credit|intcomma }} Mails</span>
+                                        </div>
+                                        <p class="bundle-price"> <span class="currency">XAF</span> {{ bundle.cost | intcomma }}</p>
+                                        <button class=" btn btn-primary btn-buy-bundle payment-start" data-product-id="{{ bundle.id }}">{% trans "Buy" %}</button>
+                                    </div>
                                 </div>
-                                <p class="bundle-price"> <span class="currency">XAF</span> {{ bundle.cost | intcomma }}</p>
-                                <button class=" btn btn-primary btn-buy-bundle payment-start animated infinite pulse" data-product-id="{{ bundle.id }}">{% trans "Buy" %}</button>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="custom-bundle">
+                        <h3 class="text-center" style="margin-top: 10vh">{% trans "Or customize your bundle"%}</h3>
+                        <hr class="separator">
+                        <div class="panel" style="margin-top: 5vh ">
+                            <div class="addon-item" style="padding-bottom: 3vh">
+                                <div class="col-lg-6" style="border-right: #3c3c3c 2px solid; text-align: left">
+                                    <h4><label  style="cursor: pointer"><input id="CustomBundleEnabled" type="checkbox"/> &nbsp;{% trans " Want customize my bundle" %}</label></h4>
+                                </div>
+                                <div class="col-lg-6" style="text-align: right">
+                                    <h4><label id="CurrentSliderPriceValLabel">{% trans "How much Mails do you want?" %}</label>&nbsp;<label id="CurrentSliderPriceVal" class="price tpl"></label></h4>
+                                </div>
+                            </div>
+                            <div style="padding-bottom: 5.5vh; z-index: 10">
+                                <input id="optionalMailsNumber" type="range" data-slider-min="1000" data-slider-max="150000" data-slider-step="500" data-slider-value="100" data-slider-enabled="false"/>
+                            </div>
+                            <div class="text-center">
+                                <button class=" btn btn-primary btn-buy-bundle custom-bundle-validation payment-start" disabled>{% trans "Buy" %}</button>
                             </div>
                         </div>
-                    {% endfor %}
+                    </div>
                 </div>
-            </div>
+            </section>
         </div>
     </div>
     {% with payment_conf='messaging_bundle' %}
@@ -46,9 +82,78 @@
 
 {% block js %}
     {{ block.super }}
+{#    <script src="{% static 'echo/js/jquery-1.12.4.min.js' %}"></script>#}
+    <script src="{% static 'echo/js/bootstrap-slider.min.js' %}"></script>
     <script>
-        (function () {
-            $('<input type="hidden" name="type" value="SMS" />').appendTo('#payment-start-flow');
-        })();
+        (() => {
+            $('<input type="hidden" name="custom_bundle_value">').appendTo('#payment-start-flow');
+            $('<input type="hidden" name="bundle_type">').appendTo('#payment-start-flow');
+            $("#CustomBundleEnabled").prop("checked", false);
+            let diamondValue = 100000;
+            let goldValue = 50000;
+
+            let diamondPrice = 0.6;
+            let goldPrice = 0.8;
+            let silverPrice = 1;
+
+            let customBundleCost = $("#optionalMailsNumber").data('slider-min');
+            let bundleCost = silverPrice;
+            let bundleValue = $("#optionalMailsNumber").data('slider-min');
+
+            let optionalMailNumberSlider = new Slider("input#optionalMailsNumber",{
+                tooltip: 'always',
+                handle: 'square',
+                tooltip_position: 'bottom',
+            });
+            $(".tooltip-main.in").css('display', 'none');
+
+
+            $("#CustomBundleEnabled").click(function() {
+                if(this.checked) {
+                    $(".predefined-bundle .btn-buy-bundle").prop("disabled", true);
+                    $(".custom-bundle .btn-buy-bundle").prop("disabled", false);
+                    optionalMailNumberSlider.enable();
+                    $(".tooltip-main.in").css('display', 'block');
+                    bundleValue= parseInt(optionalMailNumberSlider.getValue());
+                    customBundleCost= bundleValue * bundleCost;
+                    $("#CurrentSliderPriceValLabel").text(" " + bundleValue.formatMoney(0, '{{ settings.THOUSAND_SEPARATOR }}', '{{ settings.DECIMAL_SEPARATOR }}') + " Mails = ");
+                    $("#CurrentSliderPriceVal").removeClass('tpl').text(customBundleCost.formatMoney(0, '{{ settings.THOUSAND_SEPARATOR }}', '{{ settings.DECIMAL_SEPARATOR }}') + " XAF");
+                    $('input[name=product_id]').val('');
+                    $('input[name=bundle_type]').val('Mail');
+                    $('input[name=custom_bundle_value]').val(bundleValue);
+                }
+                else {
+                    $(".predefined-bundle .btn-buy-bundle").prop("disabled", false);
+                    $(".custom-bundle .btn-buy-bundle").prop("disabled", true);
+                    optionalMailNumberSlider.refresh();
+                    bundleCost= silverPrice;
+                    customBundleCost = silverPrice;
+                    $("#CurrentSliderPriceValLabel").text("How much Mails do you want?");
+                    $('#CurrentSliderPriceVal').addClass('tpl');
+                    optionalMailNumberSlider.disable();
+                    $(".tooltip-main.in").css('display', 'none');
+                    $('input[name=bundle_type]').val('');
+                    $('input[name=custom_bundle_value]').val('')
+                }
+
+            });
+            $("#optionalMailsNumber").on("change", function(slideEvt) {
+                bundleValue = parseInt(slideEvt.value.newValue);
+                if (bundleValue >= diamondValue) bundleCost = diamondPrice;
+                else if (bundleValue >= goldValue) bundleCost = goldPrice;
+                else bundleCost = silverPrice;
+
+
+                customBundleCost = bundleValue * bundleCost;
+                $("#CurrentSliderPriceValLabel").text(" " + bundleValue.formatMoney(0, '{{ settings.THOUSAND_SEPARATOR }}', '{{ settings.DECIMAL_SEPARATOR }}') + " Mails = ");
+                $("#CurrentSliderPriceVal").text(customBundleCost.formatMoney(0, '{{ settings.THOUSAND_SEPARATOR }}', '{{ settings.DECIMAL_SEPARATOR }}') + " XAF");
+                $('input[name=product_id]').val('');
+                $('input[name=custom_bundle_value]').val(bundleValue);
+                $('input[name=bundle_type]').val('Mail');
+            });
+        })()
+
+
+
     </script>
 {% endblock %}

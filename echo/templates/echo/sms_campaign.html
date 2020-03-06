@@ -14,7 +14,7 @@
         <div class="container-fluid">
             <div class="sold" style="text-align: right">
                 <strong>{% trans "Remaining SMS : " %}<span class="messaging-balance text-muted">{{ balance.sms_count|intcomma }}</span></strong>
-                <a style="text-decoration: none" href="{% url 'echo:sms_bundle' %}"><span><p>{% trans "Refill ? " %}</p></span></a>
+{#                <a style="text-decoration: none" href="{% url 'echo:sms_bundle' %}"><span><p>{% trans "Refill ? " %}</p></span></a>#}
             </div>
 
             <div class="form col-lg-4 col-sm-6 col-lg-offset-4 col-sm-offset-3">

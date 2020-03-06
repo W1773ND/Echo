@@ -4,7 +4,9 @@ from django.db import models
 from django.template.defaultfilters import truncatechars
 from django_mongodb_engine.contrib import MongoDBManager
 from djangotoolbox.fields import ListField
-from ikwen.core.constants import PENDING
+from django.utils.translation import gettext_lazy as _
+
+from ikwen.core.constants import PENDING, STARTED
 from ikwen.core.models import Model, Service
 from ikwen.accesscontrol.models import Member
 
@@ -14,6 +16,13 @@ TYPE_CHOICES = (
     (MAIL, 'Mail'),
     (SMS, 'SMS')
 )
+EN = 'en'
+FR = 'fr'
+LANG_CHOICES = (
+    (EN, 'English'),
+    (FR, u'Français'),
+)
+MESSAGING_CREDIT_REFILL = "MessagingCreditRefill"
 
 
 class Campaign(Model):
@@ -106,18 +115,47 @@ class EmailObject(Model):
         return u'%s %s' % (self.recipient, self.subject)
 
 
+class PopUp(Model):
+    UPLOAD_TO = 'popup/'
+    lang = models.CharField(max_length=10, choices=LANG_CHOICES, default=EN, verbose_name="Language")
+    name = models.CharField(max_length=150)
+    catchy = models.CharField(max_length=250, blank=True, null=True)
+    text = models.TextField(blank=True, null=True)
+    cta_label = models.CharField(max_length=40, blank=True, null=True, verbose_name="Call-to-action")
+    cta_url = models.URLField(max_length=250, blank=True, null=True)
+    image = models.ImageField(blank=True, null=True, upload_to=UPLOAD_TO,
+                              help_text=_("600 x 600px ; will appear on background"))
+    is_active = models.BooleanField(default=False)
+    order_of_appearance = models.IntegerField(default=0)
+
+    class Meta:
+        verbose_name_plural = "Pop-up"
+
+    def __unicode__(self):
+        return self.name + ' | ' + self.lang
+
+    def get_obj_details(self):
+        return self.catchy
+
+    def get_image_url(self):
+        if self.image:
+            return self.image.url
+        else:
+            return None
+
+
 class Balance(Model):
     service_id = models.CharField(max_length=24, unique=True)
     sms_count = models.IntegerField(default=0)
     mail_count = models.IntegerField(default=0)
     last_low_sms_notice = models.DateTimeField(blank=True, null=True, db_index=True,
-                                               help_text="Last time the person was informed of low SMS credit")
+                                               help_text=_("Last time the person was informed of low SMS credit"))
     last_low_mail_notice = models.DateTimeField(blank=True, null=True, db_index=True,
-                                                help_text="Last time the person was informed of low Email credit")
+                                                help_text=_("Last time the person was informed of low Email credit"))
     last_empty_sms_notice = models.DateTimeField(blank=True, null=True, db_index=True,
-                                                 help_text="Last time the person was informed of empty SMS credit")
+                                                 help_text=_("Last time the person was informed of empty SMS credit"))
     last_empty_mail_notice = models.DateTimeField(blank=True, null=True, db_index=True,
-                                                  help_text="Last time the person was informed of empty Email credit")
+                                                  help_text=_("Last time the person was informed of empty Email credit"))
 
 
 class Refill(Model):
@@ -125,7 +163,7 @@ class Refill(Model):
     type = models.CharField(max_length=10, choices=TYPE_CHOICES)
     amount = models.IntegerField()
     credit = models.IntegerField()
-    status = models.CharField(max_length=15, default=PENDING)
+    status = models.CharField(max_length=15, default=STARTED)
 
     def __unicode__(self):
         return u'%s' % self.type
@@ -136,6 +174,7 @@ class Bundle(Model):
     name = models.CharField(max_length=20)
     cost = models.IntegerField()
     credit = models.IntegerField()
+    unit_cost = models.FloatField()
     image = models.ImageField(upload_to='echo_bundles', blank=True, null=True)
     is_active = models.BooleanField(default=True)
 

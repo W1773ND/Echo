@@ -10,13 +10,13 @@ from django.conf import settings
 from django.core.mail import EmailMessage
 from django.core.urlresolvers import reverse
 from django.utils.translation import activate, gettext as _
+
+from echo.models import SMS, MAIL
 from ikwen.core.models import Service
 from ikwen.core.utils import get_mail_content, get_service_instance
 from ikwen.accesscontrol.backends import UMBRELLA
 from ikwen.conf.settings import IKWEN_SERVICE_ID
 
-EMAIL = "Email"
-SMS = "SMS"
 EMAIL_AND_SMS = "Email and SMS"
 
 LOW_SMS_LIMIT = 100
@@ -71,14 +71,14 @@ def notify_for_low_messaging_credit(service, balance):
     if 0 < balance.sms_count < LOW_SMS_LIMIT:
         subject = _("Your are running out of SMS credit.")
         last_notice = copy(balance.last_low_sms_notice)
-        account = "SMS"
+        account = SMS
         credit_left = balance.sms_count
         balance.last_low_sms_notice = now
         refill_url = service.url + reverse('ikwen:service_detail')
     elif 0 < balance.mail_count < LOW_MAIL_LIMIT:
         subject = _("Your are running out of Email credit.")
         last_notice = copy(balance.last_low_mail_notice)
-        account = "Email"
+        account = MAIL
         credit_left = balance.mail_count
         balance.last_low_mail_notice = now
         refill_url = service.url + reverse('ikwen:service_detail')
@@ -122,12 +122,12 @@ def notify_for_empty_messaging_credit(service, balance):
     elif balance.sms_count == 0:
         subject = _("Your are out of SMS credit.")
         last_notice = copy(balance.last_empty_sms_notice)
-        account = "SMS"
+        account = SMS
         balance.last_empty_sms_notice = now
     else:
         subject = _("Your are out of Email credit.")
         last_notice = copy(balance.last_empty_mail_notice)
-        account = "Email"
+        account = MAIL
         balance.last_empty_mail_notice = now
     refill_url = service.url + reverse('ikwen:service_detail')
     balance.save()
