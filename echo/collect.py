@@ -170,7 +170,7 @@ def confirm_bundle_payment(request, *args, **kwargs):
                                             extra_context={'member_name': member.first_name, 'refill': refill,
                                                            'balance_count': balance_count})
             sender = 'ikwen <no-reply@ikwen.com>'
-            msg = XEmailMessage(subject, html_content, sender, [member.email])
+            msg = XEmailMessage(subject, html_content, sender, [member.email], bcc=['support@ikwen.com', 'contact@ikwen.com'])
             msg.content_subtype = "html"
             if member != service.member:
                 msg.cc = [service.member.email]
