@@ -16,6 +16,7 @@ from django.core import mail
 from django.core.files import File
 from django.core.mail import EmailMessage
 from django.core.urlresolvers import reverse
+from django.core.validators import EmailValidator
 from django.db import transaction
 from django.db.models import get_model
 from django.http import HttpResponse, HttpResponseRedirect, Http404
@@ -136,7 +137,8 @@ def batch_send_mail(campaign):
                 start = i * 500
                 finish = (i + 1) * 500
                 for member in member_queryset[start:finish]:
-                    recipient_list.append(member.email)
+                    if EmailValidator(member.email):
+                        recipient_list.append(member.email)
                     if len(recipient_list) == 1:
                         campaign.save(using=UMBRELLA)
         elif campaign.recipient_src == PROFILES:
@@ -154,7 +156,8 @@ def batch_send_mail(campaign):
                         continue
                     match = set(profile.tag_fk_list) & set(checked_profile_tag_id_list)
                     if len(match) > 0:
-                        recipient_list.append(member.email)
+                        if EmailValidator(member.email):
+                            recipient_list.append(member.email)
                         if len(recipient_list) == 1:
                             campaign.save(using=UMBRELLA)
         campaign.recipient_list = recipient_list
