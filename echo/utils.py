@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import json
 import logging
 from copy import copy
 from datetime import datetime
@@ -9,13 +10,18 @@ from time import strptime
 from django.conf import settings
 from django.core.mail import EmailMessage
 from django.core.urlresolvers import reverse
+from django.http import HttpResponse
 from django.utils.translation import activate, gettext as _
 
-from echo.models import SMS, MAIL
+from ikwen.conf.settings import WALLETS_DB_ALIAS
 from ikwen.core.models import Service
 from ikwen.core.utils import get_mail_content, get_service_instance
 from ikwen.accesscontrol.backends import UMBRELLA
 from ikwen.conf.settings import IKWEN_SERVICE_ID
+
+from echo.models import SMS, MAIL, Balance
+
+logger = logging.getLogger('ikwen')
 
 EMAIL_AND_SMS = "Email and SMS"
 
@@ -68,20 +74,25 @@ def notify_for_low_messaging_credit(service, balance):
         activate(member.language)
     else:
         activate('en')
-    if 0 < balance.sms_count < LOW_SMS_LIMIT:
+    if 0 < balance.sms_count < LOW_SMS_LIMIT and 0 < balance.mail_count < LOW_MAIL_LIMIT:
+        subject = _("Your are running out of Email and SMS credit.")
+        last_notice = copy(max(balance.last_empty_mail_notice, balance.last_empty_sms_notice))
+        account = "Email and SMS"
+        balance.last_empty_mail_notice = now
+        balance.last_empty_sms_notice = now
+    elif 0 < balance.sms_count < LOW_SMS_LIMIT:
         subject = _("Your are running out of SMS credit.")
         last_notice = copy(balance.last_low_sms_notice)
         account = SMS
         credit_left = balance.sms_count
         balance.last_low_sms_notice = now
-        refill_url = service.url + reverse('ikwen:service_detail')
     elif 0 < balance.mail_count < LOW_MAIL_LIMIT:
         subject = _("Your are running out of Email credit.")
         last_notice = copy(balance.last_low_mail_notice)
         account = MAIL
         credit_left = balance.mail_count
         balance.last_low_mail_notice = now
-        refill_url = service.url + reverse('ikwen:service_detail')
+    refill_url = service.url + reverse('ikwen:service_detail')
     balance.save()
 
     if last_notice:
@@ -150,3 +161,18 @@ def notify_for_empty_messaging_credit(service, balance):
     msg = EmailMessage(subject, html_content, sender, [member.email])
     msg.content_subtype = "html"
     Thread(target=lambda m: m.send(), args=(msg, )).start()
+
+
+def check_messaging_balance(service):
+    balance, update = Balance.objects.using(WALLETS_DB_ALIAS).get_or_create(service_id=service.id)
+    if 0 < balance.sms_count < LOW_SMS_LIMIT or 0 < balance.mail_count < LOW_MAIL_LIMIT:
+        try:
+            notify_for_low_messaging_credit(service, balance)
+        except:
+            logger.error("Failed to notify %s for low messaging credit." % service, exc_info=True)
+    if (balance.sms_count <= 0 or balance.mail_count <= 0) and not getattr(settings, 'UNIT_TESTING', False):
+        try:
+            notify_for_empty_messaging_credit(service, balance)
+        except:
+            logger.error("Failed to notify %s for empty messaging credit." % service, exc_info=True)
+    return balance
