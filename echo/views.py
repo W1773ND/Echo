@@ -3,7 +3,6 @@ import json
 import logging
 import os
 import re
-import time
 from threading import Thread
 
 import requests
@@ -11,7 +10,6 @@ from ajaxuploader.views import AjaxFileUploader
 from currencies.models import Currency
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.auth.models import Group
 from django.core import mail
 from django.core.files import File
 from django.core.mail import EmailMessage
@@ -21,27 +19,23 @@ from django.db import transaction
 from django.db.models import get_model
 from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.shortcuts import render
-from django.template import Context
 from django.template.defaultfilters import slugify
-from django.template.loader import get_template
-from django.utils.http import urlquote
+
 from django.views.generic import TemplateView
 from django.utils.translation import gettext as _
 
 from ikwen.conf import settings as ikwen_settings
 from ikwen.conf.settings import WALLETS_DB_ALIAS
-from ikwen.core.constants import CONFIRMED
-from ikwen.core.models import Service
+
 from ikwen.core.views import ChangeObjectBase, HybridListView
 from ikwen.core.utils import send_sms, get_service_instance, DefaultUploadBackend, get_sms_label, add_event, \
     get_mail_content, get_model_admin_instance, get_item_list, send_push
-from ikwen.accesscontrol.models import Member, SUDO, PWAProfile
+from ikwen.accesscontrol.models import Member, PWAProfile
 from ikwen.accesscontrol.backends import UMBRELLA
-from ikwen.billing.models import Invoice
 from ikwen.revival.models import ProfileTag, MemberProfile
 
 from echo.admin import MailCampaignAdmin, PopUpAdmin, PushCampaignAdmin
-from echo.models import SMSCampaign, MailCampaign, SMSObject, Balance, Bundle, Refill, SMS, MAIL, PopUp, PushCampaign, \
+from echo.models import SMSCampaign, MailCampaign, SMSObject, Balance, Bundle, SMS, MAIL, PopUp, PushCampaign, \
     PUSH
 from echo.utils import count_pages, notify_for_low_messaging_credit
 

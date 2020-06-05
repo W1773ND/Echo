@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import json
 import logging
 from copy import copy
 from datetime import datetime
@@ -9,6 +10,7 @@ from time import strptime
 from django.conf import settings
 from django.core.mail import EmailMessage
 from django.core.urlresolvers import reverse
+from django.http import HttpResponse
 from django.utils.translation import activate, gettext as _
 
 from echo.models import SMS, MAIL, PUSH, Balance
@@ -17,6 +19,7 @@ from ikwen.core.models import Service
 from ikwen.core.utils import get_mail_content, get_service_instance
 from ikwen.accesscontrol.backends import UMBRELLA
 from ikwen.conf.settings import IKWEN_SERVICE_ID
+
 
 logger = logging.getLogger('ikwen')
 
