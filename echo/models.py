@@ -10,9 +10,11 @@ from ikwen.core.constants import PENDING, STARTED
 from ikwen.core.models import Model, Service
 from ikwen.accesscontrol.models import Member
 
+PUSH = 'Push'
 MAIL = 'Mail'
 SMS = 'SMS'
 TYPE_CHOICES = (
+    (PUSH, 'Push'),
     (MAIL, 'Mail'),
     (SMS, 'SMS')
 )
@@ -55,16 +57,21 @@ class Campaign(Model):
         return self.subject
 
 
-class SMSCampaign(Campaign):
-    text = models.TextField(blank=True, null=True)
-    page_count = models.IntegerField(default=0)
+class PushCampaign(Campaign):
+    UPLOAD_TO = 'push_campaigns'
+    image = models.ImageField(upload_to=UPLOAD_TO, blank=True, null=True,
+                              help_text=_("Should be at least 1350px width and landscape orientation"))
+    content = models.TextField(blank=True, null=True)
+    cta = models.CharField(max_length=40, blank=True, null=True)
+    cta_url = models.URLField(max_length=250, blank=True, null=True)
+    keep_running = models.BooleanField(default=False)
 
     def get_sample(self):
         """
-        Gets the first SMS of this campaign. Might be the only one in case on a single send
+        Gets the first Push of this campaign. Might be the only one in case on a single send
         """
         try:
-            return self.smsobject_set.all()[0]
+            return self.pushobject_set.all()[0]
         except:
             pass
 
@@ -91,15 +98,30 @@ class MailCampaign(Campaign):
     # def get_obj_details(self):
 
 
-class SMSObject(Model):
-    campaign = models.ForeignKey(SMSCampaign, blank=True, null=True)
-    label = models.CharField(max_length=15)
-    recipient = models.CharField(max_length=15, db_index=True)
-    text = models.TextField()
+class SMSCampaign(Campaign):
+    text = models.TextField(blank=True, null=True)
+    page_count = models.IntegerField(default=0)
+
+    def get_sample(self):
+        """
+        Gets the first SMS of this campaign. Might be the only one in case on a single send
+        """
+        try:
+            return self.smsobject_set.all()[0]
+        except:
+            pass
+
+
+class PushObject(Model):
+    campaign = models.ForeignKey(PushCampaign, blank=True, null=True,
+                                 related_name='+')
+    sender = models.CharField(max_length=15)
+    recipient = models.CharField(max_length=150, db_index=True)
+    subject = models.CharField(max_length=150, db_index=True)
     is_sent = models.BooleanField(default=True)
 
     def __unicode__(self):
-        return u'%s %s' % (self.label, self.text)
+        return u'%s %s' % (self.recipient, self.subject)
 
 
 class EmailObject(Model):
@@ -113,6 +135,17 @@ class EmailObject(Model):
 
     def __unicode__(self):
         return u'%s %s' % (self.recipient, self.subject)
+
+
+class SMSObject(Model):
+    campaign = models.ForeignKey(SMSCampaign, blank=True, null=True)
+    label = models.CharField(max_length=15)
+    recipient = models.CharField(max_length=15, db_index=True)
+    text = models.TextField()
+    is_sent = models.BooleanField(default=True)
+
+    def __unicode__(self):
+        return u'%s %s' % (self.label, self.text)
 
 
 class PopUp(Model):
@@ -148,14 +181,19 @@ class Balance(Model):
     service_id = models.CharField(max_length=24, unique=True)
     sms_count = models.IntegerField(default=0)
     mail_count = models.IntegerField(default=0)
-    last_low_sms_notice = models.DateTimeField(blank=True, null=True, db_index=True,
-                                               help_text=_("Last time the person was informed of low SMS credit"))
+    push_count = models.IntegerField(default=0)
+    last_low_push_notice = models.DateTimeField(blank=True, null=True, db_index=True,
+                                                help_text=_("Last time the person was informed of low Push credit"))
     last_low_mail_notice = models.DateTimeField(blank=True, null=True, db_index=True,
                                                 help_text=_("Last time the person was informed of low Email credit"))
-    last_empty_sms_notice = models.DateTimeField(blank=True, null=True, db_index=True,
-                                                 help_text=_("Last time the person was informed of empty SMS credit"))
+    last_low_sms_notice = models.DateTimeField(blank=True, null=True, db_index=True,
+                                               help_text=_("Last time the person was informed of low SMS credit"))
+    last_empty_push_notice = models.DateTimeField(blank=True, null=True, db_index=True,
+                                                  help_text=_("Last time the person was informed of empty Push credit"))
     last_empty_mail_notice = models.DateTimeField(blank=True, null=True, db_index=True,
                                                   help_text=_("Last time the person was informed of empty Email credit"))
+    last_empty_sms_notice = models.DateTimeField(blank=True, null=True, db_index=True,
+                                                 help_text=_("Last time the person was informed of empty SMS credit"))
 
 
 class Refill(Model):
@@ -174,7 +212,7 @@ class Bundle(Model):
     name = models.CharField(max_length=20)
     cost = models.IntegerField()
     credit = models.IntegerField()
-    unit_cost = models.FloatField()
+    unit_cost = models.FloatField(blank=True, null=True)
     image = models.ImageField(upload_to='echo_bundles', blank=True, null=True)
     is_active = models.BooleanField(default=True)
 

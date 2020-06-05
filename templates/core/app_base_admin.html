@@ -8,15 +8,21 @@
                 <i class="fa fa-fw fa-caret-down"></i>
             </a>
             <ul id="echo" class="nav nav-pills nav-stacked" style="padding-left: 15px;">
-                <li class="echo-sms">
-                    <a href="{% url "echo:sms_campaign" %}">SMS</a>
+                <li class="push-campaigns">{% url 'echo:pushcampaign_list' as push_campaign_url %}
+                    <a href="{{ push_campaign_url }}">
+                        {% trans "Push" %}
+                        <span class="label label-danger" style="text-transform: capitalize">New</span>
+                    </a>
                 </li>
-                <li class="mail-campaigns">
-                    <a href="{% url "echo:mailcampaign_list" %}">Mail</a>
+                <li class="mail-campaigns">{% url 'echo:mailcampaign_list' as mail_campaign_url %}
+                    <a href="{{ mail_campaign_url }}"> {% trans "Mail" %}</a>
                 </li>
-{#                <li class="echo-promotion">#}
-{#                    <a href="{% url "echo:popup_list" %}">Pop-up</a>#}
-{#                </li>#}
+                <li class="sms-campaigns">{% url 'echo:sms_campaign' as sms_campaign_url %}
+                    <a href="{{ sms_campaign_url }}">{% trans "SMS" %}</a>
+                </li>
+                {% comment %}<li class="echo-promotion">
+                    <a href="{% url "echo:popup_list" %}">Pop-up</a>
+                </li>{% endcomment %}
             </ul>
         </li>
         <hr>

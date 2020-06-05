@@ -7,7 +7,7 @@
 
 {% block head_style %}
     {{ block.super }}
-    <link rel="stylesheet" type="text/css" href="{% static 'echo/css/echo.css' %}" />
+    <link rel="stylesheet" type="text/css" href="{% static 'echo/css/echo.css' %}?v=05.20.20" />
     <link rel="stylesheet" type="text/css" href="{% static 'echo/css/bootstrap-slider.min.css' %}">
     <style>
         .custom-bundle-cost {font-weight: bold !important;}
@@ -35,11 +35,11 @@
                     <div class="predefined-bundle">
                         <h3 class="text-center">{% trans "Choose one pack below"%}</h3>
                         <hr>
-                        <div class="panel bundle-pricing-table">
+                        <div class="panel bundle-pricing-table" data-bundle-type="{{ bundle_list.0.type }}">>
                             {% for bundle in bundle_list %}
                                 <div class="col-sm-4">
-                                    <div class="bundle-pricing-plan">
-                                        <img src="{{ settings.IKWEN_MEDIA_URL }}{{ bundle.image.name }}" alt="" class="pricing-img">
+                                    <div class="bundle-pricing-plan bundle-{{ bundle.name | lower }}" data-unit-cost="{{ bundle.unit_cost }}" data-value="{{ bundle.credit }}">
+                                        <img class="img-responsive pricing-img" src="{{ settings.IKWEN_MEDIA_URL }}{{ bundle.image.name }}" alt="">
                                         <h3 class="bundle-header">{{ bundle.name }}</h3>
                                         <div class="bundle-features">
                                             <span class="bundle-features-item">{{ bundle.credit|intcomma }} Mails</span>
@@ -89,12 +89,13 @@
             $('<input type="hidden" name="custom_bundle_value">').appendTo('#payment-start-flow');
             $('<input type="hidden" name="bundle_type">').appendTo('#payment-start-flow');
             $("#CustomBundleEnabled").prop("checked", false);
-            let diamondValue = 100000;
-            let goldValue = 50000;
 
-            let diamondPrice = 0.6;
-            let goldPrice = 0.8;
-            let silverPrice = 1;
+            const diamondValue = parseInt($('.bundle-diamond').data('value'));
+            const goldValue = parseInt($('.bundle-gold').data('value'));
+
+            const diamondPrice = parseFloat($('.bundle-diamond').data('unit-cost'));
+            const goldPrice = parseFloat($('.bundle-gold').data('unit-cost'));
+            const silverPrice = parseFloat($('.bundle-silver').data('unit-cost'));
 
             let customBundleCost = $("#optionalMailsNumber").data('slider-min');
             let bundleCost = silverPrice;
@@ -149,7 +150,7 @@
                 $("#CurrentSliderPriceVal").text(customBundleCost.formatMoney(0, '{{ settings.THOUSAND_SEPARATOR }}', '{{ settings.DECIMAL_SEPARATOR }}') + " XAF");
                 $('input[name=product_id]').val('');
                 $('input[name=custom_bundle_value]').val(bundleValue);
-                $('input[name=bundle_type]').val('Mail');
+                $('input[name=bundle_type]').val($('.bundle-pricing-table').data('bundle-type'));
             });
         })()
 

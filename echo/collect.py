@@ -20,6 +20,7 @@ from django.utils.translation import gettext as _, get_language, activate
 from echo.utils import LOW_MAIL_LIMIT, notify_for_low_messaging_credit, notify_for_empty_messaging_credit
 from ikwen.conf.settings import WALLETS_DB_ALIAS, IKWEN_SERVICE_ID
 from ikwen.core.constants import CONFIRMED, STARTED, COMPLETE
+from ikwen.core.templatetags.url_utils import strip_base_alias
 from ikwen.accesscontrol.backends import UMBRELLA
 from ikwen.accesscontrol.models import SUDO, Member
 from ikwen.billing.models import Invoice, Payment, PAYMENT_CONFIRMATION, InvoiceEntry, Product, InvoiceItem, Donation, \
@@ -29,18 +30,14 @@ from ikwen.billing.utils import get_invoicing_config_instance, get_days_count, g
     share_payment_and_set_stats, get_next_invoice_number,notify_event
 from ikwen.core.models import Service, Config
 from ikwen.core.utils import add_database_to_settings, get_service_instance, add_event, get_mail_content, XEmailMessage
-from echo.models import Balance, Refill, SMS, MAIL, Bundle, MESSAGING_CREDIT_REFILL
+from echo.models import Balance, Refill, SMS, MAIL, Bundle, MESSAGING_CREDIT_REFILL, PUSH
 
 logger = logging.getLogger('ikwen')
 
 
 def set_bundle_checkout(request, *args, **kwargs):
-    if getattr(settings, 'DEBUG', False):
-        service = get_service_instance()
-        config = service.config
-    else:
-        service = Service.objects.using(UMBRELLA).get(pk=IKWEN_SERVICE_ID)
-        config = Config.objects.using(UMBRELLA).get(service=service)
+    service = get_service_instance()
+    config = service.config
     bundle_id = request.POST['product_id']
     if bundle_id != '':
         bundle = Bundle.objects.using(UMBRELLA).get(pk=bundle_id)
@@ -65,20 +62,20 @@ def set_bundle_checkout(request, *args, **kwargs):
     tx = MoMoTransaction.objects.using(WALLETS_DB_ALIAS) \
         .create(service_id=service.id, type=MoMoTransaction.CASH_OUT, amount=amount, phone='N/A',
                 model=model_name, object_id=refill.id, wallet=mean, username=buyer, is_running=True, task_id=signature)
-    notification_url = service.url + reverse('echo:confirm_bundle_payment', args=(tx.id, signature))
-    if refill.type == SMS:
-        cancel_url = service.url + reverse('echo:sms_bundle')
-        return_url = service.url + reverse('echo:sms_bundle')
+    notification_url = reverse('echo:confirm_bundle_payment', args=(tx.id, signature))
+    if refill.type == PUSH:
+        cancel_url = return_url = service.url + strip_base_alias(reverse('echo:push_bundle'))
+    elif refill.type == MAIL:
+        cancel_url = return_url = service.url + strip_base_alias(reverse('echo:mail_bundle'))
     else:
-        cancel_url = service.url + reverse('echo:mail_bundle')
-        return_url = service.url + reverse('echo:mail_bundle', )
-    gateway_url = getattr(settings, 'IKWEN_PAYMENT_GATEWAY_URL', 'https://payment.ikwen.com/v1')
+        cancel_url = return_url = service.url + strip_base_alias(reverse('echo:sms_bundle'))
+    gateway_url = getattr(settings, 'IKWEN_PAYMENT_GATEWAY_URL', 'http://payment.ikwen.com/v1')
     endpoint = gateway_url + '/request_payment'
     params = {
         'username': getattr(settings, 'IKWEN_PAYMENT_GATEWAY_USERNAME', 'ikwen'),
         'amount': amount,
         'merchant_name': config.company_name,
-        'notification_url': notification_url,
+        'notification_url': service.url + strip_base_alias(notification_url),
         'return_url': return_url,
         'cancel_url': cancel_url,
         'user_id': buyer,
@@ -142,12 +139,15 @@ def confirm_bundle_payment(request, *args, **kwargs):
     service = get_service_instance()
     balance = Balance.objects.using(WALLETS_DB_ALIAS).get(service_id=service.id)
     if refill.status == STARTED:
-        if refill.type == SMS:
-            balance.sms_count += refill.credit
-            balance_count = balance.sms_count
-        else:
+        if refill.type == PUSH:
+            balance.push_count += refill.credit
+            balance_count = balance.push_count
+        elif refill.type == MAIL:
             balance.mail_count += refill.credit
             balance_count = balance.mail_count
+        else:
+            balance.sms_count += refill.credit
+            balance_count = balance.sms_count
         refill.status = COMPLETE
         refill.save()
         balance.save(using=WALLETS_DB_ALIAS)

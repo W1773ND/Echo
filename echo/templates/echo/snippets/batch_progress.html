@@ -1,16 +1,16 @@
 <script>
-    (function () {
+    ( () => {
         ikwen.updateProgressBar = function() {
             if ($('.event.running').length === 0) {
                 clearInterval(ikwen.intervalId);
                 return;
             }
             $('.event.running').each(function () {
-                var campaignId = $(this).attr('id');
-                var params = {action: 'get_campaign_progress', campaign_id: campaignId};
+                const campaignId = $(this).attr('id');
+                const params = {action: 'get_campaign_progress', campaign_id: campaignId};
 
                 $.getJSON('', params, function (data) {
-                    var progressState = (data.progress / data.total) * 100;
+                    let progressState = (data.progress / data.total) * 100;
                     $('#' + campaignId + ' .progress-bar').css('width', progressState + '%');
                     if (progressState === 100) $('#' + campaignId).removeClass('running')
                 });

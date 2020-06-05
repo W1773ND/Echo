@@ -5,6 +5,7 @@
     name: 'PERSSONAL'
     cost: 5000
     credit: 10000
+    unit_cost: 5
 
 - model: echo.bundle
   pk: 56eb6d04b37b3379b531e201
@@ -13,3 +14,4 @@
     name: 'PERSSONAL'
     cost: 5000
     credit: 25000
+    unit_cost: 10

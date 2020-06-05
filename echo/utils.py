@@ -11,7 +11,7 @@ from django.core.mail import EmailMessage
 from django.core.urlresolvers import reverse
 from django.utils.translation import activate, gettext as _
 
-from echo.models import SMS, MAIL
+from echo.models import SMS, MAIL, PUSH
 from ikwen.core.models import Service
 from ikwen.core.utils import get_mail_content, get_service_instance
 from ikwen.accesscontrol.backends import UMBRELLA
@@ -19,8 +19,9 @@ from ikwen.conf.settings import IKWEN_SERVICE_ID
 
 EMAIL_AND_SMS = "Email and SMS"
 
-LOW_SMS_LIMIT = 100
+LOW_PUSH_LIMIT = 400
 LOW_MAIL_LIMIT = 500
+LOW_SMS_LIMIT = 100
 
 sms_normal_count = [' ', '\n', '\r\n', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e',
                     'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y',
@@ -68,12 +69,12 @@ def notify_for_low_messaging_credit(service, balance):
         activate(member.language)
     else:
         activate('en')
-    if 0 < balance.sms_count < LOW_SMS_LIMIT:
-        subject = _("Your are running out of SMS credit.")
-        last_notice = copy(balance.last_low_sms_notice)
-        account = SMS
-        credit_left = balance.sms_count
-        balance.last_low_sms_notice = now
+    if 0 < balance.push_count < LOW_PUSH_LIMIT:
+        subject = _("Your are running out of Push credit.")
+        last_notice = copy(balance.last_low_push_notice)
+        account = PUSH
+        credit_left = balance.push_count
+        balance.last_low_mail_notice = now
         refill_url = service.url + reverse('ikwen:service_detail')
     elif 0 < balance.mail_count < LOW_MAIL_LIMIT:
         subject = _("Your are running out of Email credit.")
@@ -81,6 +82,13 @@ def notify_for_low_messaging_credit(service, balance):
         account = MAIL
         credit_left = balance.mail_count
         balance.last_low_mail_notice = now
+        refill_url = service.url + reverse('ikwen:service_detail')
+    elif 0 < balance.sms_count < LOW_SMS_LIMIT:
+        subject = _("Your are running out of SMS credit.")
+        last_notice = copy(balance.last_low_sms_notice)
+        account = SMS
+        credit_left = balance.sms_count
+        balance.last_low_sms_notice = now
         refill_url = service.url + reverse('ikwen:service_detail')
     balance.save()
 
@@ -113,22 +121,28 @@ def notify_for_empty_messaging_credit(service, balance):
         activate(member.language)
     else:
         activate('en')
-    if balance.sms_count == 0 and balance.mail_count == 0:
-        subject = _("Your are out of Email and SMS credit.")
-        last_notice = copy(max(balance.last_empty_mail_notice, balance.last_empty_sms_notice))
-        account = "Email and SMS"
+    if balance.push_count == 0 and balance.sms_count == 0 and balance.mail_count == 0:
+        subject = _("Your are out of Push, Email and SMS credit.")
+        last_notice = copy(max(balance.last_empty_push_notice, balance.last_empty_mail_notice, balance.last_empty_sms_notice))
+        account = "Push, Email and SMS"
+        balance.last_empty_push_notice = now
         balance.last_empty_mail_notice = now
         balance.last_empty_sms_notice = now
-    elif balance.sms_count == 0:
-        subject = _("Your are out of SMS credit.")
-        last_notice = copy(balance.last_empty_sms_notice)
-        account = SMS
-        balance.last_empty_sms_notice = now
-    else:
+    elif balance.push_count == 0:
+        subject = _("Your are out of Push credit.")
+        last_notice = copy(balance.last_empty_push_notice)
+        account = PUSH
+        balance.last_empty_push_notice = now
+    elif balance.mail_count == 0:
         subject = _("Your are out of Email credit.")
         last_notice = copy(balance.last_empty_mail_notice)
         account = MAIL
         balance.last_empty_mail_notice = now
+    else:
+        subject = _("Your are out of SMS credit.")
+        last_notice = copy(balance.last_empty_sms_notice)
+        account = SMS
+        balance.last_empty_sms_notice = now
     refill_url = service.url + reverse('ikwen:service_detail')
     balance.save()
 

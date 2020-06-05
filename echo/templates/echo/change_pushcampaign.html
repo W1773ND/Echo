@@ -2,7 +2,7 @@
 {% load i18n humanize staticfiles auth_tokens %}
 
 {% block page_title %}
-    <title> {% trans "Email campaign" %} - ikwen</title>
+    <title> {% trans "Push campaign" %} - ikwen</title>
 {% endblock %}
 
 {% block head_style %}
@@ -28,7 +28,7 @@
                     'insertdatetime media table contextmenu paste code', 'textcolor', 'table',
                 ],
                 paste_data_images: true,
-                selector: '#mail-content',
+                selector: '#push-body',
                 height: 450,
                 toolbar: 'undo redo | fontsizeselect | forecolor backcolor | bold italic underline | bullist numlist | table | alignleft aligncenter alignright | link code',
                 fontsize_formats: '11px 12px 14px 16px 18px 24px 36px 48px',
@@ -78,9 +78,9 @@
                 ],
                 init_instance_callback: (editor) => {
                     editor.on('keyup', (e) => {
-                        var mailContent = tinyMCE.get('mail-content').getContent();
+                        let mailContent = tinyMCE.get('push-body').getContent();
                         $('div.mce-tinymce').removeClass('warning');
-                        if($('input[name=subject]').val() != "" && $('input[name=pre_header]').val() != "" && mailContent !="") {
+                        if($('input[name=subject]').val() != "" && mailContent !="") {
                             $('.start-campaign').removeClass('disabled');
                             $('.show-modal-test').removeClass('not-allowed')
                         }
@@ -104,13 +104,13 @@
     <div id="admin-content">
         <div class="container-fluid">
             <div class="sold" style="text-align: right">
-                <strong><p>{% trans "Remaining mail : " %}<span class="messaging-balance text-muted">{{ balance.mail_count|intcomma }}</span></p></strong>
-                <a style="text-decoration: none;" href="{% url 'echo:mail_bundle' %}"><strong><p>{% trans "Refill ? " %}</p></strong></a>
+                <strong><p>{% trans "Remaining Push notification(s) : " %}<span class="messaging-balance text-muted">{{ balance.push_count|intcomma }}</span></p></strong>
+                <a style="text-decoration: none;" href="{% url 'echo:push_bundle' %}"><strong><p>{% trans "Refill ? " %}</p></strong></a>
             </div>
             <div class="form all-content">
-                <h3 class="text-center"><label class="title"> {% trans "Email campaign " %}</label>
+                <h3 class="text-center"><label class="title"> {% trans "Push campaign " %}</label>
                     {% if campaign.terminated %}
-                        <form action="{% url 'echo:change_mailcampaign' %}" id="clone-campaign" style="display: inline">
+                        <form action="{% url 'echo:change_pushcampaign' %}" id="clone-campaign" style="display: inline">
                             <input id="action" name="action" type="hidden" value="clone_campaign" required>
                             <input id="campaign-id" name="campaign_id" type="hidden" value="{{ campaign.id }}">
                         </form>
@@ -120,6 +120,7 @@
                 <form class="row campaign{% if campaign and campaign.terminated %} terminated{% endif %}" method="post">{% csrf_token %}
                     <input type="hidden" name="keep_editing" value="yes">
                     <input class="filename" type="hidden" name="filename" {% if campaign.recipient_src == "[File]" %} value="{{ campaign.recipient_label }}" {% endif %}>
+                    <input class="audience-choose" type="hidden" name="audience"{% if campaign.recipient_src == "[All Subscriber]" or campaign.recipient_src == "[Registered Subscriber]" %} value="{{ campaign.recipient_label }}" {% endif %}>
                     <input class="profile-checked" type="hidden" name="profiles"{% if campaign.recipient_src == "[Profiles]" %} value="{{ campaign.recipient_profile }}" {% endif %}>
                     <div class="col-lg-4 col-sm-6 col-lg-offset-4 col-sm-offset-3">
                         {% if campaign and not campaign.terminated %}
@@ -127,7 +128,7 @@
                                 <div class="row">
                                     <div class="col-xs-6">
                                         {% if not campaign.is_started %}
-                                            <div class="btn btn-sm btn-default btn-block start-campaign{% if not campaign.subject or not campaign.pre_header %} disabled {% endif %}" data-campaign-id="{{ campaign.id }}">
+                                            <div class="btn btn-sm btn-default btn-block start-campaign{% if not campaign.subject %} disabled {% endif %}" data-campaign-id="{{ campaign.id }}">
                                                 <i class="fa fa-play"></i>
                                                 <span class="status">{% trans "Start" %}</span>
                                             </div>
@@ -144,7 +145,7 @@
                                         {% endif %}
                                     </div>
                                     <div class="col-xs-6">
-                                        <div class="btn btn-sm btn-default btn-block show-modal-test {% if not campaign.subject or not campaign.pre_header %} not-allowed {% endif %}"  data-toggle="modal" data-target="#modal-test">
+                                        <div class="btn btn-sm btn-default btn-block show-modal-test {% if not campaign.subject %} not-allowed {% endif %}"  data-toggle="modal" data-target="#modal-test">
                                             <i class="fa fa-vial"></i>
                                             {% trans "Test" %}
                                         </div>
@@ -153,23 +154,23 @@
                             </div>
                         {% endif %}
                         <div class="form-group">
-                            <div class="col-xs-10" style="padding-left: 0" >
+                            <div class="col-xs-8" style="padding-left: 0" >
                                 {% if campaign.recipient_label or campaign.is_started %}
                                     <input type="text" class="form-control recipient-list input-sm text-center" id="recipient-list" name="recipients" placeholder="{% trans 'To' %}" value="{{ campaign.recipient_label }}" autocomplete="off" readonly>
                                     {% if not campaign.is_started %}
                                         <div class="reset-recipient-list">&times;</div>
                                     {% endif %}
                                 {% else %}
-                                    <input type="text" class="form-control recipient-list input-sm " id="recipient-list" name="recipients" placeholder="{% trans 'To' %}" autocomplete="off">
+                                    <input type="text" class="form-control recipient-list input-sm " id="recipient-list" name="recipients" placeholder="{% trans 'To' %}" autocomplete="off" readonly>
                                     <div class="reset-recipient-list tpl">&times;</div>
                                 {% endif %}
                             </div>
                             {% if campaign.is_started %}
-                                    <div class="col-xs-2 btn-choose-recipient not-allowed text-center">
+                                    <div class="col-xs-4 btn-choose-recipient not-allowed text-center">
                                         <i class="fa fa-bullhorn" style="color: #888; font-size: 24px; height: 33px; width: 33px; line-height: 33px"></i>
                                     </div>
                             {% else %}
-                                <div class="col-xs-2 btn-choose-recipient text-center" data-toggle="modal" data-target="#modal-choose-recipient" title="Start a campaign" >
+                                <div class="col-xs-4 btn-choose-recipient text-center" data-toggle="modal" data-target="#modal-choose-recipient" title="Start a campaign" >
                                     <i class="fa fa-bullhorn"style="color: #888; font-size: 24px; height: 33px; width: 33px; line-height: 33px"></i>
                                 </div>
                             {% endif %}
@@ -181,13 +182,7 @@
                             <div class="form-group">
                                 <div class="">
                                     <input type="text" class="form-control input-sm" id="subject"
-                                       name="subject" value="{{ campaign.subject }}" placeholder="{% trans 'Subject' %}" />
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <div class="">
-                                    <input type="text" class="form-control input-sm" id="pre-header"
-                                       name="pre_header" value="{{ campaign.pre_header }}" placeholder="{% trans 'Pre-Header' %}" />
+                                       name="subject" value="{{ campaign.subject }}" placeholder="{% trans 'Title' %}" />
                                 </div>
                             </div>
                             <div class="form-group">
@@ -204,9 +199,9 @@
                         <div class=" col-lg-8 col-sm-6 col-lg-offset-2 col-sm-offset-3">
                             <div class="form-group">
                                 <div class="">
-                                    <h5><label class="text-center" for="mail-content">{% trans "Message" %}</label></h5>
-                                    <div class="mail-content">
-                                        <textarea class="form-control input-sm" id="mail-content" name="content">{{ campaign.content|safe }}</textarea>
+                                    <h5><label class="text-center" for="push-body">{% trans "Message" %}</label></h5>
+                                    <div class="push-body">
+                                        <textarea class="form-control input-sm" id="push-body" name="content">{{ campaign.content|safe }}</textarea>
                                     </div>
                                 </div>
                             </div>
@@ -252,14 +247,7 @@
                             <section class="call-to-action" style="border-bottom: 1px solid #eee ; padding-top: 8vh">
                                 <div class="form-group">
                                     <div class="">
-                                        <label for="cta-label">{% trans "Call-to-action button title" %}</label>
-                                        <input type="text" class="form-control input-sm" id="cta-label"
-                                           name="cta" value="{{ campaign.cta }}" placeholder="{% trans 'Ex: Buy now' %}" />
-                                    </div>
-                                </div>
-                                <div class="form-group">
-                                    <div class="">
-                                        <label for="cta-url">{% trans "Call-to-action url link" %}</label>
+                                        <label for="cta-url">{% trans "Target page url link" %}</label>
                                         <input type="text" class="form-control input-sm" id="cta-url"
                                            name="cta_url" value="{{ campaign.cta_url }}" placeholder="{% trans 'Ex: http://www.mysite.com/product' %}" />
                                     </div>
@@ -285,7 +273,7 @@
             <div class="modal-content modal-info">
                 <div class="modal-header">
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                    <h4 class="modal-title">{% trans "Send a mail test" %}</h4>
+                    <h4 class="modal-title">{% trans "Send a Push notification test" %}</h4>
                 </div>
                 <div class="modal-body">
                     <div>
@@ -314,7 +302,7 @@
             </div>
         </div>
     </div>
-    {% include 'echo/snippets/campaign_modals.html' %}
+    {% include 'echo/snippets/push_campaign_modals.html' %}
 {% endblock %}
 
 {% block js %}
@@ -322,21 +310,9 @@
     <script>
         (function () {
             $('input[name=subject]').keyup(function () {
-                let mailContent = tinyMCE.get('mail-content').getContent();
+                let pushBody = tinyMCE.get('push-body').getContent();
                 $(this).removeClass('warning');
-                if($('input[name=subject]').val() != "" && $('input[name=pre_header]').val() != "" && mailContent !="") {
-                    $('.start-campaign').removeClass('disabled');
-                    $('.show-modal-test').removeClass('not-allowed')
-                }
-                else {
-                    $('.start-campaign').addClass('disabled');
-                    $('.show-modal-test').addClass('not-allowed')
-                }
-            });
-            $('input[name=pre_header]').keyup(function () {
-                let mailContent = tinyMCE.get('mail-content').getContent();
-                $(this).removeClass('warning');
-                if($('input[name=subject]').val() != "" && $('input[name=pre_header]').val() != "" && mailContent !="") {
+                if($('input[name=subject]').val() != "" && pushBody !="") {
                     $('.start-campaign').removeClass('disabled');
                     $('.show-modal-test').removeClass('not-allowed')
                 }
@@ -351,10 +327,7 @@
                     if($('input[name=subject]').val() === "") {
                         $('input[name=subject]').addClass('warning');
                     }
-                    if($('input[name=pre_header]').val() === "") {
-                        $('input[name=pre_header]').addClass('warning');
-                    }
-                    let mailContent = tinyMCE.get('mail-content').getContent();
+                    let mailContent = tinyMCE.get('push-body').getContent();
                     if (mailContent === "") {
                         $('div.mce-tinymce').addClass('warning')
                     }
@@ -416,7 +389,7 @@
             });
             $('form.campaign.terminated input').prop('readonly', true);
             $('form.campaign.terminated .btn-choose-recipient').addClass('not-allowed');
-            $('form.campaign.terminated .mail-content').addClass('not-allowed');
+            $('form.campaign.terminated .push-body').addClass('not-allowed');
 
         })();
     </script>
