@@ -11,11 +11,14 @@ from django.core.mail import EmailMessage
 from django.core.urlresolvers import reverse
 from django.utils.translation import activate, gettext as _
 
-from echo.models import SMS, MAIL, PUSH
+from echo.models import SMS, MAIL, PUSH, Balance
+from ikwen.conf.settings import WALLETS_DB_ALIAS
 from ikwen.core.models import Service
 from ikwen.core.utils import get_mail_content, get_service_instance
 from ikwen.accesscontrol.backends import UMBRELLA
 from ikwen.conf.settings import IKWEN_SERVICE_ID
+
+logger = logging.getLogger('ikwen')
 
 EMAIL_AND_SMS = "Email and SMS"
 
@@ -164,3 +167,18 @@ def notify_for_empty_messaging_credit(service, balance):
     msg = EmailMessage(subject, html_content, sender, [member.email])
     msg.content_subtype = "html"
     Thread(target=lambda m: m.send(), args=(msg, )).start()
+
+
+def check_messaging_balance(service):
+    balance, update = Balance.objects.using(WALLETS_DB_ALIAS).get_or_create(service_id=service.id)
+    if 0 < balance.sms_count < LOW_SMS_LIMIT or 0 < balance.mail_count < LOW_MAIL_LIMIT:
+        try:
+            notify_for_low_messaging_credit(service, balance)
+        except:
+            logger.error("Failed to notify %s for low messaging credit." % service, exc_info=True)
+    if (balance.sms_count <= 0 or balance.mail_count <= 0) and not getattr(settings, 'UNIT_TESTING', False):
+        try:
+            notify_for_empty_messaging_credit(service, balance)
+        except:
+            logger.error("Failed to notify %s for empty messaging credit." % service, exc_info=True)
+    return balance
