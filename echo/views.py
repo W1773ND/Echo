@@ -131,10 +131,16 @@ def batch_send_push(campaign):
     for pwa_profile_id in campaign.recipient_list[campaign.progress:]:
         push_subscription = PWAProfile.objects.get(id=pwa_profile_id).push_subscription
         title = campaign.subject
-        target_page = campaign.cta_url
-        media_url = ikwen_settings.CLUSTER_MEDIA_URL + service.project_name_slug + '/'
-        image_url = media_url + campaign.image.name
         body = campaign.content
+        target_page = campaign.cta_url
+        try:
+            if campaign.image:
+                media_url = ikwen_settings.CLUSTER_MEDIA_URL + service.project_name_slug + '/'
+                image_url = media_url + campaign.image.name
+            else:
+                image_url = ''
+        except:
+            image_url = ''
         if campaign.recipient_src != ANONYMOUS_SUBSCRIBER:
             try:
                 member = PWAProfile.objects.get(push_subscription=push_subscription).member
@@ -353,8 +359,10 @@ class CampaignBaseView(TemplateView):
             try:
                 if subscriber.member:
                     registered_subscriber_list.append(subscriber)
+                else:
+                    anonymous_subscriber_list.append(subscriber)
             except Member.DoesNotExist:
-                anonymous_subscriber_list.append(subscriber)
+                pass
         balance, update = Balance.objects.using('wallets').get_or_create(service_id=get_service_instance().id)
         context['balance'] = balance
         context['campaign_list'] = campaign_list
