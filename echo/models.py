@@ -41,6 +41,7 @@ class Campaign(Model):
     total = models.IntegerField(default=0)
     progress = models.IntegerField(default=0)
     is_started = models.BooleanField(default=False)
+    type = models.CharField(max_length=10, blank=True, null=True)
 
     objects = MongoDBManager()
 

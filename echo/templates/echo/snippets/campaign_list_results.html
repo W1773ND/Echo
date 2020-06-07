@@ -5,7 +5,11 @@
     <li class="col-sm-12 event{% if campaign.total > campaign.progress %} running{% endif %}" id= "{{ campaign.id }}">
         <div class="subtle-shade event-detail">
             <div class="event-icon">
+                {% if campaign.type == 'Push' %}
+                <img src="{% static 'echo/img/push-icon.png' %}" />
+                {% else %}
                 <img src="{% static 'echo/img/mail-icon.png' %}" />
+                {% endif %}
             </div>
             <div class="event-content">
                 <div>

@@ -43,6 +43,7 @@ logger = logging.getLogger('ikwen')
 
 ALL_SUBSCRIBER = "[All Subscriber]"
 REGISTERED_SUBSCRIBER = "[Registered Subscriber]"
+ANONYMOUS_SUBSCRIBER = "[Anonymous Subscriber]"
 ALL_COMMUNITY = "[All Community]"
 SELECTED_PROFILES = "[Selected profiles]"
 FILE = "[File]"
@@ -55,27 +56,40 @@ def batch_send_push(campaign):
     campaign.keep_running = True
     if len(campaign.recipient_list) == 0:
         recipient_list = []
+        subscriber_qs = PWAProfile.objects.filter(push_subscription__isnull=False)
         if campaign.recipient_src == ALL_SUBSCRIBER:
-            subscriber_qs = PWAProfile.objects.all()
             total = subscriber_qs.count()
             chunks = total / 500 + 1
             for i in range(chunks):
                 start = i * 500
                 finish = (i + 1) * 500
                 for subscriber in subscriber_qs[start:finish]:
-                    recipient_list.append(subscriber.push_subscription)
+                    recipient_list.append(subscriber.id)
                     if len(recipient_list) == 1:
                         campaign.save(using=UMBRELLA)
         elif campaign.recipient_src == REGISTERED_SUBSCRIBER:
-            subscriber_qs = PWAProfile.objects.all()
             total = subscriber_qs.count()
             chunks = total / 500 + 1
             for i in range(chunks):
                 start = i * 500
                 finish = (i + 1) * 500
                 for subscriber in subscriber_qs[start:finish]:
-                    if subscriber.member:
-                        recipient_list.append(subscriber.push_subscription)
+                    try:
+                        if subscriber.member:
+                            recipient_list.append(subscriber.id)
+                    except Member.DoesNotExist:
+                        pass
+                    if len(recipient_list) == 1:
+                        campaign.save(using=UMBRELLA)
+        elif campaign.recipient_src == ANONYMOUS_SUBSCRIBER:
+            subscriber_qs = PWAProfile.objects.filter(push_subscription__isnull=False, member__isnull=True)
+            total = subscriber_qs.count()
+            chunks = total / 500 + 1
+            for i in range(chunks):
+                start = i * 500
+                finish = (i + 1) * 500
+                for subscriber in subscriber_qs[start:finish]:
+                    recipient_list.append(subscriber.id)
                     if len(recipient_list) == 1:
                         campaign.save(using=UMBRELLA)
         elif campaign.recipient_src == PROFILES:
@@ -94,8 +108,9 @@ def batch_send_push(campaign):
                     match = set(profile.tag_fk_list) & set(checked_profile_tag_id_list)
                     if len(match) > 0:
                         try:
-                            pwa_profile = PWAProfile.objects.get(member=member)
-                            recipient_list.append(pwa_profile.push_subscription)
+                            pwa_profile_qs = PWAProfile.objects.filter(push_subscription__isnull=False, member=member)
+                            for pwa_profile in pwa_profile_qs:
+                                recipient_list.append(pwa_profile.id)
                         except PWAProfile.DoesNotExist:
                             continue
                         if len(recipient_list) == 1:
@@ -113,28 +128,19 @@ def batch_send_push(campaign):
             logger.error("Failed to notify %s for low messaging credit." % service, exc_info=True)
         return
 
-    # TODO: implement equivalent test connection if available for push notifications
-    # try:
-    #     connection.open()
-    # except:
-    #     logger.error("Failed to connect to mail server. Please check your internet" % service, exc_info=True)
-    #     response = {'error': 'Failed to connect to mail server. Please check your internet'}
-    #     return HttpResponse(json.dumps(response))
-
-    for push_subscription in campaign.recipient_list[campaign.progress:]:
-        push_subscription = push_subscription.strip()
+    for pwa_profile_id in campaign.recipient_list[campaign.progress:]:
+        push_subscription = PWAProfile.objects.get(id=pwa_profile_id).push_subscription
         title = campaign.subject
         target_page = campaign.cta_url
         media_url = ikwen_settings.CLUSTER_MEDIA_URL + service.project_name_slug + '/'
-        image_url = media_url + campaign.image
+        image_url = media_url + campaign.image.name
         body = campaign.content
-        if campaign.recipient_src == REGISTERED_SUBSCRIBER:
+        if campaign.recipient_src != ANONYMOUS_SUBSCRIBER:
             try:
                 member = PWAProfile.objects.get(push_subscription=push_subscription).member
                 body = campaign.content.replace('$client', member.first_name)
-            except PWAProfile.DoesNotExist:
+            except:
                 body = campaign.content.replace('$client', "")
-        push = send_push(push_subscription, title, body, target_page, image_url)
         if getattr(settings, 'ECHO_TEST', False):
             requests.get('http://www.google.com')
             balance.push_count -= 1
@@ -142,13 +148,13 @@ def batch_send_push(campaign):
         else:
             try:
                 with transaction.atomic(using='wallets'):
-                    if push >= 1:
-                        balance.push_count -= push
+                    if send_push(push_subscription, title, body, target_page, image_url):
+                        balance.push_count -= 1
                         balance.save()
             except:
                 pass
         campaign = PushCampaign.objects.using(UMBRELLA).get(pk=campaign.id)
-        campaign.progress += push
+        campaign.progress += 1
         if not campaign.keep_running:
             campaign.save(using=UMBRELLA)
             break
@@ -340,19 +346,21 @@ class CampaignBaseView(TemplateView):
                 campaign.progress_rate = (campaign.progress / campaign.total) * 100
                 campaign.sample = campaign.get_sample()
         community_qs = Member.objects.all()
-        subscriber_qs = PWAProfile.objects.all()
+        subscriber_qs = PWAProfile.objects.filter(push_subscription__isnull=False)
+        anonymous_subscriber_list = []
         registered_subscriber_list = []
         for subscriber in subscriber_qs:
             try:
                 if subscriber.member:
                     registered_subscriber_list.append(subscriber)
             except Member.DoesNotExist:
-                pass
+                anonymous_subscriber_list.append(subscriber)
         balance, update = Balance.objects.using('wallets').get_or_create(service_id=get_service_instance().id)
         context['balance'] = balance
         context['campaign_list'] = campaign_list
         context['member_count'] = community_qs.count()
         context['subscriber_count'] = subscriber_qs.count()
+        context['anonymous_subscriber_count'] = len(anonymous_subscriber_list)
         context['registered_subscriber_count'] = len(registered_subscriber_list)
         context['profiletag_list'] = ProfileTag.objects.filter(is_active=True, is_auto=False)
         return context
@@ -373,7 +381,11 @@ class CampaignBaseView(TemplateView):
         recipient_label_raw = ''
         checked_profile_tag_id_list = []
         campaign_type = SMS if self.model == SMSCampaign else MAIL
-        if filename:
+        if recipient_list in [ALL_SUBSCRIBER, REGISTERED_SUBSCRIBER, ANONYMOUS_SUBSCRIBER, ALL_COMMUNITY]:
+            recipient_label = recipient_label_raw = recipient_src = recipient_list
+            recipient_list = []
+            recipient_profile = ""
+        elif filename:
             # Should add somme security check about file existence and type here before attempting to read it
             path = getattr(settings, 'MEDIA_ROOT') + DefaultUploadBackend.UPLOAD_DIR + '/' + filename
             recipient_list = []
@@ -386,18 +398,6 @@ class CampaignBaseView(TemplateView):
                 for recipient in fh.readlines():
                     recipient_list.append(recipient)
             fh.close()
-        elif recipient_list == ALL_SUBSCRIBER:
-            recipient_label =  recipient_label_raw = recipient_src = recipient_list
-            recipient_list = []
-            recipient_profile = ""
-        elif recipient_list == REGISTERED_SUBSCRIBER:
-            recipient_label =  recipient_label_raw = recipient_src = recipient_list
-            recipient_list = []
-            recipient_profile = ""
-        elif recipient_list == ALL_COMMUNITY:
-            recipient_label = recipient_label_raw = recipient_src = recipient_list
-            recipient_list = []
-            recipient_profile = ""
         elif recipient_list == SELECTED_PROFILES:
             recipient_src = PROFILES
             recipient_list = []
@@ -450,7 +450,6 @@ class CampaignBaseView(TemplateView):
 
 class PushCampaignList(HybridListView):
     template_name = 'echo/pushcampaign_list.html'
-    html_results_template_name = 'echo/snippets/pushcampaign_list_results.html'
     model = PushCampaign
     service = get_service_instance(using=UMBRELLA)
     queryset = PushCampaign.objects.using(UMBRELLA).filter(service=service)
@@ -526,7 +525,7 @@ class ChangePushCampaign(CampaignBaseView, ChangeObjectBase):
             slug = slugify(subject)
             if not object_id:
                 obj = PushCampaign(service=service, member=mbr)
-
+            obj.type = PUSH
             obj.subject = subject
             obj.slug = slug
             obj.content = content
@@ -588,7 +587,6 @@ class ChangePushCampaign(CampaignBaseView, ChangeObjectBase):
         campaign.keep_running = True
         campaign.is_started = True
         campaign.save()
-        # "transaction.atomic" instruction locks database during all operations inside "with" block
         try:
             Thread(target=batch_send_push, args=(campaign,)).start()
             response = {"success": True, "balance": balance.push_count, "campaign": campaign.to_dict()}
@@ -692,7 +690,7 @@ class ChangePushCampaign(CampaignBaseView, ChangeObjectBase):
 
 class MailCampaignList(HybridListView):
     template_name = 'echo/mailcampaign_list.html'
-    html_results_template_name = 'echo/snippets/mailcampaign_list_results.html'
+    html_results_template_name = 'echo/snippets/campaign_list_results.html'
     model = MailCampaign
     service = get_service_instance(using=UMBRELLA)
     queryset = MailCampaign.objects.using(UMBRELLA).filter(service=service)
@@ -786,7 +784,7 @@ class ChangeMailCampaign(CampaignBaseView, ChangeObjectBase):
             slug = slugify(subject)
             if not object_id:
                 obj = MailCampaign(service=service, member=mbr)
-
+            obj.type = MAIL
             obj.subject = subject
             obj.slug = slug
             obj.pre_header = pre_header
@@ -969,7 +967,8 @@ class SMSCampaignView(CampaignBaseView):
         service = get_service_instance(using=UMBRELLA)
         mbr = Member.objects.using(UMBRELLA).get(pk=member.id)
         balance = Balance.objects.using('wallets').get(service_id=get_service_instance().id)
-        campaign = SMSCampaign.objects.using(UMBRELLA).create(service=service, member=mbr, subject=subject,
+        campaign = SMSCampaign.objects.using(UMBRELLA).create(service=service, member=mbr,
+                                                              type=SMS, subject=subject,
                                                               slug=slug, text=txt,
                                                               recipient_list=recipient_list,
                                                               recipient_src=recipient_src,

@@ -16,8 +16,8 @@ urlpatterns = patterns(
     url(r'^sms/$', permission_required('echo.ik_manage_messaging')(SMSCampaignView.as_view()), name='sms_campaign'),
     url(r'^smsHistory/$', permission_required('echo.ik_manage_messaging')(SMSHistory.as_view()), name='sms_history'),
     url(r'^pops-up/$', permission_required('echo.ik_manage_popup')(PopupList.as_view()), name='popup_list'),
-    url(r'^pop-up/(?P<object_id>[-\w]+)/$', permission_required('echo.ik_manage_popup')(ChangePopup.as_view()), name='change_popup'),
     url(r'^pop-up/$', permission_required('echo.ik_manage_popup')(ChangePopup.as_view()), name='change_popup'),
+    url(r'^pop-up/(?P<object_id>[-\w]+)/$', permission_required('echo.ik_manage_popup')(ChangePopup.as_view()), name='change_popup'),
 
     url(r'^pushBundles/$', permission_required('echo.ik_manage_messaging')(PushBundle.as_view()), name='push_bundle'),
     url(r'^mailBundles/$', permission_required('echo.ik_manage_messaging')(MailBundle.as_view()), name='mail_bundle'),

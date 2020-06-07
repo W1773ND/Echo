@@ -44,6 +44,11 @@
                                        <h4><label><input type="radio" name="audience" class="option option-subscriber" value="[All Subscriber]">{% trans "All subscribers" %}&nbsp;&nbsp;<span class="badge badge-custom"> {{ subscriber_count }} </span></label></h4>
                                    </div>
                                     {% endif %}
+                                    {% if anonymous_subscriber_count > 0 %}
+                                    <div class="radio custom-radio">
+                                        <h4><label><input type="radio" name="audience" class="option option-member" value="[Anonymous Subscriber]">{% trans "Anonymous subscribers" %}&nbsp;&nbsp;<span class="badge badge-custom"> {{ anonymous_subscriber_count }} </span></label></h4>
+                                    </div>
+                                    {% endif %}
                                     {% if registered_subscriber_count > 0 %}
                                     <div class="radio custom-radio">
                                         <h4><label><input type="radio" name="audience" class="option option-member" value="[Registered Subscriber]">{% trans "Members only" %}&nbsp;&nbsp;<span class="badge badge-custom"> {{ registered_subscriber_count }} </span></label></h4>
@@ -89,8 +94,8 @@
                 </div>
             </div>
             <div class="modal-footer no-border" style="padding-top: 0 !important; text-align: center !important;">
-            {% if subscriber_count > 0 or registered_subscriber_count > 0 %}
-                <button type="button" class="btn btn-success btn-confirm-modal misc-btn-confirm-modal " data-dismiss="modal">{% trans "Done" %}</button>
+            {% if subscriber_count > 0 or registered_subscriber_count > 0 or anonymous_subscriber_count > 0 %}
+                <button type="button" class="btn btn-success btn-confirm-modal misc-btn " data-dismiss="modal">{% trans "Done" %}</button>
             {% else %}
                 <a href="{% url "echo:mailcampaign_list" %}" class="btn btn-success btn-modal">{% trans "Mail campaign" %}</a>
                 <a href="{% url "echo:sms_campaign" %}" class="btn btn-success btn-modal">{% trans "SMS campaign" %}</a>

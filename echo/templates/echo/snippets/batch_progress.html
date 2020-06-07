@@ -1,6 +1,6 @@
 <script>
     ( () => {
-        ikwen.updateProgressBar = function() {
+        ikwen.updateProgressBar = () => {
             if ($('.event.running').length === 0) {
                 clearInterval(ikwen.intervalId);
                 return;

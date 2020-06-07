@@ -155,15 +155,14 @@
                         {% endif %}
                         <div class="form-group">
                             <div class="col-xs-8" style="padding-left: 0" >
-                                {% if campaign.recipient_label or campaign.is_started %}
-                                    <input type="text" class="form-control recipient-list input-sm text-center" id="recipient-list" name="recipients" placeholder="{% trans 'To' %}" value="{{ campaign.recipient_label }}" autocomplete="off" readonly>
-                                    {% if not campaign.is_started %}
-                                        <div class="reset-recipient-list">&times;</div>
-                                    {% endif %}
-                                {% else %}
-                                    <input type="text" class="form-control recipient-list input-sm " id="recipient-list" name="recipients" placeholder="{% trans 'To' %}" autocomplete="off" readonly>
-                                    <div class="reset-recipient-list tpl">&times;</div>
-                                {% endif %}
+                                <input type="text" class="form-control recipient-list input-sm {% if campaign.recipient_label or campaign.is_started %}text-center {% endif %}"
+                                       id="recipient-list"
+                                       name="recipients"
+                                       placeholder="{% trans 'To' %}"
+                                       {% if campaign.recipient_label or campaign.is_started %}value="{{ campaign.recipient_label }}"{% endif %}
+                                       autocomplete="off"
+                                       readonly
+                                       style="cursor: pointer" />
                             </div>
                             {% if campaign.is_started %}
                                     <div class="col-xs-4 btn-choose-recipient not-allowed text-center">
@@ -205,42 +204,6 @@
                                     </div>
                                 </div>
                             </div>
-                            <input type="hidden" name="items_fk_list" value="{{ items_fk_list }}" />
-                            <section class="content" style="width: 100%">
-                                <ul id="content-items" style="padding-left: 0">
-                                    {% for item in item_list %}
-                                        <li class="ik-li" id="{{ item.id }}" data-id="{{ item.id }}">
-                                            <div class="subtle-shade select">
-                                                <i class="glyphicon glyphicon-ok"></i>
-                                            </div>
-                                            {% url 'kako:change_product' item.id as change_item_url %}
-                                            {% if item.image and item.image.name %}
-                                                <a href="{{ change_item_url }}" class="image" style="background-image: url({{ item.image.small_url }})"></a>
-                                            {% else %}
-                                                <a href="{{ change_item_url }}" class="image" style="background-image: url({% static 'ikwen/img/login-avatar.jpg' %})"></a>
-                                            {% endif %}
-                                            <div class="info">
-                                                <a href="{{ change_item_url }}" class="full_name">{{ item.name }}</a>
-                                            </div>
-                                            {% if campaign.total != campaign.progress %}
-                                            <div class="actions">
-                                                <i class="action glyphicon glyphicon-trash trash" title="{% trans "Delete item" %}"></i>
-                                            </div>
-                                            {% endif %}
-                                        </li>
-                                    {% endfor %}
-                                    {% if not campaign or campaign.total != campaign.progress %}
-                                        {% if add_products_url %}
-                                        <li class="ik-li">
-                                            <a href="{{ add_products_url }}">
-                                                <i class="icon link"></i>
-                                                {% trans "Add products" %}
-                                            </a>
-                                        </li>
-                                        {% endif %}
-                                    {% endif %}
-                                </ul>
-                            </section>
                         </div>
                         <div class="clearfix"></div>
                         <div class="col-lg-4 col-sm-6 col-lg-offset-4 col-sm-offset-3">
@@ -256,12 +219,12 @@
                         </div>
                     </div>
                     {% if not campaign %}
-                    <div class="form-group col-xs-12 col-sm-4 col-sm-offset-4 btn-continue not-allowed" style="clear: both; padding-top: 15px">
+                    <div class="form-group col-xs-12 col-sm-4 col-sm-offset-4 btn-continue misc-btn not-allowed" style="clear: both; padding-top: 15px">
                         <button class="btn btn-md btn-success btn-block">{% trans "Continue" %}</button>
                     </div>
                     {% elif not campaign.terminated  %}
                     <div class="form-group col-xs-12 col-sm-4 col-sm-offset-4" style="clear: both; padding-top: 15px">
-                        <button class="btn btn-md btn-success btn-block">{% trans "Save" %}</button>
+                        <button class="btn btn-md btn-success btn-block misc-btn">{% trans "Save" %}</button>
                     </div>
                     {% endif %}
                 </form>
@@ -280,7 +243,7 @@
                         <p>{% blocktrans %}Input test emails. <em>Separate with coma</em>{% endblocktrans %}</p>
                     </div>
                     <div class="form-group">
-                        <label for="test-emails">{% trans "Test emails" %}</label>
+                        <label for="test-emails">{% trans "Test Push notifications" %}</label>
                         <textarea id="test-emails" class="form-control" cols="4"></textarea>
                     </div>
                     {% include 'core/snippets/spinner.html' %}
@@ -382,6 +345,9 @@
                         $('.test-warning').html(warning).show();
                     }
                 })
+            }).on('click', '.recipient-list', (evt) => {
+                evt.preventDefault();
+                $('.btn-choose-recipient').click()
             }).on('click', '.clone-campaign', function () {
                 $('#clone-campaign').submit();
 

@@ -40,8 +40,8 @@ form.campaign.terminated .qq-uploader { display: none; }
 .event-content {padding-left: 1vw;}
 .event-content p {margin-top: 10px;}
 .event-detail {border: 1px solid #ddd; margin-top: 10px; padding: 15px;}
-.event-icon {line-height: 140px;margin: -15px 0 0 -15px;position: absolute;text-align: center;width: 90px;}
-.event-icon img {width: 60px;}
+.event-icon {line-height: 140px;margin: -15px 0 0 -15px;position: absolute;text-align: center;width: 100px;}
+.event-icon img {width: 80px;}
 
 .fa-bullhorn:hover {color: #319dd5 !important;}
 
