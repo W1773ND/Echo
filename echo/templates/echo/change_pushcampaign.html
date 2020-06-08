@@ -118,6 +118,9 @@
                     {% endif %}
                 </h3>
                 <form class="row campaign{% if campaign and campaign.terminated %} terminated{% endif %}" method="post">{% csrf_token %}
+                    {% if form.errors %}
+                        <div class="errorlist">{{ form.errors }}</div>
+                    {% endif %}
                     <input type="hidden" name="keep_editing" value="yes">
                     <input class="filename" type="hidden" name="filename" {% if campaign.recipient_src == "[File]" %} value="{{ campaign.recipient_label }}" {% endif %}>
                     <input class="audience-choose" type="hidden" name="audience"{% if campaign.recipient_src == "[All Subscriber]" or campaign.recipient_src == "[Registered Subscriber]" %} value="{{ campaign.recipient_label }}" {% endif %}>
@@ -239,27 +242,43 @@
                     <h4 class="modal-title">{% trans "Send a Push notification test" %}</h4>
                 </div>
                 <div class="modal-body">
-                    <div>
-                        <p>{% blocktrans %}Input test emails. <em>Separate with coma</em>{% endblocktrans %}</p>
-                    </div>
-                    <div class="form-group">
-                        <label for="test-emails">{% trans "Test Push notifications" %}</label>
-                        <textarea id="test-emails" class="form-control" cols="4"></textarea>
-                    </div>
-                    {% include 'core/snippets/spinner.html' %}
-                    <div class="test-error text-danger"></div>
-                    <div class="test-warning text-warning"></div>
-                    <div class="test-success text-success"></div>
-                    <div class="actions">
-                        <div class="col-xs-12 col-sm-4 pull-right action">
-                            <button class="btn btn-success btn-block btn-sm run-test"
-                                    aria-label="OK">{% trans "Send test" %}</button>
+                    <h4 class="test-error text-danger text-center animated blink infinite"></h4>
+                    <h4 class="test-warning text-warning text-center animated blink infinite"></h4>
+                    <h4 class="test-success text-success text-center animated blink infinite"></h4>
+                    <form class="col-sm-8 col-sm-offset-2" method="post">{% csrf_token %}
+                    {% if form.errors %}
+                        <div class="errorlist">{{ form.errors }}</div>
+                    {% endif %}
+                    <input type="hidden" id="customer-id" name="member_id" />
+                    <input type="hidden" id="customer-email" name="email" />
+                    {% if not form.errors %}
+                        <div class="form-group" style="padding: 20px 15px 0">
+                            <label for="customer-name">{% trans "Tester name" %}</label>
+                            <div>
+                                <input id="customer-name" class="form-control input-sm" type="text" autocomplete="off"/>
+                                {{ form.member_id.errors }}
+                                <div class="results customers has-shade" style="display: none" data-min-search-chars="2">
+                                    {% include 'core/snippets/spinner.html' %}
+                                    <ul style="padding-left: 0">
+                                        <li class="member tpl" style="display: none">
+                                            <div style="display: block">
+                                                <span class="photo logo bg-img" style="background-image: url({% static 'ikwen/img/no_photo.png' %})"></span>
+                                                <div style="float: left; margin-left: 30px">
+                                                    <span class="full_name"></span>
+                                                    <p class="about short_description"></p>
+                                                </div>
+                                            </div>
+                                        </li>
+                                    </ul>
+                                    <div class="clearfix"></div>
+                                </div>
+                            </div>
+                            <div class="" style="margin-top: 3vh">
+                                <button type="button" class="btn btn-sm btn-block btn-success run-test" disabled>{% trans "Send test" %}</button>
+                            </div>
                         </div>
-                        <div class="col-xs-12 col-sm-4 pull-right action">
-                            <button class="btn btn-default btn-block btn-sm"
-                                    data-dismiss="modal" aria-label="Close">{% trans "Cancel" %}</button>
-                        </div>
-                    </div>
+                    {% endif %}
+                </form>
                     <div class="clearfix"></div>
                 </div>
             </div>
@@ -272,6 +291,40 @@
     {{ block.super }}
     <script>
         (function () {
+            $('.results.customers').on('click', 'li.member', function() {
+                let customerId = $(this).data('id'),
+                    customerName = $(this).find('.full_name').text();
+                if (customerId && customerName) {
+                    $('#customer-id').val(customerId);
+                    $('#customer-name').val(customerName);
+                    $('.run-test').prop('disabled', false);
+                }
+            }).css('width', $('#customer-name').css('width'));
+            $('#customer-name').keyup(function() {
+                let val = $(this).val();
+                if (val.isValidEmail()) {
+                    $('#customer-id').val('');
+                    $('#customer-email').val(val);
+                    $('.run-test').prop('disabled', false);
+                } else {
+                    $('#customer-email').val('');
+                    $('.run-test').prop('disabled', true);
+                }
+            });
+            {% url 'ikwen:member_list' as list_members_url %}
+            let searchDescriptor = [{
+                endpoint: '{{ list_members_url }}',
+                resultTplSelector: '.results.customers li.member',
+                maxChars: function() {
+                    // The max number of characters that will be taken into consideration
+                    // in the string typed by user to do the search. Characters above that
+                    // limit will be ignored.
+                    return Math.max($('#customer-name').val().length, 4);
+                }
+            }];
+            $('#customer-name').focusout(function() {$('.results.customers').fadeOut()});
+            ikwen.setupSearch('#customer-name', '.results.customers', searchDescriptor);
+
             $('input[name=subject]').keyup(function () {
                 let pushBody = tinyMCE.get('push-body').getContent();
                 $(this).removeClass('warning');
@@ -328,27 +381,27 @@
                     $(this).children('span').text('Pause');
                 }
                 $.getJSON('', {action: 'toggle_campaign'})
-            }).on('click', '.run-test', function() {
-                let emailList = $('#test-emails').val(),
-                    params = {action: 'run_test', test_email_list: emailList};
+            }).on('click', '.run-test', () => {
+                let customerId = $('#customer-id').val(),
+                    params = {action: 'run_test', customer_id: customerId};
                 $('#modal-test .spinner').show();
-                $('.test-error, .test-warning, .test-success').hide();
-                $.getJSON('', params, function(data) {
+                $('.test-status .test-error, .test-warning, .test-success').hide();
+                $.getJSON('', params, (data) => {
                     $('#modal-test .spinner').hide();
                     if (data.error) {
-                        $('.test-error').text(data.error).show();
+                        $('.test-status, .test-error').text(data.error).show();
                         return;
                     }
-                    $('.test-success').text("{% trans "Your tests were sent" %}").show();
+                    $('.test-status, .test-success').text("{% trans "Your tests were successfully sent!" %}").show();
                     if (data.warning) {
                         let warning = data.warning.join('<br>');
-                        $('.test-warning').html(warning).show();
+                        $('.test-status, .test-warning').html(warning).show();
                     }
                 })
             }).on('click', '.recipient-list', (evt) => {
                 evt.preventDefault();
                 $('.btn-choose-recipient').click()
-            }).on('click', '.clone-campaign', function () {
+            }).on('click', '.clone-campaign', () => {
                 $('#clone-campaign').submit();
 
 

@@ -171,6 +171,17 @@ ul { list-style-type: none !important; }
 	animation-iteration-count: infinite;
 }
 
+.blink { -webkit-animation: blinker 3s linear; animation: blinker 3s linear; transition-timing-function: ease-out }
+
+@-webkit-keyframes blinker { 50% { opacity: 0; } }
+
+@-moz-keyframes blinker { 50% { opacity: 0; } }
+
+@-o-keyframes blinker { 50% { opacity: 0; } }
+
+@-ms-keyframes blinker { 50% { opacity: 0; } }
+
+@keyframes blinker { 50% { opacity: 0; } }
 
 @-webkit-keyframes pulse {
 	from {

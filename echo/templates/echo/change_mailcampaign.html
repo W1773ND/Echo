@@ -118,6 +118,9 @@
                     {% endif %}
                 </h3>
                 <form class="row campaign{% if campaign and campaign.terminated %} terminated{% endif %}" method="post">{% csrf_token %}
+                    {% if form.errors %}
+                        <div class="errorlist">{{ form.errors }}</div>
+                    {% endif %}
                     <input type="hidden" name="keep_editing" value="yes">
                     <input class="filename" type="hidden" name="filename" {% if campaign.recipient_src == "[File]" %} value="{{ campaign.recipient_label }}" {% endif %}>
                     <input class="profile-checked" type="hidden" name="profiles"{% if campaign.recipient_src == "[Profiles]" %} value="{{ campaign.recipient_profile }}" {% endif %}>
@@ -296,9 +299,9 @@
                         <textarea id="test-emails" class="form-control" cols="4"></textarea>
                     </div>
                     {% include 'core/snippets/spinner.html' %}
-                    <div class="test-error text-danger"></div>
-                    <div class="test-warning text-warning"></div>
-                    <div class="test-success text-success"></div>
+                    <h4 class="test-error text-danger text-center animated blink infinite"></h4>
+                    <h4 class="test-warning text-warning text-center animated blink infinite"></h4>
+                    <h4 class="test-success text-success text-center animated blink infinite"></h4>
                     <div class="actions">
                         <div class="col-xs-12 col-sm-4 pull-right action">
                             <button class="btn btn-success btn-block btn-sm run-test"
@@ -403,7 +406,7 @@
                         $('.test-error').text(data.error).show();
                         return;
                     }
-                    $('.test-success').text("{% trans "Your tests were sent" %}").show();
+                    $('.test-success').text("{% trans "Your tests were successfully sent" %}").show();
                     if (data.warning) {
                         let warning = data.warning.join('<br>');
                         $('.test-warning').html(warning).show();

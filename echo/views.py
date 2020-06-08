@@ -494,7 +494,8 @@ class ChangePushCampaign(CampaignBaseView, ChangeObjectBase):
             obj.terminated = obj.progress > 0 and obj.progress == obj.total
         return context
 
-    def get_object(self, **kwargs):
+    @staticmethod
+    def get_object(**kwargs):
         object_id = kwargs.get('object_id')  # May be overridden with the one from GET data
         if object_id:
             try:
@@ -509,7 +510,7 @@ class ChangePushCampaign(CampaignBaseView, ChangeObjectBase):
         if action == 'run_test':
             return self.run_test(request, *args, **kwargs)
         if action == 'clone_campaign':
-            return self.clone_campaign(request, *args, **kwargs)
+            return self.clone_campaign(request)
         return super(ChangePushCampaign, self).get(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
@@ -583,7 +584,8 @@ class ChangePushCampaign(CampaignBaseView, ChangeObjectBase):
             context['errors'] = form.errors
             return render(request, self.template_name, context)
 
-    def start_campaign(self, request, *args, **kwargs):
+    @staticmethod
+    def start_campaign(request, *args, **kwargs):
         campaign_id = kwargs['object_id']
         campaign = PushCampaign.objects.using(UMBRELLA).get(pk=campaign_id)
         if campaign.is_started and not campaign.keep_running:
@@ -605,7 +607,8 @@ class ChangePushCampaign(CampaignBaseView, ChangeObjectBase):
             'content-type: text/json'
         )
 
-    def toggle_campaign(self, request, *args, **kwargs):
+    @staticmethod
+    def toggle_campaign(request, *args, **kwargs):
         campaign_id = kwargs['object_id']
         campaign = PushCampaign.objects.using(UMBRELLA).get(pk=campaign_id)
         campaign.keep_running = not campaign.keep_running
@@ -616,75 +619,54 @@ class ChangePushCampaign(CampaignBaseView, ChangeObjectBase):
             'content-type: text/json'
         )
 
-    def run_test(self, request, *args, **kwargs):
-        # TODO: Implement run_test for push notifications
-        pass
-        # campaign_id = kwargs['object_id']
-        # campaign = PushCampaign.objects.using(UMBRELLA).get(pk=campaign_id)
-        # test_endpoint_list = request.GET['test_endpoint_list'].split(',')
-        # test_endpoint_count = len(test_endpoint_list)
-        # service = get_service_instance()
-        # balance = Balance.objects.using(WALLETS_DB_ALIAS).get(service_id=service.id)
-        # if balance.push_count < test_endpoint_count:
-        #     response = {'error': 'Insufficient Push credit'}
-        #     return HttpResponse(json.dumps(response))
-        #
-        # connection = mail.get_connection()
-        # try:
-        #     connection.open()
-        # except:
-        #     response = {'error': 'Failed to connect to push server. Please check your internet'}
-        #     return HttpResponse(json.dumps(response))
-        # config = service.config
-        #
-        # warning = []
-        #
-        # for endpoint in test_endpoint_list[:5]:
-        #     if balance.push_count == 0:
-        #         warning.append('Insufficient Push Credit')
-        #         break
-        #     endpoint = endpoint.strip()
-        #     subject = "Test - " + campaign.subject
-        #     message = campaign.content
-        #     # try:
-        #     #     member = Member.objects.filter(email=email)[0]
-        #     #     message = campaign.content.replace('$client', member.first_name)
-        #     # except:
-        #     #     message = campaign.content.replace('$client', "")
-        #     sender = '%s <no-reply@%s>' % (config.company_name, service.domain)
-        #     media_url = ikwen_settings.CLUSTER_MEDIA_URL + service.project_name_slug + '/'
-        #     product_list = []
-        #     if campaign.items_fk_list:
-        #         app_label, model_name = campaign.model_name.split('.')
-        #         item_model = get_model(app_label, model_name)
-        #         product_list = item_model._default_manager.filter(pk__in=campaign.items_fk_list)
-        #     try:
-        #         currency = Currency.objects.get(is_base=True)
-        #     except Currency.DoesNotExist:
-        #         currency = None
-        #     html_content = get_mail_content(subject, message, template_name='echo/mails/campaign.html',
-        #                                     extra_context={'media_url': media_url, 'product_list': product_list,
-        #                                                    'campaign': campaign, 'currency': currency})
-        #     msg = EmailMessage(subject, html_content, sender, [endpoint])
-        #     msg.content_subtype = "html"
-        #     try:
-        #         with transaction.atomic(using='wallets'):
-        #             balance.mail_count -= 1
-        #             balance.save()
-        #             if not msg.send():
-        #                 transaction.rollback(using='wallets')
-        #                 warning.append('Push not sent to %s' % endpoint)
-        #     except:
-        #         pass
-        # try:
-        #     connection.close()
-        # except:
-        #     pass
-        #
-        # response = {'success': True, 'warning': warning}
-        # return HttpResponse(json.dumps(response))
+    @staticmethod
+    def run_test(request, *args, **kwargs):
+        campaign_id = kwargs['object_id']
+        customer_id = request.GET['customer_id']
+        campaign = PushCampaign.objects.using(UMBRELLA).get(pk=campaign_id)
+        balance = Balance.objects.using(WALLETS_DB_ALIAS).get(service_id=get_service_instance().id)
+        service = campaign.service
+        title = campaign.subject
+        body = campaign.content
+        target_page = campaign.cta_url
+        image_url = ''
+        recipient_list = []
+        if campaign.image:
+            media_url = ikwen_settings.CLUSTER_MEDIA_URL + service.project_name_slug + '/'
+            image_url = media_url + campaign.image.name
+        try:
+            member = Member.objects.get(id=customer_id)
+            body = body.replace('$client', member.first_name)
+            pwa_profile_qs = PWAProfile.objects.filter(push_subscription__isnull=False, member=member)
+            for pwa_profile in pwa_profile_qs:
+                recipient_list.append(pwa_profile.id)
+            push_count = len(recipient_list)
+            if balance.push_count < push_count:
+                response = {'error': 'Insufficient Push credit'}
+                return HttpResponse(json.dumps(response))
+            warning = []
+            if getattr(settings, 'ECHO_TEST', False):
+                requests.get('http://www.google.com')
+                balance.push_count -= push_count
+                balance.save()
+            else:
+                try:
+                    with transaction.atomic(using='wallets'):
+                        if send_push(member, title, body, target_page, image_url):
+                            balance.push_count -= push_count
+                            balance.save()
+                        else:
+                            warning.append('Push not sent to %s' % member.full_name)
+                except:
+                    pass
+        except Member.DoesNotExist:
+            response = {'error': 'This is not a valid user. Please start typing and choose one of the users listed'}
+            return HttpResponse(json.dumps(response))
+        response = {'success': True}
+        return HttpResponse(json.dumps(response))
 
-    def clone_campaign(self, request):
+    @staticmethod
+    def clone_campaign(request):
         campaign_id = request.GET.get('campaign_id')
         campaign = PushCampaign.objects.using(UMBRELLA).get(pk=campaign_id)
         campaign.pk = None
@@ -844,7 +826,8 @@ class ChangeMailCampaign(CampaignBaseView, ChangeObjectBase):
             context['errors'] = form.errors
             return render(request, self.template_name, context)
 
-    def start_campaign(self, request, *args, **kwargs):
+    @staticmethod
+    def start_campaign(request, *args, **kwargs):
         campaign_id = kwargs['object_id']
         campaign = MailCampaign.objects.using(UMBRELLA).get(pk=campaign_id)
         if campaign.is_started and not campaign.keep_running:
@@ -867,7 +850,8 @@ class ChangeMailCampaign(CampaignBaseView, ChangeObjectBase):
             'content-type: text/json'
         )
 
-    def toggle_campaign(self, request, *args, **kwargs):
+    @staticmethod
+    def toggle_campaign(request, *args, **kwargs):
         campaign_id = kwargs['object_id']
         campaign = MailCampaign.objects.using(UMBRELLA).get(pk=campaign_id)
         campaign.keep_running = not campaign.keep_running
@@ -878,7 +862,8 @@ class ChangeMailCampaign(CampaignBaseView, ChangeObjectBase):
             'content-type: text/json'
         )
 
-    def run_test(self, request, *args, **kwargs):
+    @staticmethod
+    def run_test(request, *args, **kwargs):
         campaign_id = kwargs['object_id']
         campaign = MailCampaign.objects.using(UMBRELLA).get(pk=campaign_id)
         test_email_list = request.GET['test_email_list'].split(',')
@@ -942,7 +927,8 @@ class ChangeMailCampaign(CampaignBaseView, ChangeObjectBase):
         response = {'success': True, 'warning': warning}
         return HttpResponse(json.dumps(response))
 
-    def clone_campaign(self, request):
+    @staticmethod
+    def clone_campaign(request):
         campaign_id = request.GET.get('campaign_id')
         campaign = MailCampaign.objects.using(UMBRELLA).get(pk=campaign_id)
         campaign.pk = None
