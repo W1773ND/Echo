@@ -143,21 +143,29 @@ def batch_send_push(campaign):
             image_url = ''
         if campaign.recipient_src != ANONYMOUS_SUBSCRIBER:
             try:
-                member = PWAProfile.objects.get(push_subscription=push_subscription).member
-                body = campaign.content.replace('$client', member.first_name)
+                if PWAProfile.objects.get(push_subscription=push_subscription).member:
+                    member = PWAProfile.objects.get(push_subscription=push_subscription).member
+                    body = campaign.content.replace('$client', member.first_name)
             except:
                 body = campaign.content.replace('$client', "")
         if getattr(settings, 'ECHO_TEST', False):
-            requests.get('http://www.google.com')
-            balance.push_count -= 1
-            balance.save()
+            try:
+                requests.get('http://www.google.com')
+                balance.push_count -= 1
+                balance.save()
+            except requests.exceptions.RequestException:
+                logger.error("Push to pwa_profile[%s] from %s not sent" % (pwa_profile_id, service), exc_info=True)
+                break
         else:
             try:
                 with transaction.atomic(using='wallets'):
                     if send_push(push_subscription, title, body, target_page, image_url):
                         balance.push_count -= 1
                         balance.save()
+                    else:
+                        logger.error("Push to pwa_profile[%s] from %s not sent" % (pwa_profile_id, service), exc_info=True)
             except:
+                logger.error("Atomic transaction from %s exit with error code" % service, exc_info=True)
                 pass
         campaign = PushCampaign.objects.using(UMBRELLA).get(pk=campaign.id)
         campaign.progress += 1
@@ -646,9 +654,17 @@ class ChangePushCampaign(CampaignBaseView, ChangeObjectBase):
                 return HttpResponse(json.dumps(response))
             warning = []
             if getattr(settings, 'ECHO_TEST', False):
-                requests.get('http://www.google.com')
-                balance.push_count -= push_count
-                balance.save()
+                try:
+                    requests.get('http://www.google.com')
+                    balance.push_count -= push_count
+                    balance.save()
+                except requests.ConnectionError:
+                    response = {'error': 'Push not sent to %s, check your internet connection...' % member.full_name}
+                    return HttpResponse(json.dumps(response))
+                except requests.exceptions.RequestException:
+                    response = {'error': 'Push not sent to %s, see log for more details...' % member.full_name}
+                    logger.error("Push from %s not sent to %s" % (service, member.full_name), exc_info=True)
+                    return HttpResponse(json.dumps(response))
             else:
                 try:
                     with transaction.atomic(using='wallets'):
@@ -656,7 +672,8 @@ class ChangePushCampaign(CampaignBaseView, ChangeObjectBase):
                             balance.push_count -= push_count
                             balance.save()
                         else:
-                            warning.append('Push not sent to %s' % member.full_name)
+                            warning.append('Push test not sent to %s. Is it a registered subscriber?' % member.full_name)
+                            logger.error("Push from %s not sent to %s" % (service, member.full_name), exc_info=True)
                 except:
                     pass
         except Member.DoesNotExist:
