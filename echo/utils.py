@@ -2,7 +2,7 @@
 import json
 import logging
 from copy import copy
-from datetime import datetime
+from datetime import datetime, timedelta
 from math import ceil
 from threading import Thread
 from time import strptime
@@ -129,6 +129,12 @@ def notify_for_empty_messaging_credit(service, balance):
         activate('en')
     if balance.push_count == 0 and balance.sms_count == 0 and balance.mail_count == 0:
         subject = _("Your are out of Push, Email and SMS credit.")
+        if not balance.last_empty_push_notice:
+            balance.last_empty_push_notice = now - timedelta(days=10)
+        if not balance.last_empty_mail_notice:
+            balance.last_empty_mail_notice = now - timedelta(days=10)
+        if not balance.last_empty_sms_notice:
+            balance.last_empty_sms_notice = now - timedelta(days=10)
         last_notice = copy(max(balance.last_empty_push_notice, balance.last_empty_mail_notice, balance.last_empty_sms_notice))
         account = "Push, Email and SMS"
         balance.last_empty_push_notice = now

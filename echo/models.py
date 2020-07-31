@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from datetime import datetime
 
 from django.db import models
 from django.template.defaultfilters import truncatechars
@@ -183,17 +184,17 @@ class Balance(Model):
     sms_count = models.IntegerField(default=0)
     mail_count = models.IntegerField(default=0)
     push_count = models.IntegerField(default=0)
-    last_low_push_notice = models.DateTimeField(blank=True, null=True, db_index=True,
+    last_low_push_notice = models.DateTimeField(blank=True, null=True, db_index=True, default=datetime.now,
                                                 help_text=_("Last time the person was informed of low Push credit"))
-    last_low_mail_notice = models.DateTimeField(blank=True, null=True, db_index=True,
+    last_low_mail_notice = models.DateTimeField(blank=True, null=True, db_index=True, default=datetime.now,
                                                 help_text=_("Last time the person was informed of low Email credit"))
-    last_low_sms_notice = models.DateTimeField(blank=True, null=True, db_index=True,
+    last_low_sms_notice = models.DateTimeField(blank=True, null=True, db_index=True, default=datetime.now,
                                                help_text=_("Last time the person was informed of low SMS credit"))
-    last_empty_push_notice = models.DateTimeField(blank=True, null=True, db_index=True,
+    last_empty_push_notice = models.DateTimeField(blank=True, null=True, db_index=True, default=datetime.now,
                                                   help_text=_("Last time the person was informed of empty Push credit"))
-    last_empty_mail_notice = models.DateTimeField(blank=True, null=True, db_index=True,
+    last_empty_mail_notice = models.DateTimeField(blank=True, null=True, db_index=True, default=datetime.now,
                                                   help_text=_("Last time the person was informed of empty Email credit"))
-    last_empty_sms_notice = models.DateTimeField(blank=True, null=True, db_index=True,
+    last_empty_sms_notice = models.DateTimeField(blank=True, null=True, db_index=True, default=datetime.now,
                                                  help_text=_("Last time the person was informed of empty SMS credit"))
 
 

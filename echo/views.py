@@ -129,7 +129,8 @@ def batch_send_push(campaign):
         return
 
     for pwa_profile_id in campaign.recipient_list[campaign.progress:]:
-        push_subscription = PWAProfile.objects.get(id=pwa_profile_id).push_subscription
+        pwa_profile = PWAProfile.objects.select_related('member').get(pk=pwa_profile_id)
+        push_subscription = pwa_profile.push_subscription
         title = campaign.subject
         body = campaign.content
         target_page = campaign.cta_url
@@ -143,9 +144,8 @@ def batch_send_push(campaign):
             image_url = ''
         if campaign.recipient_src != ANONYMOUS_SUBSCRIBER:
             try:
-                if PWAProfile.objects.get(push_subscription=push_subscription).member:
-                    member = PWAProfile.objects.get(push_subscription=push_subscription).member
-                    body = campaign.content.replace('$client', member.first_name)
+                if pwa_profile.member:
+                    body = campaign.content.replace('$client', pwa_profile.member.first_name)
             except:
                 body = campaign.content.replace('$client', "")
         if getattr(settings, 'ECHO_TEST', False):
@@ -159,11 +159,9 @@ def batch_send_push(campaign):
         else:
             try:
                 with transaction.atomic(using='wallets'):
-                    if send_push(push_subscription, title, body, target_page, image_url):
+                    if send_push(campaign.service, push_subscription, title, body, target_page, image_url):
                         balance.push_count -= 1
                         balance.save()
-                    else:
-                        logger.error("Push to pwa_profile[%s] from %s not sent" % (pwa_profile_id, service), exc_info=True)
             except:
                 logger.error("Atomic transaction from %s exit with error code" % service, exc_info=True)
                 pass
