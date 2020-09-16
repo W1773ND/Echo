@@ -159,7 +159,7 @@ def batch_send_push(campaign):
         else:
             try:
                 with transaction.atomic(using='wallets'):
-                    if send_push(campaign.service, push_subscription, title, body, target_page, image_url):
+                    if send_push(service, push_subscription, title, body, target_page, image_url):
                         balance.push_count -= 1
                         balance.save()
             except:
@@ -666,12 +666,14 @@ class ChangePushCampaign(CampaignBaseView, ChangeObjectBase):
             else:
                 try:
                     with transaction.atomic(using='wallets'):
-                        if send_push(member, title, body, target_page, image_url):
+                        if send_push(service, member, title, body, target_page, image_url):
                             balance.push_count -= push_count
                             balance.save()
                         else:
                             warning.append('Push test not sent to %s. Is it a registered subscriber?' % member.full_name)
                             logger.error("Push from %s not sent to %s" % (service, member.full_name), exc_info=True)
+                            response = {'error': 'Bad network, try again later...'}
+                            return HttpResponse(json.dumps(response))
                 except:
                     pass
         except Member.DoesNotExist:

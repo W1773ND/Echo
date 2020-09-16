@@ -16,88 +16,6 @@
 {% block head_js %}
     {{ block.super }}
     <script src="{% static 'ikwen/ajaxuploader/js/fileuploader.js' %}" ></script>
-    <script src="//cdn.tinymce.com/4/tinymce.min.js"></script>
-    <script>
-        (() => {
-            const properties = {
-                menubar: false,
-                statusbar: false,
-                plugins: [
-                    'advlist autolink lists link image charmap print preview anchor',
-                    'searchreplace visualblocks code fullscreen',
-                    'insertdatetime media table contextmenu paste code', 'textcolor', 'table',
-                ],
-                paste_data_images: true,
-                selector: '#push-body',
-                height: 450,
-                toolbar: 'undo redo | fontsizeselect | forecolor backcolor | bold italic underline | bullist numlist | table | alignleft aligncenter alignright | link code',
-                fontsize_formats: '11px 12px 14px 16px 18px 24px 36px 48px',
-                textcolor_map: [
-                                "000000", "Black",
-                                "AB182B", "Burnt orange",
-                                "333300", "Dark olive",
-                                "003300", "Dark green",
-                                "003366", "Dark azure",
-                                "000080", "Navy Blue",
-                                "333399", "Indigo",
-                                "333333", "Very dark gray",
-                                "800000", "Maroon",
-                                "FF6600", "Orange",
-                                "808000", "Olive",
-                                "008000", "Green",
-                                "008080", "Teal",
-                                "0000FF", "Blue",
-                                "666699", "Grayish blue",
-                                "808080", "Gray",
-                                "FF0000", "Red",
-                                "FF9900", "Amber",
-                                "99CC00", "Yellow green",
-                                "339966", "Sea green",
-                                "33CCCC", "Turquoise",
-                                "3366FF", "Royal blue",
-                                "800080", "Purple",
-                                "999999", "Medium gray",
-                                "FF00FF", "Magenta",
-                                "FFCC00", "Gold",
-                                "FFFF00", "Yellow",
-                                "00FF00", "Lime",
-                                "00FFFF", "Aqua",
-                                "00CCFF", "Sky blue",
-                                "993366", "Red violet",
-                                "FFFFFF", "White",
-                                "FF99CC", "Pink",
-                                "FFCC99", "Peach",
-                                "FFFF99", "Light yellow",
-                                "CCFFCC", "Pale green",
-                                "CCFFFF", "Pale cyan",
-                                "99CCFF", "Light sky blue",
-                ],
-                content_css: [
-                                '//fonts.googleapis.com/css?family=Lato:300,300i,400,400i',
-                                '//www.tinymce.com/css/codepen.min.css'
-                ],
-                init_instance_callback: (editor) => {
-                    editor.on('keyup', (e) => {
-                        let mailContent = tinyMCE.get('push-body').getContent();
-                        $('div.mce-tinymce').removeClass('warning');
-                        if($('input[name=subject]').val() != "" && mailContent !="") {
-                            $('.start-campaign').removeClass('disabled');
-                            $('.show-modal-test').removeClass('not-allowed')
-                        }
-                        else {
-                            $('.start-campaign').addClass('disabled');
-                            $('.show-modal-test').addClass('not-allowed')
-                        }
-                    });
-                }
-            };
-            {% comment %}if ($(window).width() >= 768) {
-                properties['width'] = 435;
-            }{% endcomment %}
-            tinymce.init(properties);
-        })()
-    </script>
-
 {% endblock %}
 
 {% block admin_content %}
@@ -105,7 +23,7 @@
         <div class="container-fluid">
             <div class="sold" style="text-align: right">
                 <strong><p>{% trans "Remaining Push notification(s) : " %}<span class="messaging-balance text-muted">{{ balance.push_count|intcomma }}</span></p></strong>
-                <a style="text-decoration: none;" href="{% url 'echo:push_bundle' %}"><strong><p>{% trans "Refill ? " %}</p></strong></a>
+                {% comment %}<a style="text-decoration: none;" href="{% url 'echo:push_bundle' %}"><strong><p>{% trans "Refill ? " %}</p></strong></a>{% endcomment %}
             </div>
             <div class="form all-content">
                 <h3 class="text-center"><label class="title"> {% trans "Push campaign " %}</label>
@@ -198,7 +116,7 @@
                             </div>
                         </div>
                         <div class="clearfix"></div>
-                        <div class=" col-lg-8 col-sm-6 col-lg-offset-2 col-sm-offset-3">
+                        <div class="col-lg-4 col-sm-6 col-lg-offset-4 col-sm-offset-3 col-xs-12">
                             <div class="form-group">
                                 <div class="">
                                     <h5><label class="text-center" for="push-body">{% trans "Message" %}</label></h5>
@@ -326,7 +244,7 @@
             ikwen.setupSearch('#customer-name', '.results.customers', searchDescriptor);
 
             $('input[name=subject]').keyup(function () {
-                let pushBody = tinyMCE.get('push-body').getContent();
+                let pushBody = $('#push-body').val();
                 $(this).removeClass('warning');
                 if($('input[name=subject]').val() != "" && pushBody !="") {
                     $('.start-campaign').removeClass('disabled');
@@ -338,14 +256,28 @@
                 }
             });
 
+            $('textarea[name=content]').keyup(function () {
+                let pushBody = $(this).val();
+                $(this).removeClass('warning');
+                if($('input[name=subject]').val() != "" && pushBody !="") {
+                    $('.start-campaign').removeClass('disabled');
+                    $('.show-modal-test').removeClass('not-allowed')
+                }
+                else {
+                    $('.start-campaign').addClass('disabled');
+                    $('.show-modal-test').addClass('not-allowed')
+                }
+            });
+
+
             $('.start-campaign:not(.toggle-send)').one( 'click', function () {
                 if($(this).hasClass('disabled')) {
                     if($('input[name=subject]').val() === "") {
                         $('input[name=subject]').addClass('warning');
                     }
-                    let mailContent = tinyMCE.get('push-body').getContent();
-                    if (mailContent === "") {
-                        $('div.mce-tinymce').addClass('warning')
+                    let pushBody = $('#push-body').val();
+                    if (pushBody === "") {
+                        $('#push-body').addClass('warning')
                     }
 
                 } else {
